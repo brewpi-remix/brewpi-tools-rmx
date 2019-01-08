@@ -1,2 +1,3 @@
-# Always use LF line endings, even on Windows. This prevents git from changing files when switching branches.
+# Always use LF line endings, even on Windows. This prevents git from changing
+# files when switching branches.
 text eol=lf
