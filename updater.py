@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/python
 
 # Copyright (C) 2018  Lee C. Bussy (@LBussy)
 
@@ -26,201 +26,438 @@
 # the world. My apologies if I have missed anyone; those were the names
 # listed as contributors on the Legacy branch.
 
+# See: 'original-license.md' for notes about the original project's
+# license and credits.
+
 ############
 ### Init
 ############
 
-# Set up some project variables
-THISSCRIPT=$(basename "$0")
-VERSION="0.4.0.0"
-# These should stay the same
-GITUSER="lbussy"
-PACKAGE="BrewPi-Tools-RMX"
-GITPROJ=${PACKAGE,,}
-GITPROJWWW="brewpi-www-rmx"
-GITPROJSCRIPT="brewpi-script-rmx"
-GITHUB="https://github.com"
-SCRIPTNAME="${THISSCRIPT%%.*}"
+import subprocess
+from time import localtime, strftime
+import sys
+import os
+import urllib2
+import getopt
 
-# Packages to be installed/checked via apt
-APTPACKAGES="git arduino-core git-core pastebinit build-essential apache2 libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev python-pip python-configobj"
-# Packages to be installed/check via pip
-PIPPACKAGES="pyserial psutil simplejson configobj gitpython"
+try:
+    import git
+except ImportError:
+    print "This update script requires gitpython, please install it with:\n'sudo pip install gitpython'"
+    sys.exit(1)
 
-echo -e "\nBeginning BrewPi uninstall."
 
-############
-### Cleanup cron
-############
+# Read in command line arguments
+try:
+    opts, args = getopt.getopt(sys.argv[1:], "a", ['ask'])
+except getopt.GetoptError:
+    print ("Unknown parameter, available options: \n" + \
+          "  updater.py --ask     Do not use default options, but ask me which branches\n" + \
+          "                       to check out")
+    sys.exit()
 
-# Clear out the old brewpi cron if it exists
-if [ -f /etc/cron.d/brewpi ]; then
-  echo -e "\nResetting cron."
-  sudo rm -f /etc/cron.d/brewpi
-  sudo /etc/init.d/cron restart
-fi
+userInput = False
+for o, a in opts:
+    # print help message for command line options
+    if o in ('-a', '--ask'):
+        print "\nUsing interactive (advanced) update with user input.\n"
+        userInput = True
 
-############
-### Remove all BrePi Packages
-############
 
-# Remove all BrewPi Installation items
-# (except for installed apt/pip packages)
-cd ~ # Start from home
+### Quits all running instances of BrewPi
+def quitBrewPi(webPath):
+    print "\nStopping running instances of BrewPi."
+    try:
+        import BrewPiProcess
+        allProcesses = BrewPiProcess.BrewPiProcesses()
+        allProcesses.stopAll(webPath+"/do_not_run_brewpi")
+    except:
+        pass  # if we cannot stop running instances of the script, just continue. Might be a very old version
 
-# Stop (kill) brewpi
-sudo touch /var/www/html/do_not_run_brewpi
-if pgrep -u brewpi >/dev/null 2>&1; then
-  echo -e "\nAttempting gracefull shutdown of process(es) $(pgrep -u brewpi)."
-  cmd="sudo kill -15 $(pgrep -u brewpi)"
-  eval $cmd
-  sleep 2
-  if pgrep -u brewpi >/dev/null 2>&1; then
-    echo -e "Trying a little harder to terminate process(es) $(pgrep -u brewpi)."
-    cmd="sudo kill -2 $(pgrep -u brewpi)"
-    eval $cmd
-    sleep 2
-    if pgrep -u brewpi >/dev/null 2>&1; then
-      echo -e "Being more forcefull with process(es) $(pgrep -u brewpi)."
-      cmd="sudo kill -1 $(pgrep -u brewpi)"
-      eval $cmd
-      sleep 2
-      while pgrep -u brewpi >/dev/null 2>&1;
-      do
-        echo -e "Being really insistent about killing process(es) $(pgrep -u brewpi) now."
-        echo -e "(I'm going to keep doing this till the process(es) are gone.)"
-        cmd="sudo kill -9 $(pgrep -u brewpi)"
-        eval $cmd
-        sleep 2
-      done
-    fi
-  fi
-fi
+# remove do_not_run file
+def startBrewPi(webPath):
+    filePath = webPath+"/do_not_run_brewpi"
+    if os.path.isfile(filePath):
+        os.remove(filePath)
 
-# Wipe out all the directories
-if [ -d /home/pi/brewpi-tools-rmx ]; then
-  echo -e "\nClearing /home/pi/brewpi-tools-rmx."
-  sudo rm -fr /home/pi/brewpi-tools-rmx
-fi
-if [ -f /home/pi/bootstrap.log ]; then
-  echo -e "\nDeleting /home/pi/bootstrap.log."
-  sudo rm -f /home/pi/bootstrap.log
-fi
-if [ -d /home/brewpi ]; then
-  echo -e "\nClearing /home/brewpi."
-  sudo rm -fr /home/brewpi
-fi
-# Wipe out www if it exists and is not empty
-if [ -d /var/www/html ]; then
-  if [ ! -z "$(ls -A /var/www/html)" ]; then
-    echo -e "\nClearing /var/www/html."
-    sudo rm -fr /var/www/html
-	# Re-create html durectory
-    sudo mkdir /var/www/html
-    sudo chown www-data:www-data /var/www/html
-  fi
-fi
 
-############
-### Remove brewpi user/group
-############
+### calls update-tools-repo, which returns 0 if the brewpi-tools repo is up-to-date
+def checkForUpdates():
+    if os.path.exists(os.path.dirname(os.path.realpath(__file__)) + "/update-tools-repo.sh"):
+        try:
+            print "Checking whether the update script is up to date."
+            subprocess.check_call(["sudo", "bash", os.path.dirname(os.path.realpath(__file__)) + "/update-tools-repo.sh"],
+                                  stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError:
+            print "This script was not up-to-date and has been automatically updated.\nPlease re-run updater.py."
+            sys.exit(1)
+    else:
+        print ("The required file update-this-repo.sh was not found. This is likely to occur\n" + \
+                "if you manually copied updater.py here.  Please run this from the original\n" + \
+                "location you installed the brewpi-tools git repo and try again.\n")
+        sys.exit(1)
 
-if getent group brewpi | grep &>/dev/null "\b${pi}\b"; then
-  echo -e "\nRemoving pi from brewpi group."
-  sudo deluser pi brewpi
-fi
-if sudo id "brewpi" > /dev/null 2>&1; then
-  echo -e "\nRemoving user brewpi."
-  sudo userdel brewpi
-fi
 
-############
-### Reset Apache
-############
+### call installDependencies.sh, so commands are only defined in one place.
+def runAfterUpdate(scriptDir):
+    try:
+        print "Installing dependencies, updating CRON and fixing file permissions."
+        subprocess.check_call(["sudo", "bash", scriptDir + "/utils/runAfterUpdate.sh"], stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError:
+        print ("I tried to execute the runAfterUpdate.sh bash script, but an error occurred.\n" + \
+               "Try running it from the command line in your <brewpi-script>/utils dir.\n")
 
-# Reset Apache config to stock
-if [ -f /etc/apache2/apache2.conf ]; then
-  if grep -qF "KeepAliveTimeout 99" /etc/apache2/apache2.conf; then
-    echo -e "\nResetting /etc/apache2/apache2.conf."
-    sudo sed -i -e 's/KeepAliveTimeout 99/KeepAliveTimeout 5/g' /etc/apache2/apache2.conf
-    sudo /etc/init.d/apache2 restart
-  fi
-fi
+### Stash any local repo changes
+def stashChanges(repo):
+    print ("\nYou have local changes in this repository, that are prevent a successful merge.\n" + \
+           "These changes can be stashed to bring your repository back to its original\n" + \
+           "state so we can merge.\n" + \
+           "Your changes are not lost, but saved on the stash.  You can (optionally) get\n" + \
+           "them back later with 'git stash pop'.")
+    choice = raw_input("Would you like to stash local changes? (Required to continue) [Y/n]: ")
+    if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
+        print "Attempting to stash any changes.\n"
+        try:
+            repo.git.config('--get', 'user.name')
+        except git.GitCommandError, e:
+            print "Warning: No user name set for git, which is necessary to stash."
+            print "--> Please enter a global username for git on this system:"
+            userName = raw_input()
+            repo.git.config('--global', 'user.name', userName)
+        try:
+            repo.git.config('--get', 'user.email')
+        except git.GitCommandError, e:
+            print "Warning: No user e-mail address set for git, which is necessary to stash."
+            print "--> Please enter a global user e-mail address for git on this system: "
+            userEmail = raw_input()
+            repo.git.config('--global', 'user.email', userEmail)
+        try:
+            resp = repo.git.stash()
+            print "\n" + resp + "\n"
+            print "Stash successful."
 
-############
-### Remove pip packages
-############
+            print "##################################################################"
+            print "#Your local changes were in conflict with the last update of code.#"
+            print "##################################################################"
+            print "The conflict was:\n"
+            print "-------------------------------------------------------"
+            print  repo.git.stash("show", "--full-diff", "stash@{0}")
+            print "-------------------------------------------------------"
+            print ("\nTo make merging possible, these changes were stashed.\n" + \
+                   "To merge the changes back in, you can use 'git stash pop'.\n" + \
+                   "Only do this if you really know what you are doing.  Your\n" + \
+                   "changes might be incompatible with the update or could\n" + \
+                   "cause a new merge conflict.")
 
-echo -e "\nChecking for pip packages installed with BrewPi."
-if pip &>/dev/null; then
-  pipInstalled=$(sudo pip list --format=legacy)
-  if [ $? -eq 0 ]; then
-    pipInstalled=$(echo "$pipInstalled" | awk '{ print $1 }')
-    for pkg in ${PIPPACKAGES,,}; do
-      if [[ ${pipInstalled,,} == *"$pkg"* ]]; then
-        echo -e "Removing '$pkg'."
-        sudo pip uninstall $pkg -y
-      fi
-    done
-  fi
-fi
+            return True
+        except git.GitCommandError, e:
+            print e
+            print "Unable to stash, don't want to overwrite your stuff, aborting this branch\nupdate."
+            return False
+    else:
+        print "Changes are not stashed, cannot continue without stashing. Aborting update."
+        return False
 
-############
-### Remove apt packages
-############
 
-echo -e "\nChecking for apt packages installed with BrewPi."
-# Get list of installed packages
-packagesInstalled=$(sudo dpkg --get-selections | awk '{ print $1 }')
-# Loop through the required packages and uninstall those in $APTPACKAGES
-for pkg in ${APTPACKAGES,,}; do
-  if [[ ${packagesInstalled,,} == *"$pkg"* ]]; then
-    echo -e "\nRemoving '$pkg'.\n"
-	sudo apt remove --purge $pkg -y
-  fi
-done
+### Function used to stash local changes and update a branch passed to it
+def update_repo(repo, remote, branch):
+    stashed = False
+    repo.git.fetch(remote, branch)
+    try:
+        print repo.git.merge(remote + '/' + branch)
+    except git.GitCommandError, e:
+        print e
+        if "Your local changes to the following files would be overwritten by merge" in str(e):
+            stashed = stashChanges(repo)
+            if not stashed:
+                return False
 
-############
-### Cleanup repos
-############
+        print "Trying to merge again."
+        try:
+            print repo.git.merge(remote + '/' + branch)
+        except git.GitCommandError, e:
+            print e
+            print "Sorry, cannot automatically stash/discard local changes. Aborting."
+            return False
 
-# Cleanup
-echo -e "\nCleaning up local repositories."
-sudo apt clean -y
-sudo apt autoclean -y
-sudo apt autoremove --purge -y
 
-############
-### Change hostname
-###########
+    print branch + " updated."
+    return True
 
-oldHostName=$(hostname)
-newHostName="raspberrypi"
-echo -e "\nResetting hostname."
-if [ "$oldHostName" != "$newHostName" ]; then
-  sed1="sudo sed -i 's/$oldHostName/$newHostName/g' /etc/hosts"
-  sed2="sudo sed -i 's/$oldHostName/$newHostName/g' /etc/hostname"
-  eval $sed1
-  eval $sed2
-  sudo hostnamectl set-hostname $newHostName
-  sudo /etc/init.d/avahi-daemon restart
-  echo -e "\nYour hostname has been changed back to '$newHostName'.\n"
-  echo -e "(If your hostname is part of your prompt, your prompt will"
-  echo -e "not change untill you log out and in again.  This will have"
-  echo -e "no effect on anything but the way the prompt looks.)"
-  sleep 3
-fi
 
-############
-### Reset password
-###########
+### Function to be used to check most recent commit date on the repo passed to it
+def check_repo(repo):
+    updated = False
+    localBranch = repo.active_branch.name
+    newBranch = localBranch
+    remoteRef = None
 
-echo -e "\nResetting password for 'pi' back to 'raspberry'."
-echo "pi:raspberry" | sudo chpasswd
+    print "You are on branch " + localBranch
 
-############
-### Work Complete
-###########
+    if not localBranch in ["master", "legacy"] and not userInput:
+        print "Your checked out branch is not master, our stable release branch."
+        print "It is highly recommended that you switch to the stable master branch."
+        choice = raw_input("Would you like to do that? [Y/n]: ")
+        if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
+            print "Switching branch to master."
+            newBranch = "master"
 
-echo -e "\nUninstall complete."
+
+    ### Get available remotes
+    remote = repo.remotes[0] # default to first found remote
+    if userInput and len(repo.remotes) > 1:
+        print "Multiple remotes found in " + repo.working_tree_dir
+        for i, rem in enumerate(repo.remotes):
+            print "[%d] %s" % (i, rem.name)
+        print "[" + str(len(repo.remotes)) + "] Skip updating this repository."
+        while 1:
+            try:
+                choice = raw_input("From which remote do you want to update? [%s]:  " % remote)
+                if choice == "":
+                    print "Updating from default remote %s." % remote
+                    break
+                else:
+                    selection = int(choice)
+            except ValueError:
+                print "Use the number!"
+                continue
+            if selection == len(repo.remotes):
+                return False # choice = skip updating
+            try:
+                remote = repo.remotes[selection]
+            except IndexError:
+                print "Not a valid selection. Try again."
+                continue
+            break
+
+    repo.git.fetch(remote.name, "--prune")
+
+    ### Get available branches on the remote
+    try:
+        remoteBranches = remote.refs
+    except AssertionError as e:
+        print "Failed to get references from remote: " + repr(e)
+        print "Aborting update of " + repo.working_tree_dir
+        return False
+
+    if userInput:
+        print "\nAvailable branches on the remote '%s' for %s: " % (remote.name, repo.working_tree_dir)
+
+    for i, ref in enumerate(remoteBranches):
+        remoteRefName = "%s" % ref
+        if "/HEAD" in remoteRefName:
+            remoteBranches.pop(i)  # remove HEAD from list
+
+    for i, ref in enumerate(remoteBranches):
+        remoteRefName = "%s" % ref
+        remoteBranchName = remoteRefName.replace(remote.name + "/", "")
+        if remoteBranchName == newBranch:
+            remoteRef = ref
+        if userInput:
+            print "[%d] %s" % (i, remoteBranchName)
+
+    if userInput:
+        print "[" + str(len(remoteBranches)) + "] Skip updating this repository."
+
+        while 1:
+            try:
+                choice = raw_input("Enter the number of the branch you wish to update [%s]: " % localBranch)
+                if choice == "":
+                    print "Keeping current branch %s" % localBranch
+                    break
+                else:
+                    selection = int(choice)
+            except ValueError:
+                print "Please make a valid choice."
+                continue
+            if selection == len(remoteBranches):
+                return False # choice = skip updating
+            try:
+                remoteRef = remoteBranches[selection]
+            except IndexError:
+                print "Not a valid selection. Try again."
+                continue
+            break
+
+    if remoteRef is None:
+        print "Could not find branch selected branch on remote. Aborting."
+        return False
+
+    remoteBranch = ("%s" % remoteRef).replace(remote.name + "/", "")
+
+    checkedOutDifferentBranch = False
+    if localBranch != remoteBranch:
+        print "The " + remoteBranch + " branch is not your currently active branch - "
+        choice = raw_input("would you like me to check it out for you now? (Required to continue) [Y/n]: ")
+        if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
+            stashedForCheckout = False
+            while True:
+                try:
+                    if remoteBranch in repo.branches:
+                        print repo.git.checkout(remoteBranch)
+                    else:
+                        print repo.git.checkout(remoteRef, b=remoteBranch)
+                    print "Successfully switched to " + remoteBranch
+                    checkedOutDifferentBranch = True
+                    break
+                except git.GitCommandError, e:
+                    if not stashedForCheckout:
+                        if "Your local changes to the following files would be overwritten by checkout" in str(e):
+                            print "Local changes exist in your current files that need to be stashed to continue."
+                            if not stashChanges(repo):
+                                return
+                            print "Trying to checkout again."
+                            stashedForCheckout = True # keep track of stashing, so it is only tried once
+                            continue # retry after stash
+                    else:
+                        print e
+                        print "I was unable to checkout. Please try it manually from the command line and\nre-run this tool."
+                        return False
+        else:
+            print "Skipping this branch."
+            return False
+
+    if remoteRef is None:
+        print "Error: Could not determine which remote reference to use, aborting."
+        return False
+
+    localDate = repo.head.commit.committed_date
+    localDateString = strftime("%a, %d %b %Y %H:%M:%S", localtime(localDate))
+    localSha = repo.head.commit.hexsha
+    localName = repo.working_tree_dir
+
+    remoteDate = remoteRef.commit.committed_date
+    remoteDateString = strftime("%a, %d %b %Y %H:%M:%S", localtime(remoteDate))
+    remoteSha = remoteRef.commit.hexsha
+    remoteName = remoteRef.name
+    alignLength = max(len(localName), len(remoteName))
+
+    print "The latest commit in " + localName.ljust(alignLength) + " is " + localSha + " on " + localDateString
+    print "The latest commit on " + remoteName.ljust(alignLength) + " is " + remoteSha + " on " + remoteDateString
+
+    if localDate < remoteDate:
+        print "*** Updates are available ****"
+        choice = raw_input("Would you like to update " + localName + " from " + remoteName + " [Y/n]: ")
+        if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
+            updated = update_repo(repo, remote.name, remoteBranch)
+    else:
+        print "Your local version of " + localName + " is up to date."
+    return updated or checkedOutDifferentBranch
+
+
+print "######################################################"
+print "####                                              ####"
+print "####        Welcome to the BrewPi Updater!        ####"
+print "####                                              ####"
+print "######################################################"
+print ""
+
+if os.geteuid() != 0:
+    print "This update script should be run as root."
+    print "Try running it again with sudo, exiting."
+    exit(1)
+
+checkForUpdates()
+print ""
+
+print "It is not recommended to update during a brew.\n" \
+      "If you are actively logging a brew we recommend canceling the the update with ctrl-c."
+
+changed = False
+scriptPath = '/home/brewpi'
+
+# set a first guess for the web path. If files are not found here, the user is asked later
+webPath = '/var/www/html' # default since Jessie
+if not os.path.isdir('/var/www/html'):
+    webPath = '/var/www' # earlier default www dir
+
+print "\n\n*** Updating BrewPi script repository ***"
+
+for i in range(3):
+    correctRepo = False
+    try:
+        scriptRepo = git.Repo(scriptPath)
+        gitConfig = open(scriptPath + '/.git/config', 'r')
+        for line in gitConfig:
+            if "url =" in line and "brewpi-script" in line:
+                correctRepo = True
+                break
+        gitConfig.close()
+    except git.NoSuchPathError:
+        print "The path '%s' does not exist" % scriptPath
+        scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
+        continue
+    except (git.InvalidGitRepositoryError, IOError):
+        print "The path '%s' does not seem to be a valid git repository." % scriptPath
+        scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
+        continue
+
+    if not correctRepo:
+        print "The path '%s' does not seem to be the BrewPi python script git repository." % scriptPath
+        scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
+        continue
+    ### Add BrewPi repo into the sys path, so we can import those modules as needed later
+    sys.path.insert(0, scriptPath)
+    quitBrewPi(webPath) # exit running instances of BrewPi
+    changed = check_repo(scriptRepo) or changed
+    break
+else:
+    print "Maximum number of tries reached, updating BrewPi scripts aborted."
+
+print "\n\n*** Updating BrewPi web interface repository ***"
+for i in range(3):
+    correctRepo = False
+    try:
+        webRepo = git.Repo(webPath)
+        gitConfig = open(webPath + '/.git/config', 'r')
+        for line in gitConfig:
+            if "url =" in line and "brewpi-www" in line:
+                correctRepo = True
+                break
+        gitConfig.close()
+    except git.NoSuchPathError:
+        print "The path '%s' does not exist" % webPath
+        webPath = raw_input("To which path did you install the BrewPi web application?  ")
+        continue
+    except (git.InvalidGitRepositoryError, IOError):
+        print "The path '%s' does not seem to be a valid git repository." % webPath
+        webPath = raw_input("To which path did you install the BrewPi web application?  ")
+        continue
+    if not correctRepo:
+        print "The path '%s' does not seem to be the BrewPi web interface git repository." % webPath
+        webPath = raw_input("To which path did you install the BrewPi web application?  ")
+        continue
+    changed = check_repo(webRepo) or changed
+    break
+else:
+    print "Maximum number of tries reached, updating BrewPi web interface aborted."
+
+if changed:
+    print "\nOne our more repositories were updated, running runAfterUpdate.sh from\n%s/utils." % scriptPath
+    runAfterUpdate(scriptPath)
+else:
+    print "\nNo changes were made, skipping runAfterUpdate.sh."
+    print "If you encounter problems, you can start it manually with:"
+    print "'sudo %s/utils/runAfterUpdate.sh'" % scriptPath
+
+print("\nThe update script can automatically check your controller firmware version\n" + \
+      "and program it with the latest release on GitHub, would you like to do this")
+choice = raw_input("now? [Y/n]: ")
+if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
+    # start as a separate python process, or it will not use the updated modules
+    updateScript = os.path.join(scriptPath, 'utils', 'updateFirmware.py')
+    if userInput:
+        p = subprocess.Popen("python {0} --beta".format(updateScript), shell=True)
+    else:
+        p = subprocess.Popen("python {0} --silent".format(updateScript), shell=True)
+    p.wait()
+    result = p.returncode
+    if(result == 0):
+        print "Firmware update complete."
+else:
+    print "Skipping controller update."
+
+startBrewPi(webPath)
+print "\n\n*** Done updating BrewPi ***\n"
+print "Please refresh your browser with ctrl-F5 to make sure it is not showing an\nold cached version."
 
