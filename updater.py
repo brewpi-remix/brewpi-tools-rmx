@@ -82,18 +82,18 @@ def startBrewPi(webPath):
         os.remove(filePath)
 
 
-### calls update-tools-repo, which returns 0 if the brewpi-tools repo is up-to-date
+### calls updateToolsRepo.sh, which returns 0 if the brewpi-tools repo is up-to-date
 def checkForUpdates():
-    if os.path.exists(os.path.dirname(os.path.realpath(__file__)) + "/update-tools-repo.sh"):
+    if os.path.exists(os.path.dirname(os.path.realpath(__file__)) + "/updateToolsRepo.sh"):
         try:
             print("Checking whether the update script is up to date.")
-            subprocess.check_call(["sudo", "bash", os.path.dirname(os.path.realpath(__file__)) + "/update-tools-repo.sh"],
+            subprocess.check_call(["sudo", "bash", os.path.dirname(os.path.realpath(__file__)) + "/updateToolsRepo.sh"],
                                   stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError:
             print("This script was not up-to-date and has been automatically updated.\nPlease re-run updater.py.")
             sys.exit(1)
     else:
-        print ("The required file update-this-repo.sh was not found. This is likely to occur\n" + \
+        print ("The required file updateToolsRepo.sh was not found. This is likely to occur\n" + \
                 "if you manually copied updater.py here.  Please run this from the original\n" + \
                 "location you installed the brewpi-tools git repo and try again.\n")
         sys.exit(1)
