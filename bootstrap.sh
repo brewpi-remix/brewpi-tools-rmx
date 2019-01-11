@@ -270,13 +270,13 @@ lastUpdate=$(stat -c %Y /var/lib/apt/lists)
 nowTime=$(date +%s)
 if [ $(($nowTime - $lastUpdate)) -gt 604800 ] ; then
   echo -e "\nLast apt update was over a week ago. Running"
-  echo -e "apt-get update before updating dependencies.\n"
+  echo -e "apt update before updating dependencies.\n"
   apt update||die
   echo
 fi
 
 # Now install any necessary packages if they are not installed
-echo -e "Checking and installing required dependencies via apt\n"
+echo -e "Checking and installing required dependencies via apt.\n"
 for pkg in $APTPACKAGES; do
   pkgOk=$(dpkg-query -W --showformat='${Status}\n' $pkg | \
     grep "install ok installed")
