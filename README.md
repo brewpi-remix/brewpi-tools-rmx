@@ -45,7 +45,7 @@ doPerms.sh | Sets correct ownership and permissions on BrewPi files.  Called by 
 updateToolsRepo.sh | This script will ensure the install tools are up to date.  This is called by updater.py as needed.
 
 ## Postscript
-This project takes us back to the days when Arduino was King, firmware v2.10 was as good as it got, and the world was good.  I hope someone enjoys it.
+This project takes us back to the days when Arduino was King, firmware v2.10 was as good as it got, and the world was a happy place.  I hope someone enjoys it.
 
 ## <a name="security-note"></a>Security Note
 My instructions above tell you to copy and paste a command into your terminal window.  Despite me telling you to do that, I am now going to tell you how unsafe that is.  Many people browse the Internet, find the command they need, and blindly paste it into their terminal window.  This one is blatantly (potentially) dangerous from an untrusted source:
