@@ -26,6 +26,9 @@
 # the world. My apologies if I have missed anyone; those were the names
 # listed as contributors on the Legacy branch.
 
+# See: 'original-license.md' for notes about the original project's
+# license and credits. */
+
 # Set up some project variables
 THISSCRIPT=$(basename "$0")
 VERSION="0.4.0.0"
@@ -106,9 +109,9 @@ else
     changes=$(git log HEAD..origin/"$active_branch" --oneline)
 
     if [ -z "$changes" ]; then
-    	# no changes
-    	echo "$myPath is up to date."
-    	exit 0
+        # no changes
+        echo "$myPath is up to date."
+        exit 0
     fi
 
     echo "$myPath is not up to date, updating from GitHub."
@@ -126,7 +129,7 @@ else
     cd - # Go back where we started
   else
     # No local repository found
+	echo -e "\nNo local repository found."
     exit 1
   fi
 fi
-
