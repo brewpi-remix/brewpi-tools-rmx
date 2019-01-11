@@ -33,6 +33,7 @@
 ### Init
 ############
 
+from __future__ import print_function
 import subprocess
 from time import localtime, strftime
 import sys
@@ -43,7 +44,7 @@ import getopt
 try:
     import git
 except ImportError:
-    print "This update script requires gitpython, please install it with:\n'sudo pip install gitpython'"
+    print("This update script requires gitpython, please install it with:\n'sudo pip install gitpython'")
     sys.exit(1)
 
 
@@ -60,13 +61,13 @@ userInput = False
 for o, a in opts:
     # print help message for command line options
     if o in ('-a', '--ask'):
-        print "\nUsing interactive (advanced) update with user input.\n"
+        print("\nUsing interactive (advanced) update with user input.\n")
         userInput = True
 
 
 ### Quits all running instances of BrewPi
 def quitBrewPi(webPath):
-    print "\nStopping running instances of BrewPi."
+    print("\nStopping running instances of BrewPi.")
     try:
         import BrewPiProcess
         allProcesses = BrewPiProcess.BrewPiProcesses()
@@ -85,11 +86,11 @@ def startBrewPi(webPath):
 def checkForUpdates():
     if os.path.exists(os.path.dirname(os.path.realpath(__file__)) + "/update-tools-repo.sh"):
         try:
-            print "Checking whether the update script is up to date."
+            print("Checking whether the update script is up to date.")
             subprocess.check_call(["sudo", "bash", os.path.dirname(os.path.realpath(__file__)) + "/update-tools-repo.sh"],
                                   stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError:
-            print "This script was not up-to-date and has been automatically updated.\nPlease re-run updater.py."
+            print("This script was not up-to-date and has been automatically updated.\nPlease re-run updater.py.")
             sys.exit(1)
     else:
         print ("The required file update-this-repo.sh was not found. This is likely to occur\n" + \
@@ -101,7 +102,7 @@ def checkForUpdates():
 ### call installDependencies.sh, so commands are only defined in one place.
 def runAfterUpdate(scriptDir):
     try:
-        print "Installing dependencies, updating CRON and fixing file permissions."
+        print("Installing dependencies, updating CRON and fixing file permissions.")
         subprocess.check_call(["sudo", "bash", scriptDir + "/utils/runAfterUpdate.sh"], stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError:
         print ("I tried to execute the runAfterUpdate.sh bash script, but an error occurred.\n" + \
@@ -116,33 +117,33 @@ def stashChanges(repo):
            "them back later with 'git stash pop'.")
     choice = raw_input("Would you like to stash local changes? (Required to continue) [Y/n]: ")
     if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
-        print "Attempting to stash any changes.\n"
+        print("Attempting to stash any changes.\n")
         try:
             repo.git.config('--get', 'user.name')
-        except git.GitCommandError, e:
-            print "Warning: No user name set for git, which is necessary to stash."
-            print "--> Please enter a global username for git on this system:"
+        except git.GitCommandError as e:
+            print("Warning: No user name set for git, which is necessary to stash.")
+            print("--> Please enter a global username for git on this system:")
             userName = raw_input()
             repo.git.config('--global', 'user.name', userName)
         try:
             repo.git.config('--get', 'user.email')
-        except git.GitCommandError, e:
-            print "Warning: No user e-mail address set for git, which is necessary to stash."
-            print "--> Please enter a global user e-mail address for git on this system: "
+        except git.GitCommandError as e:
+            print("Warning: No user e-mail address set for git, which is necessary to stash.")
+            print("--> Please enter a global user e-mail address for git on this system: ")
             userEmail = raw_input()
             repo.git.config('--global', 'user.email', userEmail)
         try:
             resp = repo.git.stash()
-            print "\n" + resp + "\n"
-            print "Stash successful."
+            print("\n" + resp + "\n")
+            print("Stash successful.")
 
-            print "##################################################################"
-            print "#Your local changes were in conflict with the last update of code.#"
-            print "##################################################################"
-            print "The conflict was:\n"
-            print "-------------------------------------------------------"
-            print  repo.git.stash("show", "--full-diff", "stash@{0}")
-            print "-------------------------------------------------------"
+            print("##################################################################")
+            print("#Your local changes were in conflict with the last update of code.#")
+            print("##################################################################")
+            print("The conflict was:\n")
+            print("-------------------------------------------------------")
+            print(repo.git.stash("show", "--full-diff", "stash@{0}"))
+            print("-------------------------------------------------------")
             print ("\nTo make merging possible, these changes were stashed.\n" + \
                    "To merge the changes back in, you can use 'git stash pop'.\n" + \
                    "Only do this if you really know what you are doing.  Your\n" + \
@@ -150,12 +151,12 @@ def stashChanges(repo):
                    "cause a new merge conflict.")
 
             return True
-        except git.GitCommandError, e:
-            print e
-            print "Unable to stash, don't want to overwrite your stuff, aborting this branch\nupdate."
+        except git.GitCommandError as e:
+            print(e)
+            print("Unable to stash, don't want to overwrite your stuff, aborting this branch\nupdate.")
             return False
     else:
-        print "Changes are not stashed, cannot continue without stashing. Aborting update."
+        print("Changes are not stashed, cannot continue without stashing. Aborting update.")
         return False
 
 
@@ -164,24 +165,24 @@ def update_repo(repo, remote, branch):
     stashed = False
     repo.git.fetch(remote, branch)
     try:
-        print repo.git.merge(remote + '/' + branch)
-    except git.GitCommandError, e:
-        print e
+        print(repo.git.merge(remote + '/' + branch))
+    except git.GitCommandError as e:
+        print(e)
         if "Your local changes to the following files would be overwritten by merge" in str(e):
             stashed = stashChanges(repo)
             if not stashed:
                 return False
 
-        print "Trying to merge again."
+        print("Trying to merge again.")
         try:
-            print repo.git.merge(remote + '/' + branch)
-        except git.GitCommandError, e:
-            print e
-            print "Sorry, cannot automatically stash/discard local changes. Aborting."
+            print(repo.git.merge(remote + '/' + branch))
+        except git.GitCommandError as e:
+            print(e)
+            print("Sorry, cannot automatically stash/discard local changes. Aborting.")
             return False
 
 
-    print branch + " updated."
+    print(branch + " updated.")
     return True
 
 
@@ -192,41 +193,41 @@ def check_repo(repo):
     newBranch = localBranch
     remoteRef = None
 
-    print "You are on branch " + localBranch
+    print("You are on branch " + localBranch)
 
     if not localBranch in ["master", "legacy"] and not userInput:
-        print "Your checked out branch is not master, our stable release branch."
-        print "It is highly recommended that you switch to the stable master branch."
+        print("Your checked out branch is not master, our stable release branch.")
+        print("It is highly recommended that you switch to the stable master branch.")
         choice = raw_input("Would you like to do that? [Y/n]: ")
         if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
-            print "Switching branch to master."
+            print("Switching branch to master.")
             newBranch = "master"
 
 
     ### Get available remotes
     remote = repo.remotes[0] # default to first found remote
     if userInput and len(repo.remotes) > 1:
-        print "Multiple remotes found in " + repo.working_tree_dir
+        print("Multiple remotes found in " + repo.working_tree_dir)
         for i, rem in enumerate(repo.remotes):
-            print "[%d] %s" % (i, rem.name)
-        print "[" + str(len(repo.remotes)) + "] Skip updating this repository."
+            print("[%d] %s" % (i, rem.name))
+        print("[" + str(len(repo.remotes)) + "] Skip updating this repository.")
         while 1:
             try:
                 choice = raw_input("From which remote do you want to update? [%s]:  " % remote)
                 if choice == "":
-                    print "Updating from default remote %s." % remote
+                    print("Updating from default remote %s." % remote)
                     break
                 else:
                     selection = int(choice)
             except ValueError:
-                print "Use the number!"
+                print("Use the number!")
                 continue
             if selection == len(repo.remotes):
                 return False # choice = skip updating
             try:
                 remote = repo.remotes[selection]
             except IndexError:
-                print "Not a valid selection. Try again."
+                print("Not a valid selection. Try again.")
                 continue
             break
 
@@ -236,12 +237,12 @@ def check_repo(repo):
     try:
         remoteBranches = remote.refs
     except AssertionError as e:
-        print "Failed to get references from remote: " + repr(e)
-        print "Aborting update of " + repo.working_tree_dir
+        print("Failed to get references from remote: " + repr(e))
+        print("Aborting update of " + repo.working_tree_dir)
         return False
 
     if userInput:
-        print "\nAvailable branches on the remote '%s' for %s: " % (remote.name, repo.working_tree_dir)
+        print("\nAvailable branches on the remote '%s' for %s: " % (remote.name, repo.working_tree_dir))
 
     for i, ref in enumerate(remoteBranches):
         remoteRefName = "%s" % ref
@@ -254,71 +255,71 @@ def check_repo(repo):
         if remoteBranchName == newBranch:
             remoteRef = ref
         if userInput:
-            print "[%d] %s" % (i, remoteBranchName)
+            print("[%d] %s" % (i, remoteBranchName))
 
     if userInput:
-        print "[" + str(len(remoteBranches)) + "] Skip updating this repository."
+        print("[" + str(len(remoteBranches)) + "] Skip updating this repository.")
 
         while 1:
             try:
                 choice = raw_input("Enter the number of the branch you wish to update [%s]: " % localBranch)
                 if choice == "":
-                    print "Keeping current branch %s" % localBranch
+                    print("Keeping current branch %s" % localBranch)
                     break
                 else:
                     selection = int(choice)
             except ValueError:
-                print "Please make a valid choice."
+                print("Please make a valid choice.")
                 continue
             if selection == len(remoteBranches):
                 return False # choice = skip updating
             try:
                 remoteRef = remoteBranches[selection]
             except IndexError:
-                print "Not a valid selection. Try again."
+                print("Not a valid selection. Try again.")
                 continue
             break
 
     if remoteRef is None:
-        print "Could not find branch selected branch on remote. Aborting."
+        print("Could not find branch selected branch on remote. Aborting.")
         return False
 
     remoteBranch = ("%s" % remoteRef).replace(remote.name + "/", "")
 
     checkedOutDifferentBranch = False
     if localBranch != remoteBranch:
-        print "The " + remoteBranch + " branch is not your currently active branch - "
+        print("The " + remoteBranch + " branch is not your currently active branch - ")
         choice = raw_input("would you like me to check it out for you now? (Required to continue) [Y/n]: ")
         if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             stashedForCheckout = False
             while True:
                 try:
                     if remoteBranch in repo.branches:
-                        print repo.git.checkout(remoteBranch)
+                        print(repo.git.checkout(remoteBranch))
                     else:
-                        print repo.git.checkout(remoteRef, b=remoteBranch)
-                    print "Successfully switched to " + remoteBranch
+                        print(repo.git.checkout(remoteRef, b=remoteBranch))
+                    print("Successfully switched to " + remoteBranch)
                     checkedOutDifferentBranch = True
                     break
-                except git.GitCommandError, e:
+                except git.GitCommandError as e:
                     if not stashedForCheckout:
                         if "Your local changes to the following files would be overwritten by checkout" in str(e):
-                            print "Local changes exist in your current files that need to be stashed to continue."
+                            print("Local changes exist in your current files that need to be stashed to continue.")
                             if not stashChanges(repo):
                                 return
-                            print "Trying to checkout again."
+                            print("Trying to checkout again.")
                             stashedForCheckout = True # keep track of stashing, so it is only tried once
                             continue # retry after stash
                     else:
-                        print e
-                        print "I was unable to checkout. Please try it manually from the command line and\nre-run this tool."
+                        print(e)
+                        print("I was unable to checkout. Please try it manually from the command line and\nre-run this tool.")
                         return False
         else:
-            print "Skipping this branch."
+            print("Skipping this branch.")
             return False
 
     if remoteRef is None:
-        print "Error: Could not determine which remote reference to use, aborting."
+        print("Error: Could not determine which remote reference to use, aborting.")
         return False
 
     localDate = repo.head.commit.committed_date
@@ -332,36 +333,36 @@ def check_repo(repo):
     remoteName = remoteRef.name
     alignLength = max(len(localName), len(remoteName))
 
-    print "The latest commit in " + localName.ljust(alignLength) + " is " + localSha + " on " + localDateString
-    print "The latest commit on " + remoteName.ljust(alignLength) + " is " + remoteSha + " on " + remoteDateString
+    print("The latest commit in " + localName.ljust(alignLength) + " is " + localSha + " on " + localDateString)
+    print("The latest commit on " + remoteName.ljust(alignLength) + " is " + remoteSha + " on " + remoteDateString)
 
     if localDate < remoteDate:
-        print "*** Updates are available ****"
+        print("*** Updates are available ****")
         choice = raw_input("Would you like to update " + localName + " from " + remoteName + " [Y/n]: ")
         if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             updated = update_repo(repo, remote.name, remoteBranch)
     else:
-        print "Your local version of " + localName + " is up to date."
+        print("Your local version of " + localName + " is up to date.")
     return updated or checkedOutDifferentBranch
 
 
-print "######################################################"
-print "####                                              ####"
-print "####        Welcome to the BrewPi Updater!        ####"
-print "####                                              ####"
-print "######################################################"
-print ""
+print("######################################################")
+print("####                                              ####")
+print("####        Welcome to the BrewPi Updater!        ####")
+print("####                                              ####")
+print("######################################################")
+print("")
 
 if os.geteuid() != 0:
-    print "This update script should be run as root."
-    print "Try running it again with sudo, exiting."
+    print("This update script should be run as root.")
+    print("Try running it again with sudo, exiting.")
     exit(1)
 
 checkForUpdates()
-print ""
+print("")
 
-print "It is not recommended to update during a brew.\n" \
-      "If you are actively logging a brew we recommend canceling the the update with ctrl-c."
+print("It is not recommended to update during a brew.\n" \
+      "If you are actively logging a brew we recommend canceling the the update with ctrl-c.")
 
 changed = False
 scriptPath = '/home/brewpi'
@@ -371,7 +372,7 @@ webPath = '/var/www/html' # default since Jessie
 if not os.path.isdir('/var/www/html'):
     webPath = '/var/www' # earlier default www dir
 
-print "\n\n*** Updating BrewPi script repository ***"
+print("\n\n*** Updating BrewPi script repository ***")
 
 for i in range(3):
     correctRepo = False
@@ -384,16 +385,16 @@ for i in range(3):
                 break
         gitConfig.close()
     except git.NoSuchPathError:
-        print "The path '%s' does not exist" % scriptPath
+        print("The path '%s' does not exist" % scriptPath)
         scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
         continue
     except (git.InvalidGitRepositoryError, IOError):
-        print "The path '%s' does not seem to be a valid git repository." % scriptPath
+        print("The path '%s' does not seem to be a valid git repository." % scriptPath)
         scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
         continue
 
     if not correctRepo:
-        print "The path '%s' does not seem to be the BrewPi python script git repository." % scriptPath
+        print("The path '%s' does not seem to be the BrewPi python script git repository." % scriptPath)
         scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
         continue
     ### Add BrewPi repo into the sys path, so we can import those modules as needed later
@@ -402,9 +403,9 @@ for i in range(3):
     changed = check_repo(scriptRepo) or changed
     break
 else:
-    print "Maximum number of tries reached, updating BrewPi scripts aborted."
+    print("Maximum number of tries reached, updating BrewPi scripts aborted.")
 
-print "\n\n*** Updating BrewPi web interface repository ***"
+print("\n\n*** Updating BrewPi web interface repository ***")
 for i in range(3):
     correctRepo = False
     try:
@@ -416,29 +417,29 @@ for i in range(3):
                 break
         gitConfig.close()
     except git.NoSuchPathError:
-        print "The path '%s' does not exist" % webPath
+        print("The path '%s' does not exist" % webPath)
         webPath = raw_input("To which path did you install the BrewPi web application?  ")
         continue
     except (git.InvalidGitRepositoryError, IOError):
-        print "The path '%s' does not seem to be a valid git repository." % webPath
+        print("The path '%s' does not seem to be a valid git repository." % webPath)
         webPath = raw_input("To which path did you install the BrewPi web application?  ")
         continue
     if not correctRepo:
-        print "The path '%s' does not seem to be the BrewPi web interface git repository." % webPath
+        print("The path '%s' does not seem to be the BrewPi web interface git repository." % webPath)
         webPath = raw_input("To which path did you install the BrewPi web application?  ")
         continue
     changed = check_repo(webRepo) or changed
     break
 else:
-    print "Maximum number of tries reached, updating BrewPi web interface aborted."
+    print("Maximum number of tries reached, updating BrewPi web interface aborted.")
 
 if changed:
-    print "\nOne our more repositories were updated, running runAfterUpdate.sh from\n%s/utils." % scriptPath
+    print("\nOne our more repositories were updated, running runAfterUpdate.sh from\n%s/utils." % scriptPath)
     runAfterUpdate(scriptPath)
 else:
-    print "\nNo changes were made, skipping runAfterUpdate.sh."
-    print "If you encounter problems, you can start it manually with:"
-    print "'sudo %s/utils/runAfterUpdate.sh'" % scriptPath
+    print("\nNo changes were made, skipping runAfterUpdate.sh.")
+    print("If you encounter problems, you can start it manually with:")
+    print("'sudo %s/utils/runAfterUpdate.sh'" % scriptPath)
 
 print("\nThe update script can automatically check your controller firmware version\n" + \
       "and program it with the latest release on GitHub, would you like to do this")
@@ -453,11 +454,11 @@ if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
     p.wait()
     result = p.returncode
     if(result == 0):
-        print "Firmware update complete."
+        print("Firmware update complete.")
 else:
-    print "Skipping controller update."
+    print("Skipping controller update.")
 
 startBrewPi(webPath)
-print "\n\n*** Done updating BrewPi ***\n"
-print "Please refresh your browser with ctrl-F5 to make sure it is not showing an\nold cached version."
+print("\n\n*** Done updating BrewPi ***\n")
+print("Please refresh your browser with ctrl-F5 to make sure it is not showing an\nold cached version.")
 
