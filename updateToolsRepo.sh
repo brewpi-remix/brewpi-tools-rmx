@@ -74,7 +74,7 @@ elif [[ $REALUSER != "pi" ]]; then UIDERROR="pi"; fi
 
 if [[ ! $UIDERROR == ""  ]]; then
   echo -e "This script must be run by user 'pi' with sudo:"
-  echo -e "sudo . $THISSCRIPT\n" 1>&2
+  echo -e "'sudo ./updateToolsRepo.sh'\n" 1>&2
   exit 1
 fi
 
