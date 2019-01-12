@@ -195,13 +195,13 @@ BACKUPDIR="$HOMEPATH/$GITPROJ-backup"
 if [ -d "$installPath" ] && [ "$(ls -A ${installPath})" ]; then
   # Stop BrewPi if it's running
   if [ $(ps -ef | grep brewpi.py | grep -v grep) ]; then
-    $installPath/brewpi.py --quit
-    $installPath/brewpi.py --kill
+    "$installPath/brewpi.py" --quit
+    "$installPath/brewpi.py" --kill
     kill -9 $(pidof brewpi.py)
   fi
   dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-Script"
   echo -e "\nScript install directory is not empty, backing up this users home directory to"
-  echo -e "$dirName and then deleting contents of install directory.\n"
+  echo -e "'$dirName' and then deleting contents of install directory."
   mkdir -p "$dirName"
   cp -R "$installPath" "$dirName"/||die
   rm -rf "$installPath"/*||die
@@ -247,7 +247,7 @@ usermod -a -G www-data brewpi||warn
 # add pi user to www-data group
 usermod -a -G www-data pi||warn
 # Find web path based on Apache2 config
-echo -e "Searching for default web location."
+echo -e "\nSearching for default web location."
 webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
 if [ ! -z "$webPath" ]; then
   echo "Found $webPath in /etc/apache2/sites-enabled/000-default*."
@@ -284,7 +284,7 @@ rm -rf "$webPath/index.html" || true
 if [ -d "$webPath" ] && [ "$(ls -A ${webPath})" ]; then
   dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-WWW"
   echo -e "\nWeb directory is not empty, backing up the web directory to:"
-  echo -e "$dirName and then deleting contents of web directory.\n"
+  echo -e "'$dirName' and then deleting contents of web directory."
   mkdir -p "$dirName"
   cp -R "$webPath" "$dirName"/||die
   rm -rf "$webPath"/*||die
