@@ -43,9 +43,9 @@ GITHUB="https://github.com"
 SCRIPTNAME="${THISSCRIPT%%.*}"
 
 # Packages to be installed/checked via apt
-APTPACKAGES="git arduino-core git-core pastebinit build-essential apache2 libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev python-pip python-configobj php-xml"
+APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php"
 # Packages to be installed/check via pip
-PIPPACKAGES="pyserial psutil simplejson configobj gitpython"
+PIPPACKAGES="pyserial psutil simplejson gitpython configobj"
 
 echo -e "\nBeginning BrewPi uninstall."
 
