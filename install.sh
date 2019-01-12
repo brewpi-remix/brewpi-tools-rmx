@@ -394,7 +394,7 @@ echo -e "Review any uncaught errors above to be sure, but otherwise your initial
 echo -e "install is complete."
 echo -e "\nLinks to two important tools: brewpi.py and updater.py have been created in"
 echo -e "$HOMEPATH/$GITPROJ/ for ease of use.  Both must be run with sudo."
-echo -e "brewpi.py is the 'brains' of the operation and will allow you to control script
+echo -e "brewpi.py is the 'brains' of the operation and will allow you to control script"
 echo -e "execution.  updater.py can be run when you wish to check for an update to the"
 echo -e "packages."
 echo -e "\nBrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
