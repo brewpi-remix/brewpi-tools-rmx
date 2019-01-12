@@ -185,7 +185,7 @@ done
 ############
 
 # Cleanup
-echo -e "\nCleaning up local repositories."
+echo -e "Cleaning up local repositories."
 sudo apt clean -y
 sudo apt autoclean -y
 sudo apt autoremove --purge -y
