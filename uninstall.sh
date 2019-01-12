@@ -52,6 +52,45 @@ PIPPACKAGES="pyserial psutil simplejson gitpython configobj"
 echo -e "\nBeginning BrewPi uninstall."
 
 ############
+### Functions for --help and --version functionality
+############
+
+# func_usage outputs to stdout the --help usage message.
+func_usage () {
+  echo -e "$PACKAGE $THISSCRIPT version $VERSION
+Usage: sudo ./$THISSCRIPT"
+}
+# func_version outputs to stdout the --version message.
+func_version () {
+  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
+Copyright (C) 2018 Lee C. Bussy (@LBussy)
+This is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published
+by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
+<https://www.gnu.org/licenses/>
+There is NO WARRANTY, to the extent permitted by law."
+}
+if test $# = 1; then
+  case "$1" in
+    --help | --hel | --he | --h )
+      func_usage; exit 0 ;;
+    --version | --versio | --versi | --vers | --ver | --ve | --v )
+      func_version; exit 0 ;;
+  esac
+fi
+
+############
+### Check privilges and permissions
+############
+
+### Check if we have root privs to run
+if [[ $EUID -ne 0 ]]; then
+   echo -e "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
+   exit 1
+fi
+
+############
 ### Cleanup cron
 ############
 
