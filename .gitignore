@@ -1,3 +1,7 @@
+# BrewPi Symlinks
+brewpi.py
+updater.py
+
 # Compiled python binaries
 *.py[cod]
 
