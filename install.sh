@@ -186,7 +186,7 @@ else
       ;;
   esac
 fi
-echo -e "Installing application in $installPath.\n"
+echo -e "\nInstalling application in $installPath."
 
 # Set place to put backups
 BACKUPDIR="$homepath/$GITPROJ-backup"
@@ -289,7 +289,6 @@ if [ -d "$webPath" ] && [ "$(ls -A ${webPath})" ]; then
   rm -rf "$webPath"/*||die
   find "$webPath"/ -name '.*' | xargs rm -rf||die
 fi
-touch "$webPath/do_not_run_brewpi" # make sure BrewPi does not start yet
 
 ############
 ### Clone the web app
@@ -334,6 +333,7 @@ eval "$installPath/utils/doPerms.sh"||die
 ### Install CRON job
 ############
 
+touch "$webPath/do_not_run_brewpi" # make sure BrewPi does not start yet
 eval "$installPath/utils/doCron.sh"||die
 
 ############
