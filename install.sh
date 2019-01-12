@@ -235,6 +235,7 @@ eval $gitClone||die
 ### Install dependencies
 ############
 
+chmod +x "$installPath/utils/doDepends.sh"
 eval "$installPath/utils/doDepends.sh"||die
 
 ############
@@ -321,12 +322,14 @@ fi
 ### Install dependencies
 ############
 
+chmod +x "$installPath/utils/doDepends.sh"
 eval "$installPath/utils/doDepends.sh"||die
 
 ############
 ### Fix permisions
 ############
 
+chmod +x "$installPath/utils/doPerms.sh"
 eval "$installPath/utils/doPerms.sh"||die
 
 ############
@@ -334,6 +337,7 @@ eval "$installPath/utils/doPerms.sh"||die
 ############
 
 touch "$webPath/do_not_run_brewpi" # make sure BrewPi does not start yet
+chmod +x "$installPath/utils/doCron.sh"
 eval "$installPath/utils/doCron.sh"||die
 
 ############
