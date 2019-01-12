@@ -91,6 +91,12 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 ############
+### Start the script
+############
+
+echo -e "\n***Script $THISSCRIPT starting.***"
+
+############
 ### Cleanup cron
 ############
 
@@ -261,6 +267,6 @@ echo "pi:raspberry" | sudo chpasswd
 ### Work Complete
 ###########
 
-echo -e "\nUninstall complete."
+echo -e "\n***Script $THISSCRIPT complete.***"
 
 exit 0
