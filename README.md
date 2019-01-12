@@ -10,6 +10,8 @@ To begin installing BrewPi, you need only issue the following command in a [term
 
 `wget -qO- https://raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/bootstrap.sh - /| sudo bash`<br> - *or* - <br>`wget -qO- https://tinyurl.com/brewpi-tools-rmx - /| sudo bash`
 
+If you choose to type that command in manually, the -qO- is "dash, queue, capital Oh, dash".
+
 (Intelligent folks will want to read this [security note](#security-note) before proceeding.)
 
 The bootstrap will:
@@ -32,17 +34,12 @@ In order that I can assure myself that these scripts will always have access to 
 * [firmware](https://github.com/BrewPi/firmware) - Temperature control firmware for the BrewPi Arduino.  The current repository which is compatible with this toolset can be found in [BrewPi Firmware Remix](https://github.com/lbussy/brewpi-firmware-rmx).
 * [brewpi-www](https://github.com/BrewPi/brewpi-www) - The BrewPi web interface which communicates with the Python script, which will in turn talk to the Arduino. The current repository which is compatible with this toolset can be found in [BrewPi WWW Remix](https://github.com/lbussy/brewpi-www-rmx).
 
-## Files in this Repo
+## Scripts in this Repo
 Filename | Description
 ------------ | -------------
 bootstrap.sh | This script will handle all setup and prep of a new Pi, primarily tested on "Lite" distros.  It will clone this repository and kick off the installer proper.  This should be the only touch-point you need to get going.
 install.sh | This script will install BrewPi on a Raspbian distro.  It is called by the bootstrap script.
 uninstall.sh | This is an uninstaller I created for my own testing.  It may be of use to someone wanting to clean up their Raspberry Pi as they install/uninstall for testing.  It is rather brutal in that it does not care if you previously installed any of the packages which BrewPi needs.  It will uninstall all of them in BrewPi's list of dependencies.
-updater.py | This script will check for any updates to the entire BrewPi installation, and; upon request, will install them to your Pi.
-doCron.sh | Handles setting up the cron jobs that BrewPi depends upon for functionality.  Called by install.sh and updater.py as needed.
-doDepends.sh | This script will check for and address missing or out of date packages via apt and pip.  Called by install.sh and updater.py as needed.
-doPerms.sh | Sets correct ownership and permissions on BrewPi files.  Called by install.sh and updater.py as needed.
-updateToolsRepo.sh | This script will ensure the install tools are up to date.  This is called by updater.py as needed.
 
 ## Postscript
 This project takes us back to the days when Arduino was King, firmware v2.10 was as good as it got, and the world was a happy place.  I hope someone enjoys it.
