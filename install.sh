@@ -161,6 +161,16 @@ else
 fi
 
 ############
+### Clean out old cron
+############
+
+if [ -f /etc/cron.d/brewpi ]; then
+  rm /etc/cron.d/brewpi
+  /etc/init.d/cron restart
+  echo
+fi
+
+############
 ### Install path setup
 ############
 
@@ -178,20 +188,63 @@ else
 fi
 echo -e "Installing application in $installPath.\n"
 
+# Set place to put backups
+BACKUPDIR="$homepath/$GITPROJ-backup"
+
+# Back up installpath if it has any files in it
+if [ -d "$installPath" ] && [ "$(ls -A ${installPath})" ]; then
+  # Stop BrewPi if it's running
+  if [ $(ps -ef | grep brewpi.py | grep -v grep) ]; then
+    $installPath/brewpi.py --quit
+    $installPath/brewpi.py --kill
+    kill -9 $(pidof brewpi.py)
+  fi
+  dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-Script"
+  echo -e "\nScript install directory is not empty, backing up this users home directory to"
+  echo -e "$dirName and then deleting contents of install directory.\n"
+  mkdir -p "$dirName"
+  cp -R "$installPath" "$dirName"/||die
+  rm -rf "$installPath"/*||die
+  find "$installPath"/ -name '.*' | xargs rm -rf||die
+fi
+
 ############
-### Clean out old cron
+### Create/configure user account
 ############
 
-if [ -f /etc/cron.d/brewpi ]; then
-  rm /etc/cron.d/brewpi
-  /etc/init.d/cron restart
-  echo
+if ! id -u brewpi >/dev/null 2>&1; then
+  useradd -G dialout brewpi||die
+  echo -e "\nPlease enter a password for the new user 'brewpi':"
+  until passwd brewpi < /dev/tty; do sleep 2; echo; done
 fi
+
+# Create install path if it does not exist
+if [ ! -d "$installPath" ]; then mkdir -p "$installPath"; fi
+chown -R brewpi:brewpi "$installPath"||die
+
+############
+### Clone BrewPi scripts
+############
+
+echo -e "\nDownloading most recent BrewPi codebase."
+echo -e "\nCloning scripts."
+gitClone="sudo -u brewpi git clone $GITHUBSCRIPT $installPath"
+eval $gitClone||die
+
+############
+### Install dependencies
+############
+
+eval "$installPath/utils/doDepends.sh"||die
 
 ############
 ### Web path setup
 ############
 
+# Add brewpi user to www-data group
+usermod -a -G www-data brewpi||warn
+# add pi user to www-data group
+usermod -a -G www-data pi||warn
 # Find web path based on Apache2 config
 echo -e "Searching for default web location."
 webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
@@ -219,27 +272,9 @@ fi
 webPath="$webPathInput"
 echo -e "\nInstalling web files in $webPath.\n"
 
-# Set place to put backups
-BACKUPDIR="$homepath/$GITPROJ-backup"
-
-# Back up installpath if it has any files in it
-if [ -d "$installPath" ] && [ "$(ls -A ${installPath})" ]; then
-  # Stop BrewPi if it's running
-  if [ $(ps -ef | grep brewpi.py | grep -v grep) ]; then
-    touch "$webPath/do_not_run_brewpi"
-    $installPath/brewpi.py --quit
-    $installPath/brewpi.py --kill
-    kill -9 $(pidof brewpi.py)
-  fi
-  dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-Script"
-  echo -e "\nScript install directory is not empty, backing up this users home directory to"
-  echo -e "$dirName"
-  echo -e "and then deleting contents of install directory.\n"
-  mkdir -p "$dirName"
-  cp -R "$installPath" "$dirName"/||die
-  rm -rf "$installPath"/*||die
-  find "$installPath"/ -name '.*' | xargs rm -rf||die
-fi
+# Create web path if it does not exist
+if [ ! -d "$webPath" ]; then mkdir -p "$webPath"; fi
+chown -R www-data:www-data "$webPath"||die
 
 # Back up webPath if it has any files in it
 sudo /etc/init.d/apache2 stop||die
@@ -248,43 +283,18 @@ rm -rf "$webPath/index.html" || true
 if [ -d "$webPath" ] && [ "$(ls -A ${webPath})" ]; then
   dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-WWW"
   echo -e "\nWeb directory is not empty, backing up the web directory to:"
-  echo -e "$dirName"
-  echo -e "and then deleting contents of web directory.\n"
+  echo -e "$dirName and then deleting contents of web directory.\n"
   mkdir -p "$dirName"
   cp -R "$webPath" "$dirName"/||die
   rm -rf "$webPath"/*||die
   find "$webPath"/ -name '.*' | xargs rm -rf||die
 fi
+touch "$webPath/do_not_run_brewpi" # make sure BrewPi does not start yet
 
 ############
-### Create/configure user accounts and directories
+### Clone the web app
 ############
 
-if ! id -u brewpi >/dev/null 2>&1; then
-  useradd -G www-data,dialout brewpi||die
-  echo -e "\nPlease enter a password for the new user 'brewpi':"
-  until passwd brewpi < /dev/tty; do sleep 2; echo; done
-fi
-# add pi user to brewpi and www-data group
-usermod -a -G www-data pi||die
-usermod -a -G brewpi pi||die
-
-# Create install and web path if it does not exist
-if [ ! -d "$installPath" ]; then mkdir -p "$installPath"; fi
-if [ ! -d "$webPath" ]; then mkdir -p "$webPath"; fi
-
-chown -R www-data:www-data "$webPath"||die
-chown -R brewpi:brewpi "$installPath"||die
-
-############
-### Now for the install
-############
-
-# Clone BrewPi repositories
-echo -e "\nDownloading most recent BrewPi codebase."
-echo -e "\nCloning scripts."
-gitClone="sudo -u brewpi git clone $GITHUBSCRIPT $installPath"
-eval $gitClone||die
 echo -e "\nCloning web site."
 gitClone="sudo -u www-data git clone $GITHUBWWW $webPath"
 eval $gitClone||die
@@ -350,7 +360,7 @@ esac
 ############
 
 # Allw BrewPi to start via cron.
-touch "$webPath/do_not_run_brewpi"
+rm "$webPath/do_not_run_brewpi"
 
 echo -e "\nDone installing BrewPi."
 
