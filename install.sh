@@ -179,12 +179,6 @@ fi
 echo -e "Installing application in $installPath.\n"
 
 ############
-### Install dependencies
-############
-
-eval "$homepath/$GITPROJ/doDepends.sh"||die
-
-############
 ### Clean out old cron
 ############
 
@@ -294,6 +288,8 @@ eval $gitClone||die
 echo -e "\nCloning web site."
 gitClone="sudo -u www-data git clone $GITHUBWWW $webPath"
 eval $gitClone||die
+# Keep BrewPi for running while we do this.
+touch "$webPath/do_not_run_brewpi"
 
 ###########
 ### If non-default paths are used, update config files accordingly
@@ -313,10 +309,22 @@ if [[ "$webPath" != "$(grep DocumentRoot /etc/apache2/sites-enabled/000-default*
 fi
 
 ############
+### Install dependencies
+############
+
+eval "$installPath/utils/doDepends.sh"||die
+
+############
 ### Fix permisions
 ############
 
-eval "$homepath/$GITPROJ/doPerms.sh"||die
+eval "$installPath/utils/doPerms.sh"||die
+
+############
+### Install CRON job
+############
+
+eval "$installPath/utils/doCron.sh"||die
 
 ############
 ### Fix an issue with BrewPi and Safari-based browsers
@@ -338,14 +346,11 @@ case $yn in
 esac
 
 ############
-### Install CRON job
-############
-
-eval "$homepath/$GITPROJ/doCron.sh"||die
-
-############
 ### Done
 ############
+
+# Allw BrewPi to start via cron.
+touch "$webPath/do_not_run_brewpi"
 
 echo -e "\nDone installing BrewPi."
 
