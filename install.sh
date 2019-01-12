@@ -98,12 +98,6 @@ else
 fi
 
 ############
-### Start the script
-############
-
-echo -e "\n***Script $THISSCRIPT starting.***"
-
-############
 ### Functions to catch/display errors during execution
 ############
 
@@ -123,6 +117,12 @@ die () {
   warn "$@"
   exit "$st"
 }
+
+############
+### Start the script
+############
+
+echo -e "\n***Script $THISSCRIPT starting.***"
 
 ############
 ### Check network connection
