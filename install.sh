@@ -56,7 +56,7 @@ GITURLSCRIPT="${GITURL/$GITPROJ/$GITPROJSCRIPT}"
 # func_usage outputs to stdout the --help usage message.
 func_usage () {
   echo -e "$PACKAGE $THISSCRIPT version $VERSION
-Usage: sudo . $THISSCRIPT"
+Usage: sudo ./$THISSCRIPT"
 }
 # func_version outputs to stdout the --version message.
 func_version () {
