@@ -193,11 +193,33 @@ BACKUPDIR="$HOMEPATH/$GITPROJ-backup"
 
 # Back up installpath if it has any files in it
 if [ -d "$installPath" ] && [ "$(ls -A ${installPath})" ]; then
-  # Stop BrewPi if it's running
-  if [ $(ps -ef | grep brewpi.py | grep -v grep) ]; then
-    "$installPath/brewpi.py" --quit
-    "$installPath/brewpi.py" --kill
-    kill -9 $(pidof brewpi.py)
+  # Stop (kill) brewpi
+  sudo touch /var/www/html/do_not_run_brewpi
+  if pgrep -u brewpi >/dev/null 2>&1; then
+    echo -e "\nAttempting gracefull shutdown of process(es) $(pgrep -u brewpi)."
+    cmd="sudo kill -15 $(pgrep -u brewpi)"
+    eval $cmd
+    sleep 2
+    if pgrep -u brewpi >/dev/null 2>&1; then
+      echo -e "Trying a little harder to terminate process(es) $(pgrep -u brewpi)."
+      cmd="sudo kill -2 $(pgrep -u brewpi)"
+      eval $cmd
+      sleep 2
+      if pgrep -u brewpi >/dev/null 2>&1; then
+        echo -e "Being more forcefull with process(es) $(pgrep -u brewpi)."
+        cmd="sudo kill -1 $(pgrep -u brewpi)"
+        eval $cmd
+        sleep 2
+        while pgrep -u brewpi >/dev/null 2>&1;
+        do
+          echo -e "Being really insistent about killing process(es) $(pgrep -u brewpi) now."
+          echo -e "(I'm going to keep doing this till the process(es) are gone.)"
+          cmd="sudo kill -9 $(pgrep -u brewpi)"
+          eval $cmd
+          sleep 2
+        done
+      fi
+    fi
   fi
   dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-Script"
   echo -e "\nScript install directory is not empty, backing up this users home directory to"
@@ -385,4 +407,3 @@ echo -e "https://support.apple.com/downloads/bonjour_for_windows"
 echo -e "\nHappy Brewing!"
 
 exit 0
-
