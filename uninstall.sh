@@ -26,25 +26,27 @@
 # the world. My apologies if I have missed anyone; those were the names
 # listed as contributors on the Legacy branch.
 
+# See: 'original-license.md' for notes about the original project's
+# license and credits.
+
 ############
 ### Init
 ############
 
-# Set up some project variables
-THISSCRIPT=$(basename "$0")
-VERSION="0.4.0.0"
-# These should stay the same
-GITUSER="lbussy"
-PACKAGE="BrewPi-Tools-RMX"
-GITPROJ=${PACKAGE,,}
-GITPROJWWW="brewpi-www-rmx"
-GITPROJSCRIPT="brewpi-script-rmx"
-GITHUB="https://github.com"
-SCRIPTNAME="${THISSCRIPT%%.*}"
+# Change to current dir so we can get the git info
+cd "$(dirname "$0")"
 
-# Packages to be installed/checked via apt
+# Set up some project constants
+THISSCRIPT="$(basename "$0")"
+SCRIPTNAME="${THISSCRIPT%%.*}"
+VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))"
+GITURL="$(git config --get remote.origin.url)"
+GITPROJ="$(basename $GITURL)" && GITPROJ="${GITPROJ%.*}"
+PACKAGE="${GITPROJ^^}"
+
+# Packages to be uninstalled via apt
 APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php"
-# Packages to be installed/check via pip
+# Packages to be uninstalled via pip
 PIPPACKAGES="pyserial psutil simplejson gitpython configobj"
 
 echo -e "\nBeginning BrewPi uninstall."
@@ -61,11 +63,9 @@ if [ -f /etc/cron.d/brewpi ]; then
 fi
 
 ############
-### Remove all BrePi Packages
+### Remove all BrewPi Packages
 ############
 
-# Remove all BrewPi Installation items
-# (except for installed apt/pip packages)
 cd ~ # Start from home
 
 # Stop (kill) brewpi
@@ -223,3 +223,5 @@ echo "pi:raspberry" | sudo chpasswd
 ###########
 
 echo -e "\nUninstall complete."
+
+exit 0

@@ -26,35 +26,37 @@
 # the world. My apologies if I have missed anyone; those were the names
 # listed as contributors on the Legacy branch.
 
+# See: 'original-license.md' for notes about the original project's
+# license and credits.
+
 ############
 ### Init
 ############
 
-# Set up some project variables
-THISSCRIPT=$(basename "$0")
-VERSION="0.4.0.0"
-# These should stay the same
-GITUSER="lbussy"
-PACKAGE="BrewPi-Tools-RMX"
-GITPROJ=${PACKAGE,,}
+# Change to current dir so we can get the git info
+cd "$(dirname "$0")"
+
+# Set up some project constants
+THISSCRIPT="$(basename "$0")"
+SCRIPTNAME="${THISSCRIPT%%.*}"
+VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))"
+GITURL="$(git config --get remote.origin.url)"
+GITPROJ="$(basename $GITURL)" && GITPROJ="${GITPROJ%.*}"
+PACKAGE="${GITPROJ^^}"
 GITPROJWWW="brewpi-www-rmx"
 GITPROJSCRIPT="brewpi-script-rmx"
-GITHUB="https://github.com"
-SCRIPTNAME="${THISSCRIPT%%.*}"
 # Concatenate URLs
-GITHUBWWW="$GITHUB/$GITUSER/$GITPROJWWW.git"
-GITHUBSCRIPT="$GITHUB/$GITUSER/$GITPROJSCRIPT.git"
-# Website for network test
-GITTEST=$GITHUBWWW
-# Hold return values
-declare -i retval=0
+GITURLWWW="${GITURL/$GITPROJ/$GITPROJWWW}"
+GITURLSCRIPT="${GITURL/$GITPROJ/$GITPROJSCRIPT}"
 
-# Support the standard --help and --version.
-#
+############
+### Functions for --help and --version functionality
+############
+
 # func_usage outputs to stdout the --help usage message.
 func_usage () {
   echo -e "$PACKAGE $THISSCRIPT version $VERSION
-Usage: sudo . $THISSCRIPT    {run as user 'pi'}"
+Usage: sudo . $THISSCRIPT"
 }
 # func_version outputs to stdout the --version message.
 func_version () {
@@ -77,24 +79,21 @@ if test $# = 1; then
 fi
 
 ############
-### Make sure user pi is running with sudo
+### Check privilges and permissions
 ############
 
-if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
-if [[ $EUID -ne 0 ]]; then UIDERROR="root";
-elif [[ $REALUSER != "pi" ]]; then UIDERROR="pi"; fi
-if [[ ! $UIDERROR == ""  ]]; then
-  echo -e "This script must be run by user 'pi' with sudo:"
-  echo -e "sudo . $THISSCRIPT\n" 1>&2
-  exit 1
+### Check if we have root privs to run
+if [[ $EUID -ne 0 ]]; then
+   echo -e "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
+   exit 1
 fi
 # And get the user home directory
+if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
 _shadow="$((getent passwd $REALUSER) 2>&1)"
 if [ $? -eq 0 ]; then
   HOMEPATH="$(echo $_shadow | cut -d':' -f6)"
 else
-  echo "Unable to retrieve $REALUSER's home directory. Manual install"
-  echo "may be necessary."
+  echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install may be necessary."
   exit 1
 fi
 
@@ -102,10 +101,10 @@ fi
 ### Start the script
 ############
 
-echo -e "\n***Script $THISSCRIPT starting.***\n"
+echo -e "\n***Script $THISSCRIPT starting.***"
 
 ############
-### Functions to catch/display errors during setup
+### Functions to catch/display errors during execution
 ############
 
 warn() {
@@ -126,19 +125,18 @@ die () {
 }
 
 ############
-### Check for network connection
+### Check network connection
 ###########
 
-echo -e "Checking for connection to GitHub.\n"
-wget -q --spider "$GITTEST"
+echo -e "\nChecking for connection to GitHub."
+wget -q --spider "$GITURL"
 if [ $? -ne 0 ]; then
-  echo -e "-------------------------------------------------------------\n" \
-          "Could not connect to GitHub.  Please check your network and " \
-                  "try again. A connection to GitHub is required to download the" \
-                  "$PACKAGE package.\n"
-  exit 1
+  echo -e "\n-----------------------------------------------------------------------------"
+  echo -e "\nCould not connect to GitHub.  Please check your network and try again. A"
+  echo -e "\nconnection to GitHub is required to download the $PACKAGE packages."
+  die
 else
-  echo -e "Connection to GitHub ok.\n"
+  echo -e "\nConnection to GitHub ok."
 fi
 
 ############
@@ -250,7 +248,7 @@ chown -R brewpi:brewpi "$installPath"||die
 
 echo -e "\nDownloading most recent BrewPi codebase."
 echo -e "\nCloning scripts."
-gitClone="sudo -u brewpi git clone $GITHUBSCRIPT $installPath"
+gitClone="sudo -u brewpi git clone $GITURLSCRIPT $installPath"
 eval $gitClone||die
 
 ############
@@ -318,7 +316,7 @@ fi
 ############
 
 echo -e "\nCloning web site."
-gitClone="sudo -u www-data git clone $GITHUBWWW $webPath"
+gitClone="sudo -u www-data git clone $GITURLWWW $webPath"
 eval $gitClone||die
 # Keep BrewPi for running while we do this.
 touch "$webPath/do_not_run_brewpi"
@@ -395,9 +393,10 @@ echo -e "-----------------------------------------------------------------------
 echo -e "Review any uncaught errors above to be sure, but otherwise your initial"
 echo -e "install is complete."
 echo -e "\nLinks to two important tools: brewpi.py and updater.py have been created in"
-echo -e "$HOMEPATH/$GITPROJ/ for ease of use.  Both must be run with sudo; brewpi.py is"
-echo -e "the 'brains' of the operation and will allow you to control script execution."
-echo -e "updater.py can be run when you wish to check for an update to the packages."
+echo -e "$HOMEPATH/$GITPROJ/ for ease of use.  Both must be run with sudo."
+echo -e "brewpi.py is the 'brains' of the operation and will allow you to control script
+echo -e "execution.  updater.py can be run when you wish to check for an update to the"
+echo -e "packages."
 echo -e "\nBrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
 echo -e "http://$localIP into your favorite web browser.  If you have Bonjour"
 echo -e "or another zeroconf utility installed, you may use the much easier address of"
@@ -407,3 +406,4 @@ echo -e "https://support.apple.com/downloads/bonjour_for_windows"
 echo -e "\nHappy Brewing!"
 
 exit 0
+
