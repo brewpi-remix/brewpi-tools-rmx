@@ -158,7 +158,7 @@ if pip &>/dev/null; then
     pipInstalled=$(echo "$pipInstalled" | awk '{ print $1 }')
     for pkg in ${PIPPACKAGES,,}; do
       if [[ ${pipInstalled,,} == *"$pkg"* ]]; then
-        echo -e "Removing '$pkg'."
+        echo -e "\nRemoving '$pkg'.\n"
         sudo pip uninstall $pkg -y
       fi
     done
@@ -223,4 +223,3 @@ echo "pi:raspberry" | sudo chpasswd
 ###########
 
 echo -e "\nUninstall complete."
-
