@@ -91,7 +91,7 @@ fi
 # And get the user home directory
 _shadow="$((getent passwd $REALUSER) 2>&1)"
 if [ $? -eq 0 ]; then
-  homepath="$(echo $_shadow | cut -d':' -f6)"
+  HOMEPATH="$(echo $_shadow | cut -d':' -f6)"
 else
   echo "Unable to retrieve $REALUSER's home directory. Manual install"
   echo "may be necessary."
@@ -161,7 +161,7 @@ else
 fi
 
 ############
-### Clean out old cron
+### Clean out old cron if it exists
 ############
 
 if [ -f /etc/cron.d/brewpi ]; then
@@ -189,7 +189,7 @@ fi
 echo -e "\nInstalling application in $installPath."
 
 # Set place to put backups
-BACKUPDIR="$homepath/$GITPROJ-backup"
+BACKUPDIR="$HOMEPATH/$GITPROJ-backup"
 
 # Back up installpath if it has any files in it
 if [ -d "$installPath" ] && [ "$(ls -A ${installPath})" ]; then
@@ -319,13 +319,6 @@ if [[ "$webPath" != "$(grep DocumentRoot /etc/apache2/sites-enabled/000-default*
 fi
 
 ############
-### Install dependencies
-############
-
-chmod +x "$installPath/utils/doDepends.sh"
-eval "$installPath/utils/doDepends.sh"||die
-
-############
 ### Fix permisions
 ############
 
@@ -349,6 +342,13 @@ sed -i -e 's/KeepAliveTimeout 5/KeepAliveTimeout 99/g' /etc/apache2/apache2.conf
 /etc/init.d/apache2 restart
 
 ############
+### Create sym links to BrewPi and Updater
+############
+
+ln -sf "$installPath/brewpi.py" "$HOMEPATH/$GITPROJ/"
+ln -sf "$installPath/utils/updater.py" "$HOMEPATH/$GITPROJ/"
+
+############
 ### Flash controller
 ############
 
@@ -363,20 +363,26 @@ esac
 ### Done
 ############
 
-# Allw BrewPi to start via cron.
+# Allow BrewPi to start via cron.
 rm "$webPath/do_not_run_brewpi"
 
-echo -e "\nDone installing BrewPi."
+localIP=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
 
-echo -e "\n* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
-echo -e "Review the output above for any errors, otherwise, your initial"
-echo -e "install is complete.\n"
-echo -e "To view your BrewPi web interface, enter http://$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p') into your"
-echo -e "web browser.\n"
-echo -e "If you have Bonjour installed (in Windows, it installs with iTunes) you can"
-echo -e "take advantage of zeroconf and use the address http://$(hostname).local"
-echo -e "instead.\n"
-echo -e "Happy Brewing!\n"
+echo -e "\n                           BrewPi Install Complete"
+echo -e "------------------------------------------------------------------------------"
+echo -e "Review any uncaught errors above to be sure, but otherwise your initial"
+echo -e "install is complete."
+echo -e "\nLinks to two important tools: brewpi.py and updater.py have been created in"
+echo -e "$HOMEPATH/$GITPROJ/ for ease of use.  Both must be run with sudo; brewpi.py is"
+echo -e "the 'brains' of the operation and will allow you to control script execution."
+echo -e "updater.py can be run when you wish to check for an update to the packages."
+echo -e "\nBrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
+echo -e "http://$localIP into your favorite web browser.  If you have Bonjour"
+echo -e "or another zeroconf utility installed, you may use the much easier address of"
+echo -e "http://$(hostname).local to access BrewPi without remembering an IP address."
+echo -e "\nUnder Windows Bonjour installs with iTunes or can be downloaded separately at: "
+echo -e "https://support.apple.com/downloads/bonjour_for_windows"
+echo -e "\nHappy Brewing!"
 
 exit 0
 
