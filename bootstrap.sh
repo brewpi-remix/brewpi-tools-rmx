@@ -229,7 +229,7 @@ if [ "$oldHostName" = "raspberrypi" ]; then
   done
   echo
   if [ $sethost -eq 1 ]; then
-    echo -e "You will now be asked to enter a new hostname.\n"
+    echo -e "You will now be asked to enter a new hostname."
     while
       read -p "Enter new hostname: " host1  < /dev/tty
       read -p "Enter new hostname again: " host2 < /dev/tty
