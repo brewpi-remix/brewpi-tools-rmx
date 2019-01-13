@@ -30,13 +30,11 @@
 ### Init
 ############
 
-# Set up some project variables
+# Set up some project variables we won't have running as a bootstrap
 PACKAGE="BrewPi-Tools-RMX"
 GITBRNCH="master"
 THISSCRIPT="bootstrap.sh"
 VERSION="0.4.0.0"
-# Packages to be installed/checked via apt
-APTPACKAGES="git"
 # These should stay the same
 GITUSER="lbussy"
 GITRAW="https://raw.githubusercontent.com"
@@ -49,6 +47,8 @@ GITRAW="$GITRAW/$GITUSER/$GITPROJ/$GITBRNCH/$THISSCRIPT"
 GITCMD="-b $GITBRNCH --single-branch $GITHUB"
 # Website for network test
 GITTEST=$GITHUB
+# Packages to be installed/checked via apt
+APTPACKAGES="git"
 
 # Avoid weird pipe broken errors from wget
 sleep 1
@@ -109,7 +109,7 @@ fi
 ### Create install log file
 ############
 
-# TODO: This causes the py scripts to hang. Maybe use screen?
+# TODO: This causes the py scripts to hang. Revisit this later.
 #exec > >(tee -a $homepath/$SCRIPTNAME.log) 2>&1
 #echo -e "\nLogging to: $homepath/$SCRIPTNAME.log.\n"
 #echo -e "***Script $THISSCRIPT starting.***\n"
@@ -134,6 +134,12 @@ die () {
   warn "$@"
   exit "$st"
 }
+
+############
+### Start the script
+############
+
+echo -e "\n***Script $THISSCRIPT starting.***"
 
 ############
 ### Instructions
@@ -333,8 +339,9 @@ eval $gitClone||die
 eval "$homepath/$GITPROJ/install.sh"||die
 
 ############
-### Return success or failure
+### Work complete
 ############
 
-echo -e "Execution of $THISSCRIPT succeeded.\n"
+echo -e "\n***Script $THISSCRIPT complete.***"
 
+exit 0
