@@ -1,33 +1,38 @@
+
 # ![BrewPi Legacy Remix Logo](https://raw.githubusercontent.com/lbussy/brewpi-www-rmx/master/brewpi_logo.png)
 *[@LBussy](https://github.com/lbussy)'s forks of the original [BrewPi Project](https://github.com/BrewPi)*
 
-This project contains tools to setup, update and configure [BrewPi](https://www.brewpi.com/this-is-brewpi-0-2/) with an [Arduino](https://www.arduino.cc/en/guide/introduction) controller.  Despite the original creators no longer actively supporting BrewPi on Arduino, and despite the Arduino being arguably one of the least capable [controllers](https://en.wikipedia.org/wiki/Controller_(computing)) on the market, BrewPi still has an amazing following among home brewers.  When I last checked there were [7473 posts in this thread](https://www.homebrewtalk.com/forum/threads/howto-make-a-brewpi-fermentation-controller-for-cheap.466106/) on [HomeBrewTalk.com](https://www.homebrewtalk.com/) since March 19, 2014 when [@FuzzeWuzze](https://www.homebrewtalk.com/forum/members/fuzzewuzze.123340/) started the thread.
+This project contains tools to setup, update and configure [BrewPi](https://www.brewpi.com/this-is-brewpi-0-2/) with an [Arduino](https://www.arduino.cc/en/guide/introduction) controller.  Despite the original creators no longer actively supporting BrewPi on Arduino, and despite the Arduino being arguably one of the least capable [controllers](https://en.wikipedia.org/wiki/Controller_(computing)) on the market, BrewPi on Arduino still has an amazing following among home brewers.  When I last checked there were [7473 posts in this thread](https://www.homebrewtalk.com/forum/threads/howto-make-a-brewpi-fermentation-controller-for-cheap.466106/) on [HomeBrewTalk.com](https://www.homebrewtalk.com/) since March 19, 2014 when [@FuzzeWuzze](https://www.homebrewtalk.com/forum/members/fuzzewuzze.123340/) started the thread.
 
-This [fork](https://en.wikipedia.org/wiki/Fork_(software_development)) is intended for the fans of the *original* BrewPi (called "Legacy" in BrewPi circles).  For [BrewPi Spark 3](https://www.brewpi.com/) information and support, please continue to use and support [the original project](https://github.com/BrewPi) which by all accounts is far more capable.
+These [forks](https://en.wikipedia.org/wiki/Fork_(software_development)) are intended for the fans of the *original* BrewPi (called "Legacy" in BrewPi circles).  For current [BrewPi Spark 3](https://www.brewpi.com/) information and support, please continue to use and support [the original project](https://github.com/BrewPi) which by all accounts is far more capable.
+
+Before we proceed, a huge thank you to [Elco Jacobs](https://github.com/elcojacobs), without whom none of this would be possible.
 
 # <a name="getting-started"></a>Getting Started
 Check [Assumptions and Proceedings](#assumptions-proceedings) before moving forward if you are not starting with a brand new install of current Raspbian on a dedicated Pi. 
 
 To begin installing BrewPi, you need only issue the following command in a [terminal window](https://www.raspberrypi.org/documentation/usage/terminal/) (or via [ssh](https://www.raspberrypi.org/documentation/remote-access/ssh/)) on your Internet-connected Raspberry Pi:
 
-`wget -qO- https://raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/bootstrap.sh - /| sudo bash`<br> - *or* - <br>`wget -qO- https://tinyurl.com/brewpi-tools-rmx - /| sudo bash`
+`wget -qO- https://raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/bootstrap.sh - /| sudo bash`
+*or*
+`wget -qO- https://tinyurl.com/brewpi-tools-rmx - /| sudo bash`
 
-If you choose to type either command in manually, the -qO- is "dash, lower-case 'Q', capital 'o', dash", with no spaces in between.
+If you choose to type either command in manually, the `-qO-` is "dash, lower-case 'Q', upper-case 'o', dash", with no spaces in between those characters.
 
-> Security-conscious or just curious folks will want to read this
-> [security note](#security-note) before proceeding.
+Security-conscious or just plain curious folks will want to read this [security note](#security-note) before proceeding.
  
 When it is complete, you will have a working BrewPi Legacy setup.  I'm a little amazed that the work I've done is summed up in one "run this", but if I've done my work right that should be it. Do [let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) if you find differently.
 
 # Scripts in this Repo
+
 Filename | Description
 ------------ | -------------
 bootstrap.sh | This script will handle all setup and prep of a new Raspberry Pi.  It will clone this repository and kick off the installer proper.  This should be the only touch-point you need to get going.
-install.sh | This script will install BrewPi on a Raspbian distro.  It is called by the bootstrap script.
-uninstall.sh | This is an uninstaller I created for my own testing.  It may be of use to someone wanting to clean up their Raspberry Pi as they install/uninstall for testing.  It is rather brutal in that it does not care if you previously installed any of the packages which BrewPi needs for something else.  This behavior is likely safe if you intend to reinstall BrewPi right away.  It will uninstall all of them in BrewPi's list of dependencies.
+install.sh | This script will install BrewPi on a Raspbian distro.  It is called by the bootstrap script.  This is not the right way forward to move an existing BrewPi Legacy system to this new fork.  At the moment the only tested way is to start fresh.
+uninstall.sh | This is an uninstaller I created for my own testing.  It may be of use to someone wanting to clean up their Raspberry Pi as they install/uninstall for their own testing.  It is rather brutal in that it does not care if you previously installed any of the dependencies for some other purpose.  This behavior is *likely* safe (but not tested) if you intend to reinstall BrewPi right away.  It will uninstall all dependencies in BrewPi's list of dependencies.  At the moment this will not completely remove the former BrewPi Legacy branch to allow you to use this new fork.  It is possible that might be something I add.
 
 # <a name="assumptions-proceedings"></a>Assumptions and Proceedings
-This tool set adds a [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping) to install the BrewPi packages on a completely fresh install of [Raspbian](https://www.raspberrypi.org/documentation/raspbian/) (codename "[Stretch](https://www.raspberrypi.org/blog/raspbian-stretch/)" at the time of this writing).  I do this because some steps required in previous iterations were a little alien to people new to Raspbian/Linux.  Additionally, some supporting software has been deprecated/upgraded which before now made the older BrewPi packages incompatible.
+This tool set adds a [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping) to install the BrewPi Legacy Remix packages on a completely fresh install of [Raspbian](https://www.raspberrypi.org/documentation/raspbian/) (codename "[Stretch](https://www.raspberrypi.org/blog/raspbian-stretch/)" at the time of this writing).  I do this because some steps required in previous iterations were a little alien to people new to Raspbian/Linux.  Additionally, some supporting software has been deprecated/upgraded which before now made the older BrewPi packages incompatible.
 
 This bootstrap will:
  * Check a few things
@@ -57,7 +62,8 @@ In order to make this work well, I have to make some assumptions about the envir
    9. Install `git` packages via `apt get` to allow the rest of the install to work
    10. Clone the BrewPi Tools RMX into the `~/brewpi-tools-rmx` folder
    11. Execute install.sh which is responsible for the rest of the setup
- - I am certain that someone will find an important assumption I did not list here.  We'll see how long that takes, [let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) what you find
+
+I am certain that someone will find an important assumption I did not list here.  We'll see how long that takes.  [Let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) what you find
 
 # Credits
 These scripts were originally a part of [brewpi-tools](https://github.com/BrewPi/brewpi-tools), an installer for the [BrewPi project](https://github.com/BrewPi).  My original intent was to simply make the Legacy branch of BrewPi work again since the original install scripts called for PHP5 explicitly and that's no longer available from the regular repositories.  The project grew from there to address some other shortcomings in the original, as well as to make it easier for beginners to get started.
@@ -79,26 +85,28 @@ This project takes us back to the days when Arduino was King, firmware v2.10 was
 # <a name="security-note"></a>Security Note
 My instructions above tell you to copy and paste a command into your terminal window.  Despite me telling you to do that, I am now going to tell you how unsafe that is.  Many people browse the Internet, find the command they need, and blindly paste it into their terminal window.  This one is blatantly (potentially) dangerous from a non-trusted source:
 
-`wget -qO- https://tinyurl.com/brewpi-tools-rmx - /| sudo bash`
+> `wget -qO- https://tinyurl.com/brewpi-tools-rmx - /| sudo bash`
 
-It's going to download a script to your Raspberry Pi, and pipe ("|") it through the command `sudo bash`.  When you use `sudo` without any other arguments it will run the command which follows with `root` privileges.  So, you basically found someone on the Internet telling you to run their code as root, without even knowing what it all does.  Despite the inherent risk, doing this is often necessary since some applications have to make global changes to your system.
+It's going to download a script to your Raspberry Pi, and pipe (`|`) it through the command `sudo bash`.  When you use `sudo` without any other arguments it will run the command which follows with `root` privileges.  So, you basically found someone on the Internet telling you to run their code as root, without even knowing what it all does.  Despite the inherent risk, installing an application as root is often necessary since some applications have to make global changes to your system.
 
 *This is how bad things happen.*
 
-Even if you think you *completely* understand the command you are reading, copying and pasting, there is still an opportunity for a specially crafted web page to make the command look like one thing, but be a completely different command when you paste it.  That would be ***A Bad Thing*&reg;&trade;.**  For an example, see [this page which described this copy/paste vulnerability](https://thejh.net/misc/website-terminal-copy-paste).  Instead of pasting the test lines on that page into a terminal window, you can see the "payload" of the attack by a copy/paste into any text editor.
+Even if you think you *completely* understand the command you are reading and copying, there is still an opportunity for a specially crafted web page to make the command look like one thing, but be a completely different command when you paste it.  That would be ***A Bad Thing*&trade;.**  For an example, see [this page which describes this copy/paste vulnerability](https://thejh.net/misc/website-terminal-copy-paste).  Instead of pasting the test lines on that page into a terminal window, you can see the "payload" of the attack by a copy/paste into any text editor.
 
-The lesson to be learned from this is if you are going to copy/paste a command from __*any*__ Internet source, always use an interim paste into a text editor line Notepad to make sure ***A Bad Thing*&reg;&trade;** doesn't happen to you.  Now you can join your previously scheduled show: [Getting Started](#getting-started), which is patiently waiting for you above.
+The lesson to be learned from this is if you are going to copy/paste a command from __*any*__ source, always use an interim paste into a text editor like Notepad to make sure ***A Bad Thing*&trade;** doesn't happen to you.  Now you can join your previously scheduled show: [Getting Started](#getting-started), which is patiently waiting for you above.
 
 Wait.  Now you don't know if you should trust the setup command I provided?  I'm shedding a happy tear.  Security and the Internet is a rabbit hole filled with (justifiable) paranoia and bad actors.  Your choices here however are:
 1. Trust me and run it
 2. Examine [that script](https://github.com/lbussy/brewpi-tools-rmx/blob/master/bootstrap.sh) carefully and make sure it does nothing bad.  Then, since the first one executes as root you need to follow that to the [next one](https://github.com/lbussy/brewpi-tools-rmx/blob/master/install.sh) because it inherits that security construct.  Ultimately you can drive yourself crazy when you realize the implications, or just accept that whenever you install free code from the Internet you take your chances.  This is the case with any software, not just BrewPi.
 
-At some point I hope to list out the manual install steps necessary to replicate this series of automated steps.  That's quite frankly not a high priority since the goal here is to make BrewPi Legacy Remix available to every-day people.  Those of you who would choose the manual steps can probably figure it all out anyway.
+At some point I hope to list out the manual install steps necessary to replicate this series of automated steps.  That's quite frankly not a high priority for me since the goal here is to make BrewPi Legacy Remix available to every-day people.  Those of you who would choose the manual steps can probably figure it all out anyway.
 
 Cheers!
 
 # FAQ:
 
- - "*What about some other scenario, when will you test that?*" - Maybe never.  This is not a commercial venture so chances are once I'm "done enough" making it work on the target system, I'll be done for good.  The original/current [BrewPi](https://www.brewpi.com) is a far more capable system, with a wider adoption base, and excellent support.  That's probably a better choice for you if you want to venture from this path I've created for you.
+ - "*What about some other scenario, when will you test that?*" - Maybe never.  This is not a commercial venture; chances are once I'm "done enough" making it work on the target system, I'll be done for good.  The original/current [BrewPi](https://www.brewpi.com) is a far more capable system, with a wider adoption base, and excellent support.  That's probably a better choice for you if you want to venture from this path I've created for you.
  - "*Do you plan to create/implement/merge {insert cool idea here} functionality?*" - No I do not.  I'm not a software developer by trade, and this is not a commercial venture so there's probably little reason to implement something I'll never use.  To be embarrassingly and brutally honest, I hardly get a chance to even brew anymore.  I started this initially to make it easier for a friend of mine to get going again after his Pi ate his SD card.  I'll repeat: The original/current [BrewPi](https://www.brewpi.com) is a far more capable system, with a wider adoption base, and excellent support.  That's probably a better choice for you if you want expanded capabilities.
- - "*Will you accept pull requests*?" - Maybe.  Here's the honest truth however:  Not being a software developer by trade means that working with typical software development tools in a collaborative environment like GitHub is new to me.  I probably am doing this wrong/poorly and in a way that doesn't easily allow such collaboration.  If you're willing to work with someone who does not have these skills in order that you may contribute your own work, it's likely best to [contact me directly](https://github.com/lbussy/) before you start so we can work out the details to avoid frustration for both of us (mostly you.)
+ - "*Will you accept pull requests*?" - Maybe.  Here's the honest truth however:  Not being a software developer by trade means that working with typical software development tools in a collaborative environment like GitHub is new to me.  I am probably doing this wrong/poorly and in a way that doesn't easily allow such collaboration.  If you're willing to work with someone who does not have these skills in order that you may contribute your own work, it's likely best to [contact me directly](https://github.com/lbussy/) before you start so we can work out the details to avoid frustration for both of us (mostly you.)
+
+Back up to [Getting Started](#getting-started).
