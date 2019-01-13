@@ -1,10 +1,6 @@
-## Original License
-In order that the comments on each source file don't stretch into the 
-hundreds, while still maintaining credit and provenance, the original 
-BrewPi project license statement follows (taken from the header of each 
-file.)  If a file has been modified in any way for the BrewPi Remix 
-project, the license comments on the code header have been changed to 
-that of the new (derivative) project.
+# Original License
+In order that the comments on each source file don't stretch into the hundreds, while still maintaining credit and provenance to the original project, the original BrewPi project license statement follows (taken from the header of teh source files.)  If a file has been modified in any way for the BrewPi Remix project, the license comments on the code header have been changed to that of the new (derivative) project.  Any new files will use the new license comments.
+
 > Copyright 2012 BrewPi/Elco Jacobs. This file is part of BrewPi.
 > 
 > BrewPi is free software: you can redistribute it and/or modify it 
