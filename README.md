@@ -17,7 +17,7 @@ If you choose to type either command in manually, the -qO- is "dash, lower-case 
 > Security-conscious or just curious folks will want to read this
 > [security note](#security-note) before proceeding.
  
-When it is complete, you will have a working BrewPi Legacy setup.  I'm a little amazed that the work I've done is summed up in those four points, but if I've done my work right that should be it. Do [let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) if you find differently.
+When it is complete, you will have a working BrewPi Legacy setup.  I'm a little amazed that the work I've done is summed up in one "run this", but if I've done my work right that should be it. Do [let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) if you find differently.
 
 # Scripts in this Repo
 Filename | Description
