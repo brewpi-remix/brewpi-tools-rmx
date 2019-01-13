@@ -256,7 +256,7 @@ eval "$installPath/utils/doDepends.sh"||die
 # Add brewpi user to www-data group
 usermod -a -G www-data brewpi||warn
 # add pi user to www-data group
-usermod -a -G www-data pi||warn
+usermod -a -G www-data,brewpi pi||warn
 # Find web path based on Apache2 config
 echo -e "\nSearching for default web location."
 webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
