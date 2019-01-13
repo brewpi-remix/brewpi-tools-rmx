@@ -393,7 +393,7 @@ echo -e "easier to remember address to access BrewPi without having to rememberi
 echo -e "IP address:"
 echo -e "http://$(hostname).local "
 echo -e "\nUnder Windows, Bonjour installs with iTunes or can be downloaded separately at:"
-echo -e "\nhttps://support.apple.com/downloads/bonjour_for_windows"
+echo -e "https://support.apple.com/downloads/bonjour_for_windows"
 echo -e "\nHappy Brewing!"
 
 exit 0
