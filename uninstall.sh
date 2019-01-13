@@ -111,7 +111,7 @@ fi
 ### Remove all BrewPi Packages
 ############
 
-cd ~ # Start from home
+cd .. # Start from home
 
 # Stop (kill) brewpi
 sudo touch /var/www/html/do_not_run_brewpi
