@@ -159,16 +159,6 @@ else
 fi
 
 ############
-### Clean out old cron if it exists
-############
-
-if [ -f /etc/cron.d/brewpi ]; then
-  rm /etc/cron.d/brewpi
-  /etc/init.d/cron restart
-  echo
-fi
-
-############
 ### Install path setup
 ############
 
@@ -221,7 +211,8 @@ if [ -d "$installPath" ] && [ "$(ls -A ${installPath})" ]; then
   fi
   dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-Script"
   echo -e "\nScript install directory is not empty, backing up this users home directory to"
-  echo -e "'$dirName' and then deleting contents of install directory."
+  echo -e "'$dirName' and then deleting"
+  echo -e "contents of install directory."
   mkdir -p "$dirName"
   cp -R "$installPath" "$dirName"/||die
   rm -rf "$installPath"/*||die
