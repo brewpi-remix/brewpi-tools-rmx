@@ -342,6 +342,4 @@ eval "$homepath/$GITPROJ/install.sh"||die
 ### Work complete
 ############
 
-echo -e "\n***Script $THISSCRIPT complete.***"
-
 exit 0
