@@ -14,7 +14,9 @@ Check [Assumptions and Proceedings](#assumptions-proceedings) before moving forw
 To begin installing BrewPi, you need only issue the following command in a [terminal window](https://www.raspberrypi.org/documentation/usage/terminal/) (or via [ssh](https://www.raspberrypi.org/documentation/remote-access/ssh/)) on your Internet-connected Raspberry Pi:
 
 `wget -qO- https://raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/bootstrap.sh - /| sudo bash`
+
 *or*
+
 `wget -qO- https://tinyurl.com/brewpi-tools-rmx - /| sudo bash`
 
 If you choose to type either command in manually, the `-qO-` is "dash, lower-case 'Q', upper-case 'o', dash", with no spaces in between those characters.
