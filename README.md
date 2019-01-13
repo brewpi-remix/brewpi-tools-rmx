@@ -51,13 +51,13 @@ In order to make this work well, I have to make some assumptions about the envir
    3. Provide some rudimentary instructions
    4. Check for default password, and prompt to change it if so
    5. Set the proper timezone
-   6. Change host name if it is currently the default 'raspberrypi'
+   6. Prompt to optionally change the host name if it is currently the default 'raspberrypi'
    7.  Check network connectivity to GitHub (this part should be a given since it's intended to be run via `wget` but I'm not going to assume someone can't break my plans)
    8. Run an `apt update` if it's not been run within the last week
    9. Install `git` packages via `apt get` to allow the rest of the install to work
    10. Clone the BrewPi Tools RMX into the `~/brewpi-tools-rmx` folder
    11. Execute install.sh which is responsible for the rest of the setup
- - I am certain that someone will find an assumption I did not list here which is important.  We'll see how long that takes, [let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) what you find
+ - I am certain that someone will find an important assumption I did not list here.  We'll see how long that takes, [let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) what you find
 
 # Credits
 These scripts were originally a part of [brewpi-tools](https://github.com/BrewPi/brewpi-tools), an installer for the [BrewPi project](https://github.com/BrewPi).  My original intent was to simply make the Legacy branch of BrewPi work again since the original install scripts called for PHP5 explicitly and that's no longer available from the regular repositories.  The project grew from there to address some other shortcomings in the original, as well as to make it easier for beginners to get started.
