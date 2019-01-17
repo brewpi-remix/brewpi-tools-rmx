@@ -40,8 +40,13 @@ cd "$(dirname "$0")"
 THISSCRIPT="$(basename "$0")"
 SCRIPTNAME="${THISSCRIPT%%.*}"
 VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))"
+retval=$?
+if [ $retval -ne 0 ]; then
+  echo -e "\nNot a valid git repository. Did you copy this file here?"
+  exit 1
+fi
 GITURL="$(git config --get remote.origin.url)"
-GITPROJ="$(basename $GITURL)" && GITPROJ="${GITPROJ%.*}"
+GITPROJ=( "$(basename $GITURL)" && GITPROJ="${GITPROJ%.*}" )
 PACKAGE="${GITPROJ^^}"
 GITPROJWWW="brewpi-www-rmx"
 GITPROJSCRIPT="brewpi-script-rmx"
@@ -117,6 +122,10 @@ die () {
   warn "$@"
   exit "$st"
 }
+
+############
+### Make sure we are a GIT app
+############
 
 ############
 ### Start the script
@@ -224,8 +233,8 @@ fi
 ############
 
 if ! id -u brewpi >/dev/null 2>&1; then
-  useradd -G dialout brewpi||die
-  echo -e "\nPlease enter a password for the new user 'brewpi':"
+  useradd -G dialout,sudo brewpi||die
+  echo -e "\nPlease enter a password for the new user 'brewpi':" # TODO: Consider a locked/passwordless account
   until passwd brewpi < /dev/tty; do sleep 2; echo; done
 fi
 
@@ -253,7 +262,7 @@ eval "$installPath/utils/doDepends.sh"||die
 ### Web path setup
 ############
 
-# Add brewpi user to www-data group
+# Add brewpi user to www-data and sudo group
 usermod -a -G www-data brewpi||warn
 # add pi user to www-data group
 usermod -a -G www-data,brewpi pi||warn
@@ -356,7 +365,7 @@ sed -i -e 's/KeepAliveTimeout 5/KeepAliveTimeout 99/g' /etc/apache2/apache2.conf
 ### Create sym links to BrewPi and Updater
 ############
 
-ln -sf "$installPath/brewpi.py" "$HOMEPATH/$GITPROJ/"
+ln -sf "$installPath/brewpi.py" "$HOMEPATH/$GITPROJ/" # TODO:  Do we like this or not?
 ln -sf "$installPath/utils/updater.py" "$HOMEPATH/$GITPROJ/"
 
 ############
