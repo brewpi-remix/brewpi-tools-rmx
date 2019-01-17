@@ -39,14 +39,13 @@ GITBRNCH="master"
 THISSCRIPT="bootstrap.sh"
 VERSION="0.4.0.0"
 # These should stay the same
-GITUSER="lbussy"
-GITRAW="https://raw.githubusercontent.com"
-GITHUB="https://github.com"
+GITRAW="https://raw.githubusercontent.com/lbussy"
+GITHUB="https://github.com/lbussy"
 # Cobble together some strings
 SCRIPTNAME="${THISSCRIPT%%.*}"
 GITPROJ="${PACKAGE,,}"
-GITHUB="$GITHUB/$GITUSER/$GITPROJ.git"
-GITRAW="$GITRAW/$GITUSER/$GITPROJ/$GITBRNCH/$THISSCRIPT"
+GITHUB="$GITHUB/$GITPROJ.git"
+GITRAW="$GITRAW/$GITPROJ/$GITBRNCH/$THISSCRIPT"
 GITCMD="-b $GITBRNCH --single-branch $GITHUB"
 # Website for network test
 GITTEST=$GITHUB
@@ -63,7 +62,7 @@ sleep 1
 # func_usage outputs to stdout the --help usage message.
 func_usage () {
   echo -e "$PACKAGE $THISSCRIPT version $VERSION
-Usage: sudo . $THISSCRIPT    {run as user 'pi'}"
+Usage: sudo ./$THISSCRIPT"
 }
 # func_version outputs to stdout the --version message.
 func_version () {
@@ -263,8 +262,8 @@ wget -q --spider "$GITTEST"
 if [ $? -ne 0 ]; then
   echo -e "-------------------------------------------------------------\n" \
           "Could not connect to GitHub.  Please check your network and " \
-		  "try again. A connection to GitHub is required to download the" \
-		  "$PACKAGE package.\n"
+                  "try again. A connection to GitHub is required to download the" \
+                  "$PACKAGE package.\n"
   exit 1
 else
   echo -e "Connection to GitHub ok.\n"
@@ -292,7 +291,7 @@ for pkg in $APTPACKAGES; do
   if [ -z "$pkgOk" ]; then
     echo -e "\nInstalling '$pkg'.\n"
     apt install $pkg -y||die
-	echo
+        echo
   fi
 done
 
@@ -346,3 +345,4 @@ eval "$homepath/$GITPROJ/install.sh"||die
 ############
 
 exit 0
+
