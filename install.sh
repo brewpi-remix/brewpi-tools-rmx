@@ -46,7 +46,8 @@ if [ $retval -ne 0 ]; then
   exit 1
 fi
 GITURL="$(git config --get remote.origin.url)"
-GITPROJ=( "$(basename $GITURL)" && GITPROJ="${GITPROJ%.*}" )
+GITPROJ="$(basename $GITURL)"
+GITPROJ="${GITPROJ%.*}"
 PACKAGE="${GITPROJ^^}"
 GITPROJWWW="brewpi-www-rmx"
 GITPROJSCRIPT="brewpi-script-rmx"
