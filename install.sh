@@ -140,6 +140,7 @@ if [ -f "./brewpi.py" ]; then
       scriptPath="$(readlink ./brewpi.py)"
       scriptPath="$(dirname ${scriptPath})"
       eval "$scriptPath/utils/doUpdate.sh"
+      exit 0
       ;;
   esac
 fi
