@@ -125,8 +125,24 @@ die () {
 }
 
 ############
-### Make sure we are a GIT app
+### See if BrewPi is already installed
 ############
+
+if [ -f "./brewpi.py" ]; then
+  echo -e "\nBrewPi seems to already be installed.  Would you like to run doUpdate.sh"
+  read -p "to check for updates instead?  [Y/n]: " yn  < /dev/tty
+  case $yn in
+    [Nn]* )
+      echo -e "\nUnable to run install over an existing installation.  Exiting.";
+      exit 1;;
+    * )
+      # Get real location of link
+      scriptPath="$(readlink ./brewpi.py)"
+      scriptPath="$(dirname ${scriptPath})"
+      eval "$scriptPath/utils/doUpdate.sh"
+      ;;
+  esac
+fi
 
 ############
 ### Start the script
