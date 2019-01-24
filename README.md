@@ -1,4 +1,3 @@
-
 # ![BrewPi Legacy Remix Logo](https://raw.githubusercontent.com/lbussy/brewpi-www-rmx/master/brewpi_logo.png)
 *[@LBussy](https://github.com/lbussy)'s forks of the original [BrewPi Project](https://github.com/BrewPi)*
 
@@ -45,7 +44,7 @@ This bootstrap will:
 
 In order to make this work well, I have to make some assumptions about the environment in which this will be run.  Here I'll try to list some, however I am sure someone will find a way to try something I've not considered.  Do not over-think this.  Don't fiddle around with your Pi before running the bootstrap.  Turn it on, connect to your home network, and go.  Here's a list of known assumptions made during this project:
 
- - This has been developed and tested on a Raspberry Pi 3 B+ because that's what I have laying around.  I have absolutely no reason to believe it would not work on a Zero, 2B, or other versions of the Raspberry PI line.  I've just not tested it.
+ - This has been developed and tested on a Raspberry Pi 3 B+ because that's what I have laying around.  I have absolutely no reason to believe it would not work on a Zero, 2B, or other versions of the Raspberry Pi line.  I've just not tested it.
  - This has been developed and tested on the Raspbian OS.  Raspbian is based on Debian so using a Debian (or derivative) OS distribution *may* work, however that's not been tested.  I am not at all sure that it would work on a different flavor of Linux.
  - This has been developed and tested on the Raspbian Stretch distribution.  If a new distribution for the Raspberry Pi is released it *may* no longer work.  I hope I've future-proofed it, however the original/core code may have some non future-proofed areas waiting to rear their ugly head (or I may not be as good at future-proofing as I believe.)
  - I've assumed throughout that this is the only function the Pi will handle.  This is not unique to this project; the original did not support very well differences like multiple chambers, different user, etc.  Theoretically such functionality is trivial to implement, and I might try my hand at it, but not yet.
@@ -110,5 +109,10 @@ Cheers!
  - "*What about some other scenario, when will you test that?*" - Maybe never.  This is not a commercial venture; chances are once I'm "done enough" making it work on the target system, I'll be done for good.  The original/current [BrewPi](https://www.brewpi.com) is a far more capable system, with a wider adoption base, and excellent support.  That's probably a better choice for you if you want to venture from this path I've created for you.
  - "*Do you plan to create/implement/merge {insert cool idea here} functionality?*" - No I do not.  I'm not a software developer by trade, and this is not a commercial venture so there's probably little reason to implement something I'll never use.  To be embarrassingly and brutally honest, I hardly get a chance to even brew anymore.  I started this initially to make it easier for a friend of mine to get going again after his Pi ate his SD card.  I'll repeat: The original/current [BrewPi](https://www.brewpi.com) is a far more capable system, with a wider adoption base, and excellent support.  That's probably a better choice for you if you want expanded capabilities.
  - "*Will you accept pull requests*?" - Maybe.  Here's the honest truth however:  Not being a software developer by trade means that working with typical software development tools in a collaborative environment like GitHub is new to me.  I am probably doing this wrong/poorly and in a way that doesn't easily allow such collaboration.  If you're willing to work with someone who does not have these skills in order that you may contribute your own work, it's likely best to [contact me directly](https://github.com/lbussy/) before you start so we can work out the details to avoid frustration for both of us (mostly you.)
+ - "*What about older versions of the Pi or Raspbian Stretch, etc.?*" - I've no reason to believe older versions will not work, but they've not been tested.  In theory it should work fine, but at some point, on a platform like Raspberry Pi, you just need to say "flash a new card and get over it."  These are not desktop machines that accumulate "stuff" over the years.  If you have a Pi that's on it's original SD card for more than a couple years you have a rare bird indeed.  I'd be more than happy to discuss why it didn't work if you run into an issue, it would be interesting I think, but it might not be something I choose to address.
+
+# Known Issues
+
+ 1. Flashing firmware from the Web UI seems to cause the log to stop  updating.  The Web UI itself seems to update fine however, and it does not seem to impact the flash process.  It's something weird between the Python script, the port, and the sunspots.  I'll get to it one of these days.  Flashing from the Python script itself seems to work just fine.
 
 Back up to [Getting Started](#getting-started).
