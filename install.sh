@@ -413,7 +413,7 @@ echo -e "-----------------------------------------------------------------------
 echo -e "Review any uncaught errors above to be sure, but otherwise your initial"
 echo -e "install is complete."
 echo -e "\nLinks to two important tools: brewpi.py and updater.py, have been created in"
-echo -e "$HOMEPATH$GITPROJ/ for ease of use."
+echo -e "$HOMEPATH/$GITPROJ/ for ease of use."
 echo -e "\nBrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
 echo -e "the following in your favorite browser:"
 echo -e "http://$localIP"
