@@ -91,7 +91,7 @@ func_comline() {
 ############
 
 func_checkroot() {
-  if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
+  if [ "$SUDO_USER" ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
   if [[ $EUID -ne 0 ]]; then UIDERROR="root";
   elif [[ $REALUSER != "pi" ]]; then UIDERROR="pi"; fi
   if [[ ! $UIDERROR == ""  ]]; then
@@ -101,25 +101,14 @@ func_checkroot() {
     exit 1
   fi
   # And get the user home directory
-  _shadow="$((getent passwd $REALUSER) 2>&1)"
+  _shadow="$( (getent passwd "$REALUSER") 2>&1)"
   if [ $? -eq 0 ]; then
-    homepath="$(echo $_shadow | cut -d':' -f6)"
+    homepath=$(echo $_shadow | cut -d':' -f6)
   else
     echo "Unable to retrieve $REALUSER's home directory. Manual install"
     echo "may be necessary."
     exit 1
   fi
-}
-
-############
-### Create install log file
-############
-
-func_log() {
-  # TODO: This causes the py scripts to hang. Revisit this later.
-  #exec > >(tee -a $homepath/$SCRIPTNAME.log) 2>&1
-  #echo -e "\nLogging to: $homepath/$SCRIPTNAME.log.\n"
-  #echo -e "***Script $THISSCRIPT starting.***\n"
 }
 
 ############
@@ -137,7 +126,7 @@ warn() {
   echo -e "Setup NOT completed.\n"
 }
 
-die () {
+die() {
   local st="$?"
   warn "$@"
   exit "$st"
@@ -352,8 +341,7 @@ func_clonetools() {
 ### Main function
 ############
 
-func_main()
-{
+func_main() {
   func_init # Get constants
   func_comline # Check command line arguments
   func_checkroot # Make sure we are su into root
