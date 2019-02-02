@@ -33,57 +33,12 @@
 ### Init
 ############
 
-# Change to current dir so we can get the git info
-cd "$(dirname "$0")"
-
-# Set up some project constants
-THISSCRIPT="$(basename "$0")"
-SCRIPTNAME="${THISSCRIPT%%.*}"
-# Just in case we're running this without a local tools repo, skip the rest
-if [ -x "$(command -v git)" ] && [ -d .git ]; then
-  VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))" > /dev/null 2>&1
-  GITURL="$(git config --get remote.origin.url)" > /dev/null 2>&1
-  GITPROJ="$(basename $GITURL)" && GITPROJ="${GITPROJ%.*}" > /dev/null 2>&1
-  PACKAGE="${GITPROJ^^}" > /dev/null 2>&1
-fi
-
 # Packages to be uninstalled via apt
 APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php"
 # nginx packages to be uninstalled via apt if present
 NGINXPACKAGES="libgd-tools, fcgiwrap, nginx-doc, ssl-cert, fontconfig-config, fonts-dejavu-core, libfontconfig1, libgd3, libjbig0, libnginx-mod-http-auth-pam, libnginx-mod-http-dav-ext, libnginx-mod-http-echo, libnginx-mod-http-geoip, libnginx-mod-http-image-filter, libnginx-mod-http-subs-filter, libnginx-mod-http-upstream-fair, libnginx-mod-http-xslt-filter, libnginx-mod-mail, libnginx-mod-stream, libtiff5, libwebp6, libxpm4, libxslt1.1, nginx, nginx-common, nginx-full"
 # Packages to be uninstalled via pip
 PIPPACKAGES="pyserial psutil simplejson gitpython configobj"
-
-echo -e "\nBeginning BrewPi uninstall."
-
-############
-### Functions for --help and --version functionality
-############
-
-# func_usage outputs to stdout the --help usage message.
-func_usage () {
-  echo -e "$PACKAGE $THISSCRIPT version $VERSION
-Usage: sudo ./$THISSCRIPT"
-}
-# func_version outputs to stdout the --version message.
-func_version () {
-  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
-Copyright (C) 2018 Lee C. Bussy (@LBussy)
-This is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published
-by the Free Software Foundation, either version 3 of the License,
-or (at your option) any later version.
-<https://www.gnu.org/licenses/>
-There is NO WARRANTY, to the extent permitted by law."
-}
-if test $# = 1; then
-  case "$1" in
-    --help | --hel | --he | --h )
-      func_usage; exit 0 ;;
-    --version | --versio | --versi | --vers | --ver | --ve | --v )
-      func_version; exit 0 ;;
-  esac
-fi
 
 ############
 ### Check privilges and permissions
@@ -99,7 +54,7 @@ fi
 ### Start the script
 ############
 
-echo -e "\n***Script $THISSCRIPT starting.***"
+echo -e "\n***Script BrewPi Uninstaller starting.***"
 cd ~ # Start from home
 
 ############
