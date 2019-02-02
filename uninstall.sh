@@ -44,284 +44,335 @@ PIPPACKAGES="pyserial psutil simplejson gitpython configobj"
 ### Check privilges and permissions
 ############
 
-### Check if we have root privs to run
-if [[ $EUID -ne 0 ]]; then
-   echo -e "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
-   exit 1
-fi
-
-############
-### Start the script
-############
-
-echo -e "\n***Script BrewPi Uninstaller starting.***"
-cd ~ # Start from home
+func_getroot() {
+  ### Check if we have root privs to run
+  if [[ $EUID -ne 0 ]]; then
+     echo -e "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
+     exit 1
+  fi
+}
 
 ############
 ### Cleanup cron
 ############
 
-# Clear out the old brewpi cron if it exists
-if [ -f /etc/cron.d/brewpi ]; then
-  echo -e "\nResetting cron."
-  sudo rm -f /etc/cron.d/brewpi
-  sudo /etc/init.d/cron restart
-fi
-
+func_cron() {
+  # Clear out the old brewpi cron if it exists
+  if [ -f /etc/cron.d/brewpi ]; then
+    echo -e "\nResetting cron."
+    sudo rm -f /etc/cron.d/brewpi
+    sudo /etc/init.d/cron restart
+  fi
+}
+  
 ############
 ### Stop all BrewPi processes
 ############
 
-if [ $(getent passwd brewpi) ]; then
- pidlist=$(pgrep -u brewpi)
-fi
-for pid in "$pidlist"
-do
-  # Stop (kill) brewpi
-  sudo touch /var/www/html/do_not_run_brewpi > /dev/null 2>&1
-  if ps -p "$pid" > /dev/null 2>&1; then
-    echo -e "\nAttempting gracefull shutdown of process $pid."
-    sudo kill -15 "$pid"
-    sleep 2
-    if ps -p $pid > /dev/null 2>&1; then
-      echo -e "\nTrying a little harder to terminate process $pid."
-      sudo kill -2 "$pid"
+func_killproc() {
+  if [ $(getent passwd brewpi) ]; then
+   pidlist=$(pgrep -u brewpi)
+  fi
+  for pid in "$pidlist"
+  do
+    # Stop (kill) brewpi
+    sudo touch /var/www/html/do_not_run_brewpi > /dev/null 2>&1
+    if ps -p "$pid" > /dev/null 2>&1; then
+      echo -e "\nAttempting gracefull shutdown of process $pid."
+      sudo kill -15 "$pid"
       sleep 2
       if ps -p $pid > /dev/null 2>&1; then
-        echo -e "\nBeing more forcefull with process $pid."
-        sudo kill -1 "$pid"
+        echo -e "\nTrying a little harder to terminate process $pid."
+        sudo kill -2 "$pid"
         sleep 2
-        while ps -p $pid > /dev/null 2>&1;
-        do
-          echo -e "\nBeing really insistent about killing process $pid now."
-          echo -e "(I'm going to keep doing this till the process(es) are gone.)"
-          sudo kill -9 "$pid"
+        if ps -p $pid > /dev/null 2>&1; then
+          echo -e "\nBeing more forcefull with process $pid."
+          sudo kill -1 "$pid"
           sleep 2
-        done
+          while ps -p $pid > /dev/null 2>&1;
+          do
+            echo -e "\nBeing really insistent about killing process $pid now."
+            echo -e "(I'm going to keep doing this till the process(es) are gone.)"
+            sudo kill -9 "$pid"
+            sleep 2
+          done
+        fi
       fi
     fi
-  fi
-done
-
+  done
+}
+  
 ############
 ### Remove all BrewPi Packages
 ############
 
-# Wipe out tools
-if [ -d /home/pi/brewpi-tools-rmx ]; then
-  echo -e "\nClearing /home/pi/brewpi-tools-rmx."
-  sudo rm -fr /home/pi/brewpi-tools-rmx
-fi
-# Wipe out legacy tools
-if [ -d /home/pi/brewpi-tools ]; then
-  echo -e "\nClearing /home/pi/brewpi-tools."
-  sudo rm -fr /home/pi/brewpi-tools
-fi
-# Wipe out BrewPi scripts
-if [ -d /home/brewpi ]; then
-  echo -e "\nClearing /home/brewpi."
-  sudo rm -fr /home/brewpi
-fi
-# Wipe out www if it exists and is not empty
-if [ -d /var/www/html ]; then
-  if [ ! -z "$(ls -A /var/www/html)" ]; then
-    echo -e "\nClearing /var/www/html."
-    sudo rm -fr /var/www/html
-	# Re-create html durectory
-    sudo mkdir /var/www/html
-    sudo chown www-data:www-data /var/www/html
+func_delrepo() {
+  # Wipe out tools
+  if [ -d /home/pi/brewpi-tools-rmx ]; then
+    echo -e "\nClearing /home/pi/brewpi-tools-rmx."
+    sudo rm -fr /home/pi/brewpi-tools-rmx
   fi
-fi
+  # Wipe out legacy tools
+  if [ -d /home/pi/brewpi-tools ]; then
+    echo -e "\nClearing /home/pi/brewpi-tools."
+    sudo rm -fr /home/pi/brewpi-tools
+  fi
+  # Wipe out BrewPi scripts
+  if [ -d /home/brewpi ]; then
+    echo -e "\nClearing /home/brewpi."
+    sudo rm -fr /home/brewpi
+  fi
+  # Wipe out www if it exists and is not empty
+  if [ -d /var/www/html ]; then
+    if [ ! -z "$(ls -A /var/www/html)" ]; then
+      echo -e "\nClearing /var/www/html."
+      sudo rm -fr /var/www/html
+  	# Re-create html durectory
+      sudo mkdir /var/www/html
+      sudo chown www-data:www-data /var/www/html
+    fi
+  fi
+}
 
 ############
 ### Remove brewpi user/group
 ############
 
-username="pi"
-if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
-  echo -e "\nRemoving $username from brewpi group."
-  sudo deluser pi brewpi
-fi
-if getent group www-data | grep &>/dev/null "\b${username}\b"; then
-  echo -e "\nRemoving $username from www-data group."
-  sudo deluser pi www-data
-fi
-username="www-data"
-if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
-  echo -e "\nRemoving $username from brewpi group."
-  sudo deluser www-data brewpi
-fi
-username="brewpi"
-if getent group www-data | grep &>/dev/null "\b${username}\b"; then
-  echo -e "\nRemoving $username from www-data group."
-  sudo deluser brewpi www-data
-fi
-if sudo id "$username" > /dev/null 2>&1; then
-  echo -e "\nRemoving user $username."
-  sudo userdel "$username"
-fi
-egrep -i "^$username" /etc/group;
-if [ $? -eq 0 ]; then
-   groupdel "$username"
-fi
+func_cleanusers() {
+  username="pi"
+  if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
+    echo -e "\nRemoving $username from brewpi group."
+    sudo deluser pi brewpi
+  fi
+  if getent group www-data | grep &>/dev/null "\b${username}\b"; then
+    echo -e "\nRemoving $username from www-data group."
+    sudo deluser pi www-data
+  fi
+  username="www-data"
+  if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
+    echo -e "\nRemoving $username from brewpi group."
+    sudo deluser www-data brewpi
+  fi
+  username="brewpi"
+  if getent group www-data | grep &>/dev/null "\b${username}\b"; then
+    echo -e "\nRemoving $username from www-data group."
+    sudo deluser brewpi www-data
+  fi
+  if sudo id "$username" > /dev/null 2>&1; then
+    echo -e "\nRemoving user $username."
+    sudo userdel "$username"
+  fi
+  egrep -i "^$username" /etc/group;
+  if [ $? -eq 0 ]; then
+     groupdel "$username"
+  fi
+}
 
 ############
 ### Reset Apache
 ############
 
-# Reset Apache config to stock
-if [ -f /etc/apache2/apache2.conf ]; then
-  if grep -qF "KeepAliveTimeout 99" /etc/apache2/apache2.conf; then
-    echo -e "\nResetting /etc/apache2/apache2.conf."
-    sudo sed -i -e 's/KeepAliveTimeout 99/KeepAliveTimeout 5/g' /etc/apache2/apache2.conf
-    sudo /etc/init.d/apache2 restart
+func_resetapache() {
+  # Reset Apache config to stock
+  if [ -f /etc/apache2/apache2.conf ]; then
+    if grep -qF "KeepAliveTimeout 99" /etc/apache2/apache2.conf; then
+      echo -e "\nResetting /etc/apache2/apache2.conf."
+      sudo sed -i -e 's/KeepAliveTimeout 99/KeepAliveTimeout 5/g' /etc/apache2/apache2.conf
+      sudo /etc/init.d/apache2 restart
+    fi
   fi
-fi
+}
 
 ############
 ### Remove pip packages
 ############
 
-echo -e "\nChecking for pip packages installed with BrewPi."
-if pip &>/dev/null; then
-  pipInstalled=$(sudo pip list --format=legacy)
-  if [ $? -eq 0 ]; then
-    pipInstalled=$(echo "$pipInstalled" | awk '{ print $1 }')
-    for pkg in ${PIPPACKAGES,,}; do
-      if [[ ${pipInstalled,,} == *"$pkg"* ]]; then
-        echo -e "\nRemoving '$pkg'.\n"
-        sudo pip uninstall $pkg -y
-      fi
-    done
+func_delpip() {
+  echo -e "\nChecking for pip packages installed with BrewPi."
+  if pip &>/dev/null; then
+    pipInstalled=$(sudo pip list --format=legacy)
+    if [ $? -eq 0 ]; then
+      pipInstalled=$(echo "$pipInstalled" | awk '{ print $1 }')
+      for pkg in ${PIPPACKAGES,,}; do
+        if [[ ${pipInstalled,,} == *"$pkg"* ]]; then
+          echo -e "\nRemoving '$pkg'.\n"
+          sudo pip uninstall $pkg -y
+        fi
+      done
+    fi
   fi
-fi
+}
 
 ############
 ### Remove apt packages
 ############
 
-echo -e "\nChecking for apt packages installed with BrewPi."
-# Get list of installed packages
-packagesInstalled=$(sudo dpkg --get-selections | awk '{ print $1 }')
-# Loop through the required packages and uninstall those in $APTPACKAGES
-for pkg in ${APTPACKAGES,,}; do
-  if [[ ${packagesInstalled,,} == *"$pkg"* ]]; then
-    echo -e "\nRemoving '$pkg'.\n"
-	sudo apt remove --purge $pkg -y
-  fi
-done
+func_delapt() {
+  echo -e "\nChecking for apt packages installed with BrewPi."
+  # Get list of installed packages
+  packagesInstalled=$(sudo dpkg --get-selections | awk '{ print $1 }')
+  # Loop through the required packages and uninstall those in $APTPACKAGES
+  for pkg in ${APTPACKAGES,,}; do
+    if [[ ${packagesInstalled,,} == *"$pkg"* ]]; then
+      echo -e "\nRemoving '$pkg'.\n"
+  	sudo apt remove --purge $pkg -y
+    fi
+  done
+}
 
 ############
 ### Remove php5 packages if installed
 ############
 
-echo -e "\nChecking for previously installed php5 packages."
-# Get list of installed packages
-php5packages="$(dpkg --get-selections | awk '{ print $1 }' | grep 'php5')"
-if [[ -z "$php5packages" ]] ; then
-  echo -e "\nNo php5 packages found."
-else
-  echo -e "\nFound php5 packages installed.  It is recomended to uninstall all php before"
-  echo -e "proceeding as BrewPi requires php7 and will install it during the install"
-  read -p "process.  Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
-  case $yn in
-    [Nn]* )
-      echo -e "\nUnable to proceed with php5 installed, exiting.";
-      exit 1;;
-    * )
-      php_packages="$(dpkg --get-selections | awk '{ print $1 }' | grep 'php')"
-      # Loop through the php5 packages that we've found
-      for pkg in ${php_packages,,}; do
-        echo -e "\nRemoving '$pkg'.\n"
-        sudo apt remove --purge $pkg -y
-      done
-	  echo -e "\nCleanup of the php environment complete."
-      ;;
-  esac
-fi
+func_delphp5() {
+  echo -e "\nChecking for previously installed php5 packages."
+  # Get list of installed packages
+  php5packages="$(dpkg --get-selections | awk '{ print $1 }' | grep 'php5')"
+  if [[ -z "$php5packages" ]] ; then
+    echo -e "\nNo php5 packages found."
+  else
+    echo -e "\nFound php5 packages installed.  It is recomended to uninstall all php before"
+    echo -e "proceeding as BrewPi requires php7 and will install it during the install"
+    read -p "process.  Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
+    case $yn in
+      [Nn]* )
+        echo -e "\nUnable to proceed with php5 installed, exiting.";
+        exit 1;;
+      * )
+        php_packages="$(dpkg --get-selections | awk '{ print $1 }' | grep 'php')"
+        # Loop through the php5 packages that we've found
+        for pkg in ${php_packages,,}; do
+          echo -e "\nRemoving '$pkg'.\n"
+          sudo apt remove --purge $pkg -y
+        done
+  	  echo -e "\nCleanup of the php environment complete."
+        ;;
+    esac
+  fi
+}
 
 ############
 ### Remove nginx packages if installed
 ############
 
-echo -e "\nChecking for previously installed nginx packages."
-# Get list of installed packages
-nginxPackage="$(dpkg --get-selections | awk '{ print $1 }' | grep 'nginx')"
-if [[ -z "$nginxPackage" ]] ; then
-  echo -e "\nNo nginx packages found."
-else
-  echo -e "\nFound nginx packages installed.  It is recomended to uninstall nginx before"
-  echo -e "proceeding as BrewPi requires apache2 and they will conflict with each other."
-  read -p "Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
-  case $yn in
-    [Nn]* )
-      echo -e "\nUnable to proceed with nginx installed, exiting.";
-      exit 1;;
-    * )
-      # Loop through the php5 packages that we've found
-      for pkg in ${NGINXPACKAGES,,}; do
-        echo -e "\nRemoving '$pkg'.\n"
-        sudo apt remove --purge $pkg -y
-      done
-	  echo -e "\nCleanup of the nginx environment complete."
-      ;;
-  esac
-fi
+func_delnginx() {
+  echo -e "\nChecking for previously installed nginx packages."
+  # Get list of installed packages
+  nginxPackage="$(dpkg --get-selections | awk '{ print $1 }' | grep 'nginx')"
+  if [[ -z "$nginxPackage" ]] ; then
+    echo -e "\nNo nginx packages found."
+  else
+    echo -e "\nFound nginx packages installed.  It is recomended to uninstall nginx before"
+    echo -e "proceeding as BrewPi requires apache2 and they will conflict with each other."
+    read -p "Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
+    case $yn in
+      [Nn]* )
+        echo -e "\nUnable to proceed with nginx installed, exiting.";
+        exit 1;;
+      * )
+        # Loop through the php5 packages that we've found
+        for pkg in ${NGINXPACKAGES,,}; do
+          echo -e "\nRemoving '$pkg'.\n"
+          sudo apt remove --purge $pkg -y
+        done
+  	  echo -e "\nCleanup of the nginx environment complete."
+        ;;
+    esac
+  fi
+}
 
 ############
 ### Cleanup local packages
 ############
 
-# Cleanup
-echo -e "\nCleaning up local repositories."
-sudo apt clean -y
-sudo apt autoclean -y
-sudo apt autoremove --purge -y
+func_cleanapt() {
+  # Cleanup
+  echo -e "\nCleaning up local apt packages."
+  sudo apt clean -y
+  sudo apt autoclean -y
+  sudo apt autoremove --purge -y
+}
 
 ############
 ### Change hostname
 ###########
 
-oldHostName=$(hostname)
-newHostName="raspberrypi"
-if [ "$oldHostName" != "$newHostName" ]; then
-  echo -e "\nResetting hostname from $oldhostname back to $newhostname."
-  sed1="sudo sed -i 's/$oldHostName/$newHostName/g' /etc/hosts"
-  sed2="sudo sed -i 's/$oldHostName/$newHostName/g' /etc/hostname"
-  eval $sed1
-  eval $sed2
-  sudo hostnamectl set-hostname $newHostName
-  sudo /etc/init.d/avahi-daemon restart
-  echo -e "\nYour hostname has been changed back to '$newHostName'.\n"
-  echo -e "(If your hostname is part of your prompt, your prompt will"
-  echo -e "not change untill you log out and in again.  This will have"
-  echo -e "no effect on anything but the way the prompt looks.)"
-  sleep 3
-fi
+func_resethost() {
+  oldHostName=$(hostname)
+  newHostName="raspberrypi"
+  if [ "$oldHostName" != "$newHostName" ]; then
+    echo -e "\nResetting hostname from $oldhostname back to $newhostname."
+    sed1="sudo sed -i 's/$oldHostName/$newHostName/g' /etc/hosts"
+    sed2="sudo sed -i 's/$oldHostName/$newHostName/g' /etc/hostname"
+    eval $sed1
+    eval $sed2
+    sudo hostnamectl set-hostname $newHostName
+    sudo /etc/init.d/avahi-daemon restart
+    echo -e "\nYour hostname has been changed back to '$newHostName'.\n"
+    echo -e "(If your hostname is part of your prompt, your prompt will"
+    echo -e "not change untill you log out and in again.  This will have"
+    echo -e "no effect on anything but the way the prompt looks.)"
+    sleep 3
+  fi
+}
 
 ############
 ### Remove device rules
 ###########
 
-rules="/etc/udev/rules.d/99-arduino.rules"
-if [ -f "$rules" ]; then
-  echo -e "\nRemoving udev rules."
-  rm "$rules"
-  udevadm control --reload-rules
-  udevadm trigger
-fi
+func_resetudev() {
+  rules="/etc/udev/rules.d/99-arduino.rules"
+  if [ -f "$rules" ]; then
+    echo -e "\nRemoving udev rules."
+    rm "$rules"
+    udevadm control --reload-rules
+    udevadm trigger
+  fi
+}
   
 ############
 ### Reset password
 ###########
 
-echo -e "\nResetting password for 'pi' back to 'raspberry'."
-echo "pi:raspberry" | sudo chpasswd
+func_resetpwd() {
+  echo -e "\nResetting password for 'pi' back to 'raspberry'."
+  echo "pi:raspberry" | sudo chpasswd
+}
+
+############
+### Main
+###########
+
+func_main() {
+  func_getroot # Check for root privs
+  func_cron # Clean up crontab
+  func_killproc # Kill all brewpi procs
+  func_delrepo # Remove all the repos
+  func_cleanusers # Clean up users and groups
+  func_resetapache # Reset Apache config to stock
+  func_delpip # Remove pip packages
+  func_delapt # Remove BrewPi apt dependencies
+  func_delphp5 # Remove php5 packages
+  func_delnginx # Remove nginx 
+  func_cleanapt # Clean up apt packages locally
+  func_resethost # Reset hostname
+  func_resetudev # Remove udev rules
+  func_resetpwd # Reset pi password
+}
+
+############
+### Start the script
+############
+
+sleep 2
+echo -e "\n***Script BrewPi Uninstaller starting.***"
+cd ~ # Start from home
+func_main # Moved to functions to prevent broken execution with wget
 
 ############
 ### Work Complete
 ###########
 
-echo -e "\n***Script $THISSCRIPT complete.***"
+echo -e "\n***Script BrewPi Uninstaller complete.***"
 
 exit 0
