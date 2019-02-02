@@ -168,21 +168,21 @@ fi
 
 username="pi"
 if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
-  echo -e "\nRemoving pi from brewpi group."
+  echo -e "\nRemoving $username from brewpi group."
   sudo deluser pi brewpi
 fi
 if getent group www-data | grep &>/dev/null "\b${username}\b"; then
-  echo -e "\nRemoving pi from www-data group."
+  echo -e "\nRemoving $username from www-data group."
   sudo deluser pi www-data
 fi
 username="www-data"
 if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
-  echo -e "\nRemoving www-data from brewpi group."
+  echo -e "\nRemoving $username from brewpi group."
   sudo deluser www-data brewpi
 fi
 username="brewpi"
 if getent group www-data | grep &>/dev/null "\b${username}\b"; then
-  echo -e "\nRemoving pi from www-data group."
+  echo -e "\nRemoving $username from www-data group."
   sudo deluser brewpi www-data
 fi
 if sudo id "$username" > /dev/null 2>&1; then
