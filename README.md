@@ -1,3 +1,4 @@
+
 # ![BrewPi Legacy Remix Logo](https://raw.githubusercontent.com/lbussy/brewpi-www-rmx/master/brewpi_logo.png)
 *[@LBussy](https://github.com/lbussy)'s forks of the original [BrewPi Project](https://github.com/BrewPi)*
 
@@ -112,7 +113,12 @@ Cheers!
  - "*What about older versions of the Pi or Raspbian Stretch, etc.?*" - I've no reason to believe older versions will not work, but they've not been tested.  In theory it should work fine, but at some point, on a platform like Raspberry Pi, you just need to say "flash a new card and get over it."  These are not desktop machines that accumulate "stuff" over the years.  If you have a Pi that's on it's original SD card for more than a couple years you have a rare bird indeed.  I'd be more than happy to discuss why it didn't work if you run into an issue, it would be interesting I think, but it might not be something I choose to address.
 
 # Known Issues
-
- 1. Flashing firmware from the Web UI seems to cause the log to stop  updating.  The Web UI itself seems to update fine however, and it does not seem to impact the flash process.  It's something weird between the Python script, the port, and the sunspots.  I'll get to it one of these days.  Flashing from the Python script itself seems to work just fine.
+You can view or log new issues via the links below:
+Project | Name | Known Issues
+------------ | ------------- | ------------- 
+BrewPi-Tools-RMX | BrewPi Tools Remix | [Issues List](https://github.com/lbussy/brewpi-tools-rmx/issues)
+BrewPi-Script-RMX | BrewPi Script Remix | [Issues List](https://github.com/lbussy/brewpi-script-rmx/issues)
+BrewPi-WWW-RMX | BrewPi WWW Remox | [Issues List](https://github.com/lbussy/brewpi-www-rmx/issues)
+BrewPi-Firmware-RMX | BrewPi Firmware Remix | [Issues List](https://github.com/lbussy/brewpi-firmware-rmx/issues)
 
 Back up to [Getting Started](#getting-started).
