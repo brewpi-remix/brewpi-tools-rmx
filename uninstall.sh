@@ -39,10 +39,10 @@ cd "$(dirname "$0")"
 # Set up some project constants
 THISSCRIPT="$(basename "$0")"
 SCRIPTNAME="${THISSCRIPT%%.*}"
-VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))"
-GITURL="$(git config --get remote.origin.url)"
-GITPROJ="$(basename $GITURL)" && GITPROJ="${GITPROJ%.*}"
-PACKAGE="${GITPROJ^^}"
+VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))" > /dev/null 2>&1
+GITURL="$(git config --get remote.origin.url)" > /dev/null 2>&1
+GITPROJ="$(basename $GITURL)" && GITPROJ="${GITPROJ%.*}" > /dev/null 2>&1
+PACKAGE="${GITPROJ^^}" > /dev/null 2>&1
 
 # Packages to be uninstalled via apt
 APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php"
@@ -114,7 +114,7 @@ fi
 ### Stop all BrewPi processes
 ############
 
-pidlist=$(pgrep -u brewpi)
+pidlist=$(pgrep -u brewpi)  > /dev/null 2>&1
 for pid in "$pidlist"
 do
   # Stop (kill) brewpi
