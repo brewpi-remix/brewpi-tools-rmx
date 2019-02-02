@@ -194,6 +194,7 @@ func_getscriptpath() {
 
 func_doport(){
   if [ -n $chamber ]; then
+    echo -e "\nDEBUG: Chamber = $chamber."
     declare -i count=-1
     declare -a port
     declare -a serial
@@ -422,7 +423,7 @@ func_updateconfig() {
     # Update web path config
     echo "wwwPath = $webPath" >> "$scriptPath"/config.cfg
     # Update port setting
-	echo "port = /dev/$chamber" >> "$scriptPath"/config.cfg
+    echo "port = /dev/$chamber" >> "$scriptPath"/config.cfg
   fi
 }
 
@@ -507,7 +508,8 @@ func_complete() {
 ############
 
 func_main() {
-  func_doinit # Intialize constants and variables
+  func_doinit # Initialize constants and variables
+  echo -e "\nDEBUG: THISSCRIPT = $THISSCRPT, SCRIPTNAME = $SCRIPTNAME and basename = $(basename "$0")"
   func_arguments # Handle command line arguments
   func_checkroot # Make sure we are using sudo
   func_checknet # Check for connection to GitHub
