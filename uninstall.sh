@@ -185,9 +185,13 @@ if getent group www-data | grep &>/dev/null "\b${username}\b"; then
   echo -e "\nRemoving pi from www-data group."
   sudo deluser brewpi www-data
 fi
-if sudo id "brewpi" > /dev/null 2>&1; then
-  echo -e "\nRemoving user brewpi."
-  sudo userdel brewpi
+if sudo id "$username" > /dev/null 2>&1; then
+  echo -e "\nRemoving user $username."
+  sudo userdel $username
+fi
+egrep -i "^$username" /etc/group;
+if [ $? -eq 0 ]; then
+   groupdel $username
 fi
 
 ############
