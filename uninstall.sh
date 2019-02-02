@@ -318,7 +318,7 @@ fi
 ############
 
 # Cleanup
-echo -e "Cleaning up local repositories."
+echo -e "\nCleaning up local repositories."
 sudo apt clean -y
 sudo apt autoclean -y
 sudo apt autoremove --purge -y
@@ -329,8 +329,8 @@ sudo apt autoremove --purge -y
 
 oldHostName=$(hostname)
 newHostName="raspberrypi"
-echo -e "\nResetting hostname."
 if [ "$oldHostName" != "$newHostName" ]; then
+  echo -e "\nResetting hostname from $oldhostname back to $newhostname."
   sed1="sudo sed -i 's/$oldHostName/$newHostName/g' /etc/hosts"
   sed2="sudo sed -i 's/$oldHostName/$newHostName/g' /etc/hostname"
   eval $sed1
