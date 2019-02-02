@@ -382,13 +382,6 @@ sed -i -e 's/KeepAliveTimeout 5/KeepAliveTimeout 99/g' /etc/apache2/apache2.conf
 /etc/init.d/apache2 restart
 
 ############
-### Create sym links to BrewPi and Updater
-############
-
-ln -sf "$installPath/brewpi.py" "$HOMEPATH/$GITPROJ/" # TODO:  Do we like this or not?
-ln -sf "$installPath/utils/updater.py" "$HOMEPATH/$GITPROJ/"
-
-############
 ### Flash controller
 ############
 
@@ -412,8 +405,6 @@ echo -e "\n                           BrewPi Install Complete"
 echo -e "------------------------------------------------------------------------------"
 echo -e "Review any uncaught errors above to be sure, but otherwise your initial"
 echo -e "install is complete."
-echo -e "\nLinks to two important tools: brewpi.py and updater.py, have been created in"
-echo -e "$HOMEPATH/$GITPROJ/ for ease of use."
 echo -e "\nBrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
 echo -e "the following in your favorite browser:"
 echo -e "http://$localIP"
@@ -426,4 +417,3 @@ echo -e "https://support.apple.com/downloads/bonjour_for_windows"
 echo -e "\nHappy Brewing!"
 
 exit 0
-
