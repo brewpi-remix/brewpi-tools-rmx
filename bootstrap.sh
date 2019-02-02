@@ -155,7 +155,7 @@ func_instructions() {
   echo -e "default path is not recommended as not all possibilities can be reasonably"
   echo -e "tested.\n"
   
-  read -p "Press <enter> when you are ready to proceed." yn  < /dev/tty
+  read -p "Press <enter> when you are ready to proceed. " yn  < /dev/tty
 }
 
 ############
