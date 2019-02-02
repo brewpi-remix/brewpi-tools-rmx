@@ -55,7 +55,7 @@ func_doinit() {
     exit 1
   fi
 }
-  
+
 ############
 ### Functions for --help and --version functionality
 ############
@@ -352,7 +352,7 @@ func_getwwwpath() {
   usermod -a -G www-data,brewpi pi||warn
   # Add www-data user to brewpi group (allow access to logs)
   usermod -a -G brewpi www-data||warn
-  
+
   # Find web path based on Apache2 config
   echo -e "\nSearching for default web location."
   webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
