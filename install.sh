@@ -164,7 +164,7 @@ func_checkfree() {
     echo -e "sudo raspi-config\nExpand your root partition via the options, and reboot.\n"
     exit 1
   else
-    echo -e "Disk usage is $free_percentage, free disk space is $free_readable.\n"
+    echo -e "\nDisk usage is $free_percentage, free disk space is $free_readable."
   fi
 }
 
@@ -173,16 +173,76 @@ func_checkfree() {
 ############
 
 func_getscriptpath() {
+  regex="^0-9a-zA-Z\[-]_$"
   echo -e "\nIf you would like to use BrewPi in multi-chamber mode, or simply not use the"
   echo -e "defaults of /home/brewpi for scripts and /var/www/html for web pages, you may"
-  echo -e "choose a sub directory now.  Enter a name for this directory, or hit enter to"
-  read -p "accept the defaults. [default]: " chamber < /dev/tty
+  echo -e "choose a sub directory now.  Any character entered that is not [A-Z], [a-z],"
+  echo -e "[0-9], - or _ will be converted to an underscore.  Enter chamber name, or hit"
+  read -p "enter to accept the defaults. [/home/brewpi]: " chamber < /dev/tty
   if [ -z "$chamber" ]; then
     scriptPath="/home/brewpi"
   else
+    chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
     scriptPath="/home/brewpi/$chamber"
   fi
   echo -e "\nUsing $scriptPath for scripts directory."
+}
+
+############
+### Install a udev rule to connect this instance to an Arduino
+############
+
+func_doport(){
+  declare -i count=-1
+  declare -a port
+  declare -a serial
+  declare -a manuf
+  rules="/etc/udev/rules.d/99-arduino.rules"
+  devices=$(ls /dev/ttyACM* /dev/ttyUSB* 2> /dev/null)
+  # Get a list of USB TTY devices
+  for device in $devices; do
+    # Walk device tree | awk out the "paragraph" with the last device in chain 
+    board=$(udevadm info --a -n $device | awk -v RS='' '/ATTRS{maxchild}=="0"/')
+    if [ -n "$board" ]; then
+        ((count++))
+      # Get the device Product ID, Vendor ID and Serial Number
+      #idProduct=$(echo "$board" | grep "idProduct" | cut -d'"' -f 2)
+      #idVendor=$(echo "$board" | grep "idVendor" | cut -d'"' -f 2)
+      port[count]="$device"
+      serial[count]=$(echo "$board" | grep "serial" | cut -d'"' -f 2)
+      manuf[count]=$(echo "$board" | grep "manufacturer" | cut -d'"' -f 2)
+    fi
+  done
+  # Display a menu of devices to associate with this chamber
+  if [ $count -gt -1 ]; then
+    echo -e "\nThe following seem to be the Arduinos available on this system:\n"
+    for (( c=0; c<=count; c++ ))
+    do
+      echo -e "[$c] Manuf: ${manuf[c]}, Serial: ${serial[c]}"
+    done
+    echo
+    while :; do
+      read -p "Please select an Arduino [0-$count] to associate with this chamber. [0]:  " board < /dev/tty
+      [[ $board =~ ^[0-$count]+$ ]] || { echo "Please enter a valid choice."; continue; }
+      if ((board >= 0 && board <= count)); then
+        break
+      fi
+    done
+  fi
+  if [ -L "/dev/$chamber" ]; then
+    echo "That name already exists as a /dev link, using it."
+  else
+    echo -e "\nCreating rule for board ${serial[board]} as /dev/$chamber."
+    # Concatenate the rule
+    rule='SUBSYSTEM=="tty", ATTRS{serial}=="sernum", SYMLINK+="chambr", '
+    rule+='OWNER="root", GROUP="brewpi"'
+    # Replace placeholders with real values
+    rule="${rule/sernum/${serial[board]}}"
+    rule="${rule/chambr/$chamber}"
+    echo "$rule" >> "$rules"
+  fi
+  udevadm control --reload-rules
+  udevadm trigger
 }
 
 ############
@@ -295,7 +355,7 @@ func_getwwwpath() {
   # Find web path based on Apache2 config
   echo -e "\nSearching for default web location."
   webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
-  if [ ! -z "$webPath" ]; then
+  if [ -n "$webPath" ]; then
     echo -e "\nFound $webPath in /etc/apache2/sites-enabled/000-default*."
   else
     echo "Something went wrong searching for /etc/apache2/sites-enabled/000-default*."
@@ -303,7 +363,7 @@ func_getwwwpath() {
     exit 1
   fi
   # Use chamber name if configured
-  if [ ! -z "$chamber" ]; then
+  if [ -n "$chamber" ]; then
     webPath="webPath/$chamber"
   fi
   # Create web path if it does not exist
@@ -350,17 +410,17 @@ func_clonewww() {
 ##########
 
 func_updateconfig() {
-  if [[ "$scriptPath" != "/home/brewpi" ]]; then
-    echo -e "\nUsing non-default path for the script dir, updating config files.\n"
-    echo "scriptPath = $scriptPath" >> "$scriptPath"/settings/config.cfg
-  
+  if [ -n "$chamber" ]; then
+    echo -e "\nUsing non-default paths, updating config files."
+    # Update brewpi scripts config
+    echo "scriptPath = $scriptPath" >> "$scriptPath"/config.cfg
+    # Update WWW page confog
     echo "<?php " >> "$webPath"/config_user.php
     echo "\$scriptPath = '$scriptPath';" >> "$webPath"/config_user.php
-  fi
-  
-  if [[ "$webPath" != "$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)" ]]; then
-    echo -e "\nUsing non-default path for the web dir, updating config files.\n"
-    echo "wwwPath = $webPath" >> "$scriptPath"/settings/config.cfg
+    # Update web path config
+    echo "wwwPath = $webPath" >> "$scriptPath"/config.cfg
+    # Update port setting
+	echo "port = /dev/$chamber" >> "$scriptPath"/config.cfg
   fi
 }
 
@@ -420,7 +480,7 @@ func_complete() {
   echo -e "\nBrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
   echo -e "the following in your favorite browser:"
   # Use chamber name if configured
-  if [ ! -z "$chamber" ]; then
+  if [ -n "$chamber" ]; then
     echo -e "http://$localIP/$chamber"
   else
     echo -e "http://$localIP"
@@ -430,7 +490,7 @@ func_complete() {
   echo -e "easier to remember address to access BrewPi without having to remembering an"
   echo -e "IP address:"
   # Use chamber name if configured
-  if [ ! -z "$chamber" ]; then
+  if [ -n "$chamber" ]; then
     echo -e "http://$(hostname).local/$chamber"
   else
     echo -e "http://$(hostname).local"
@@ -451,6 +511,7 @@ func_main() {
   func_checknet # Check for connection to GitHub
   func_checkfree # Make sure there's enough free space for install
   func_getscriptpath # Choose a sub directory name or take default for scripts
+  func_doport # Install a udev rule for the Arduino connected to this installation
   func_backupscript # Backup anything in the scripts directory
   func_makeuser # Create/configure user account
   func_clonescripts # Clone scripts git repository
