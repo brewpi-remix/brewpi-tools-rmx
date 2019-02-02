@@ -156,11 +156,9 @@ func_checkfree() {
   free_readable=$(df -H /home | grep -vE '^Filesystem|tmpfs|cdrom|none' | awk '{ print $4 }')
   
   if [ "$free" -le "524288" ]; then
-    echo -e "Disk usage is $free_percentage, free disk space is $free_readable,"
-    echo -e "\nNot enough space to continue setup. Installing BrewPi requires"
-    echo -e "at least 512mb free space.\n"
-    echo -e "Did you forget to expand your root partition? To do so run:"
-    echo -e "sudo raspi-config\nExpand your root partition via the options, and reboot.\n"
+    echo -e "\nDisk usage is $free_percentage, free disk space is $free_readable,"
+    echo -e "Not enough space to continue setup. Installing BrewPi requires"
+    echo -e "at least 512mb free space."
     exit 1
   else
     echo -e "\nDisk usage is $free_percentage, free disk space is $free_readable."
@@ -365,13 +363,13 @@ func_getwwwpath() {
   fi
   # Use chamber name if configured
   if [ ! -z "$chamber" ]; then
-    webPath="webPath/$chamber"
+    webPath="$webPath/$chamber"
   fi
   # Create web path if it does not exist
   if [ ! -d "$webPath" ]; then mkdir -p "$webPath"; fi
   chown -R www-data:www-data "$webPath"||die
   
-  echo -e "\nUsing $webPath for scripts directory."
+  echo -e "\nUsing $webPath for web directory."
 }
 
 ############
@@ -486,7 +484,6 @@ func_complete() {
   else
     echo -e "http://$localIP"
   fi
-  echo -e "http://$localIP"
   echo -e "\nIf you have Bonjour or another zeroconf utility installed, you may use this"
   echo -e "easier to remember address to access BrewPi without having to remembering an"
   echo -e "IP address:"
