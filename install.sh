@@ -193,56 +193,58 @@ func_getscriptpath() {
 ############
 
 func_doport(){
-  declare -i count=-1
-  declare -a port
-  declare -a serial
-  declare -a manuf
-  rules="/etc/udev/rules.d/99-arduino.rules"
-  devices=$(ls /dev/ttyACM* /dev/ttyUSB* 2> /dev/null)
-  # Get a list of USB TTY devices
-  for device in $devices; do
-    # Walk device tree | awk out the "paragraph" with the last device in chain 
-    board=$(udevadm info --a -n $device | awk -v RS='' '/ATTRS{maxchild}=="0"/')
-    if [ -n "$board" ]; then
-        ((count++))
-      # Get the device Product ID, Vendor ID and Serial Number
-      #idProduct=$(echo "$board" | grep "idProduct" | cut -d'"' -f 2)
-      #idVendor=$(echo "$board" | grep "idVendor" | cut -d'"' -f 2)
-      port[count]="$device"
-      serial[count]=$(echo "$board" | grep "serial" | cut -d'"' -f 2)
-      manuf[count]=$(echo "$board" | grep "manufacturer" | cut -d'"' -f 2)
-    fi
-  done
-  # Display a menu of devices to associate with this chamber
-  if [ $count -gt -1 ]; then
-    echo -e "\nThe following seem to be the Arduinos available on this system:\n"
-    for (( c=0; c<=count; c++ ))
-    do
-      echo -e "[$c] Manuf: ${manuf[c]}, Serial: ${serial[c]}"
-    done
-    echo
-    while :; do
-      read -p "Please select an Arduino [0-$count] to associate with this chamber. [0]:  " board < /dev/tty
-      [[ $board =~ ^[0-$count]+$ ]] || { echo "Please enter a valid choice."; continue; }
-      if ((board >= 0 && board <= count)); then
-        break
+  if [ -n $chamber ]; then
+    declare -i count=-1
+    declare -a port
+    declare -a serial
+    declare -a manuf
+    rules="/etc/udev/rules.d/99-arduino.rules"
+    devices=$(ls /dev/ttyACM* /dev/ttyUSB* 2> /dev/null)
+    # Get a list of USB TTY devices
+    for device in $devices; do
+      # Walk device tree | awk out the "paragraph" with the last device in chain 
+      board=$(udevadm info --a -n $device | awk -v RS='' '/ATTRS{maxchild}=="0"/')
+      if [ -n "$board" ]; then
+          ((count++))
+        # Get the device Product ID, Vendor ID and Serial Number
+        #idProduct=$(echo "$board" | grep "idProduct" | cut -d'"' -f 2)
+        #idVendor=$(echo "$board" | grep "idVendor" | cut -d'"' -f 2)
+        port[count]="$device"
+        serial[count]=$(echo "$board" | grep "serial" | cut -d'"' -f 2)
+        manuf[count]=$(echo "$board" | grep "manufacturer" | cut -d'"' -f 2)
       fi
     done
+    # Display a menu of devices to associate with this chamber
+    if [ $count -gt -1 ]; then
+      echo -e "\nThe following seem to be the Arduinos available on this system:\n"
+      for (( c=0; c<=count; c++ ))
+      do
+        echo -e "[$c] Manuf: ${manuf[c]}, Serial: ${serial[c]}"
+      done
+      echo
+      while :; do
+        read -p "Please select an Arduino [0-$count] to associate with this chamber. [0]:  " board < /dev/tty
+        [[ $board =~ ^[0-$count]+$ ]] || { echo "Please enter a valid choice."; continue; }
+        if ((board >= 0 && board <= count)); then
+          break
+        fi
+      done
+    fi
+    if [ -L "/dev/$chamber" ]; then
+      echo "That name already exists as a /dev link, using it."
+    else
+      echo -e "\nCreating rule for board ${serial[board]} as /dev/$chamber."
+      # Concatenate the rule
+      rule='SUBSYSTEM=="tty", ATTRS{serial}=="sernum", SYMLINK+="chambr", '
+      rule+='OWNER="root", GROUP="brewpi"'
+      # Replace placeholders with real values
+      rule="${rule/sernum/${serial[board]}}"
+      rule="${rule/chambr/$chamber}"
+      echo "$rule" >> "$rules"
+    fi
+    udevadm control --reload-rules
+    udevadm trigger
   fi
-  if [ -L "/dev/$chamber" ]; then
-    echo "That name already exists as a /dev link, using it."
-  else
-    echo -e "\nCreating rule for board ${serial[board]} as /dev/$chamber."
-    # Concatenate the rule
-    rule='SUBSYSTEM=="tty", ATTRS{serial}=="sernum", SYMLINK+="chambr", '
-    rule+='OWNER="root", GROUP="brewpi"'
-    # Replace placeholders with real values
-    rule="${rule/sernum/${serial[board]}}"
-    rule="${rule/chambr/$chamber}"
-    echo "$rule" >> "$rules"
-  fi
-  udevadm control --reload-rules
-  udevadm trigger
 }
 
 ############
