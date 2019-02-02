@@ -38,7 +38,6 @@ func_doinit() {
   cd "$(dirname "$0")"
   
   # Set up some project constants
-  THISSCRIPT="$(basename "$0")"
   SCRIPTNAME="${THISSCRIPT%%.*}"
   if [ -x "$(command -v git)" ] && [ -d .git ]; then
     VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))"
@@ -193,7 +192,7 @@ func_getscriptpath() {
 ############
 
 func_doport(){
-  if [ -n $chamber ]; then
+  if [ ! -z $chamber ]; then
     echo -e "\nDEBUG: Chamber = $chamber."
     declare -i count=-1
     declare -a port
@@ -205,7 +204,7 @@ func_doport(){
     for device in $devices; do
       # Walk device tree | awk out the "paragraph" with the last device in chain 
       board=$(udevadm info --a -n $device | awk -v RS='' '/ATTRS{maxchild}=="0"/')
-      if [ -n "$board" ]; then
+      if [ ! -z "$board" ]; then
           ((count++))
         # Get the device Product ID, Vendor ID and Serial Number
         #idProduct=$(echo "$board" | grep "idProduct" | cut -d'"' -f 2)
@@ -358,7 +357,7 @@ func_getwwwpath() {
   # Find web path based on Apache2 config
   echo -e "\nSearching for default web location."
   webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
-  if [ -n "$webPath" ]; then
+  if [ ! -z "$webPath" ]; then
     echo -e "\nFound $webPath in /etc/apache2/sites-enabled/000-default*."
   else
     echo "Something went wrong searching for /etc/apache2/sites-enabled/000-default*."
@@ -366,7 +365,7 @@ func_getwwwpath() {
     exit 1
   fi
   # Use chamber name if configured
-  if [ -n "$chamber" ]; then
+  if [ ! -z "$chamber" ]; then
     webPath="webPath/$chamber"
   fi
   # Create web path if it does not exist
@@ -413,7 +412,7 @@ func_clonewww() {
 ##########
 
 func_updateconfig() {
-  if [ -n "$chamber" ]; then
+  if [ ! -z "$chamber" ]; then
     echo -e "\nUsing non-default paths, updating config files."
     # Update brewpi scripts config
     echo "scriptPath = $scriptPath" >> "$scriptPath"/config.cfg
@@ -483,7 +482,7 @@ func_complete() {
   echo -e "\nBrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
   echo -e "the following in your favorite browser:"
   # Use chamber name if configured
-  if [ -n "$chamber" ]; then
+  if [ ! -z "$chamber" ]; then
     echo -e "http://$localIP/$chamber"
   else
     echo -e "http://$localIP"
@@ -493,7 +492,7 @@ func_complete() {
   echo -e "easier to remember address to access BrewPi without having to remembering an"
   echo -e "IP address:"
   # Use chamber name if configured
-  if [ -n "$chamber" ]; then
+  if [ ! -z "$chamber" ]; then
     echo -e "http://$(hostname).local/$chamber"
   else
     echo -e "http://$(hostname).local"
@@ -508,6 +507,7 @@ func_complete() {
 ############
 
 func_main() {
+  THISSCRIPT="$(basename "$0")"
   func_doinit # Initialize constants and variables
   echo -e "\nDEBUG: THISSCRIPT = $THISSCRPT, SCRIPTNAME = $SCRIPTNAME and basename = $(basename "$0")"
   func_arguments # Handle command line arguments
