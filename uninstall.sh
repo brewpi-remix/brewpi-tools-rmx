@@ -147,10 +147,6 @@ if [ -d /home/pi/brewpi-tools-rmx ]; then
   echo -e "\nClearing /home/pi/brewpi-tools-rmx."
   sudo rm -fr /home/pi/brewpi-tools-rmx
 fi
-if [ -f /home/pi/bootstrap.log ]; then
-  echo -e "\nDeleting /home/pi/bootstrap.log."
-  sudo rm -f /home/pi/bootstrap.log
-fi
 if [ -d /home/brewpi ]; then
   echo -e "\nClearing /home/brewpi."
   sudo rm -fr /home/brewpi
@@ -170,17 +166,24 @@ fi
 ### Remove brewpi user/group
 ############
 
-if getent group brewpi | grep &>/dev/null "\b${pi}\b"; then
+username="pi"
+if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
   echo -e "\nRemoving pi from brewpi group."
   sudo deluser pi brewpi
 fi
-if getent group brewpi | grep &>/dev/null "\b${www-data}\b"; then
+if getent group www-data | grep &>/dev/null "\b${username}\b"; then
+  echo -e "\nRemoving pi from www-data group."
+  sudo deluser pi www-data
+fi
+username="www-data"
+if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
   echo -e "\nRemoving www-data from brewpi group."
   sudo deluser www-data brewpi
 fi
-if getent group www-data | grep &>/dev/null "\b${pi}\b"; then
+username="brewpi"
+if getent group www-data | grep &>/dev/null "\b${username}\b"; then
   echo -e "\nRemoving pi from www-data group."
-  sudo deluser pi www-data
+  sudo deluser brewpi www-data
 fi
 if sudo id "brewpi" > /dev/null 2>&1; then
   echo -e "\nRemoving user brewpi."
