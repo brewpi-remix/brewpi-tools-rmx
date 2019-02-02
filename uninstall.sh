@@ -346,6 +346,7 @@ fi
 rules="/etc/udev/rules.d/99-arduino.rules"
 if [ -f "$rules" ]; then
   echo -e "\nRemoving udev rules."
+  rm "$rules"
   udevadm control --reload-rules
   udevadm trigger
 fi
