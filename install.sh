@@ -412,14 +412,14 @@ func_updateconfig() {
   if [ ! -z "$chamber" ]; then
     echo -e "\nUsing non-default paths, updating config files."
     # Update brewpi scripts config
-    echo "scriptPath = $scriptPath" >> "$scriptPath"/config.cfg
-    # Update WWW page confog
+    echo "scriptPath = $scriptPath" >> "$scriptPath/settings/config.cfg"
+    # Update WWW page config
     echo "<?php " >> "$webPath"/config_user.php
-    echo "\$scriptPath = '$scriptPath';" >> "$webPath"/config_user.php
+    echo "\$scriptPath = '$scriptPath';" >> "$webPath/config_user.php"
     # Update web path config
-    echo "wwwPath = $webPath" >> "$scriptPath"/config.cfg
+    echo "wwwPath = $webPath" >> "$scriptPath/settings/config.cfg"
     # Update port setting
-    echo "port = /dev/$chamber" >> "$scriptPath"/config.cfg
+    echo "port = /dev/$chamber" >> "$scriptPath/settings/config.cfg"
   fi
 }
 
