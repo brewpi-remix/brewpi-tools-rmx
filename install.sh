@@ -193,7 +193,6 @@ func_getscriptpath() {
 
 func_doport(){
   if [ ! -z $chamber ]; then
-    echo -e "\nDEBUG: Chamber = $chamber."
     declare -i count=-1
     declare -a port
     declare -a serial
@@ -507,9 +506,7 @@ func_complete() {
 ############
 
 func_main() {
-  THISSCRIPT="$(basename "$0")"
   func_doinit # Initialize constants and variables
-  echo -e "\nDEBUG: THISSCRIPT = $THISSCRPT, SCRIPTNAME = $SCRIPTNAME and basename = $(basename "$0")"
   func_arguments # Handle command line arguments
   func_checkroot # Make sure we are using sudo
   func_checknet # Check for connection to GitHub
@@ -536,6 +533,7 @@ func_main() {
 ### Start the script
 ############
 
+THISSCRIPT="$(basename "$0")"
 echo -e "\n***Script $THISSCRIPT starting.***"
 
 func_main # Run the script functions
