@@ -46,6 +46,8 @@ PACKAGE="${GITPROJ^^}"
 
 # Packages to be uninstalled via apt
 APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php"
+# nginx packages to be uninstalled via apt if present
+NGINXPACKAGES="libgd-tools, fcgiwrap, nginx-doc, ssl-cert, fontconfig-config, fonts-dejavu-core, libfontconfig1, libgd3, libjbig0, libnginx-mod-http-auth-pam, libnginx-mod-http-dav-ext, libnginx-mod-http-echo, libnginx-mod-http-geoip, libnginx-mod-http-image-filter, libnginx-mod-http-subs-filter, libnginx-mod-http-upstream-fair, libnginx-mod-http-xslt-filter, libnginx-mod-mail, libnginx-mod-stream, libtiff5, libwebp6, libxpm4, libxslt1.1, nginx, nginx-common, nginx-full"
 # Packages to be uninstalled via pip
 PIPPACKAGES="pyserial psutil simplejson gitpython configobj"
 
@@ -95,6 +97,7 @@ fi
 ############
 
 echo -e "\n***Script $THISSCRIPT starting.***"
+cd ~ # Start from home
 
 ############
 ### Cleanup cron
@@ -108,45 +111,53 @@ if [ -f /etc/cron.d/brewpi ]; then
 fi
 
 ############
+### Stop all BrewPi processes
+############
+
+pidlist=$(pgrep -u brewpi)
+for pid in "$pidlist"
+do
+  # Stop (kill) brewpi
+  sudo touch /var/www/html/do_not_run_brewpi > /dev/null 2>&1
+  if ps -p "$pid" > /dev/null 2>&1; then
+    echo -e "\nAttempting gracefull shutdown of process $pid."
+    sudo kill -15 "$pid"
+    sleep 2
+    if ps -p $pid > /dev/null 2>&1; then
+      echo -e "\nTrying a little harder to terminate process $pid."
+      sudo kill -2 "$pid"
+      sleep 2
+      if ps -p $pid > /dev/null 2>&1; then
+        echo -e "\nBeing more forcefull with process $pid."
+        sudo kill -1 "$pid"
+        sleep 2
+        while ps -p $pid > /dev/null 2>&1;
+        do
+          echo -e "\nBeing really insistent about killing process $pid now."
+          echo -e "(I'm going to keep doing this till the process(es) are gone.)"
+          sudo kill -9 "$pid"
+          sleep 2
+        done
+      fi
+    fi
+  fi
+done
+
+############
 ### Remove all BrewPi Packages
 ############
 
-cd .. # Start from home
-
-# Stop (kill) brewpi
-sudo touch /var/www/html/do_not_run_brewpi
-if pgrep -u brewpi >/dev/null 2>&1; then
-  echo -e "\nAttempting gracefull shutdown of process(es) $(pgrep -u brewpi)."
-  cmd="sudo kill -15 $(pgrep -u brewpi)"
-  eval $cmd
-  sleep 2
-  if pgrep -u brewpi >/dev/null 2>&1; then
-    echo -e "Trying a little harder to terminate process(es) $(pgrep -u brewpi)."
-    cmd="sudo kill -2 $(pgrep -u brewpi)"
-    eval $cmd
-    sleep 2
-    if pgrep -u brewpi >/dev/null 2>&1; then
-      echo -e "Being more forcefull with process(es) $(pgrep -u brewpi)."
-      cmd="sudo kill -1 $(pgrep -u brewpi)"
-      eval $cmd
-      sleep 2
-      while pgrep -u brewpi >/dev/null 2>&1;
-      do
-        echo -e "Being really insistent about killing process(es) $(pgrep -u brewpi) now."
-        echo -e "(I'm going to keep doing this till the process(es) are gone.)"
-        cmd="sudo kill -9 $(pgrep -u brewpi)"
-        eval $cmd
-        sleep 2
-      done
-    fi
-  fi
-fi
-
-# Wipe out all the directories
+# Wipe out tools
 if [ -d /home/pi/brewpi-tools-rmx ]; then
   echo -e "\nClearing /home/pi/brewpi-tools-rmx."
   sudo rm -fr /home/pi/brewpi-tools-rmx
 fi
+# Wipe out legacy tools
+if [ -d /home/pi/brewpi-tools ]; then
+  echo -e "\nClearing /home/pi/brewpi-tools."
+  sudo rm -fr /home/pi/brewpi-tools
+fi
+# Wipe out BrewPi scripts
 if [ -d /home/brewpi ]; then
   echo -e "\nClearing /home/brewpi."
   sudo rm -fr /home/brewpi
@@ -187,11 +198,11 @@ if getent group www-data | grep &>/dev/null "\b${username}\b"; then
 fi
 if sudo id "$username" > /dev/null 2>&1; then
   echo -e "\nRemoving user $username."
-  sudo userdel $username
+  sudo userdel "$username"
 fi
 egrep -i "^$username" /etc/group;
 if [ $? -eq 0 ]; then
-   groupdel $username
+   groupdel "$username"
 fi
 
 ############
@@ -241,7 +252,64 @@ for pkg in ${APTPACKAGES,,}; do
 done
 
 ############
-### Cleanup repos
+### Remove php5 packages if installed
+############
+
+echo -e "\nChecking for previously installed php5 packages."
+# Get list of installed packages
+php5packages="$(dpkg --get-selections | awk '{ print $1 }' | grep 'php5')"
+if [[ -z "$php5packages" ]] ; then
+  echo -e "\nNo php5 packages found."
+else
+  echo -e "\nFound php5 packages installed.  It is recomended to uninstall all php before"
+  echo -e "proceeding as BrewPi requires php7 and will install it during the install"
+  read -p "process.  Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
+  case $yn in
+    [Nn]* )
+      echo -e "\nUnable to proceed with php5 installed, exiting.";
+      exit 1;;
+    * )
+      php_packages="$(dpkg --get-selections | awk '{ print $1 }' | grep 'php')"
+      # Loop through the php5 packages that we've found
+      for pkg in ${php_packages,,}; do
+        echo -e "\nRemoving '$pkg'.\n"
+        sudo apt remove --purge $pkg -y
+      done
+	  echo -e "\nCleanup of the php environment complete."
+      ;;
+  esac
+fi
+
+############
+### Remove nginx packages if installed
+############
+
+echo -e "\nChecking for previously installed nginx packages."
+# Get list of installed packages
+nginxPackage="$(dpkg --get-selections | awk '{ print $1 }' | grep 'nginx')"
+if [[ -z "$nginxPackage" ]] ; then
+  echo -e "\nNo nginx packages found."
+else
+  echo -e "\nFound nginx packages installed.  It is recomended to uninstall nginx before"
+  echo -e "proceeding as BrewPi requires apache2 and they will conflict with each other."
+  read -p "Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
+  case $yn in
+    [Nn]* )
+      echo -e "\nUnable to proceed with nginx installed, exiting.";
+      exit 1;;
+    * )
+      # Loop through the php5 packages that we've found
+      for pkg in ${NGINXPACKAGES,,}; do
+        echo -e "\nRemoving '$pkg'.\n"
+        sudo apt remove --purge $pkg -y
+      done
+	  echo -e "\nCleanup of the nginx environment complete."
+      ;;
+  esac
+fi
+
+############
+### Cleanup local packages
 ############
 
 # Cleanup
@@ -271,6 +339,17 @@ if [ "$oldHostName" != "$newHostName" ]; then
   sleep 3
 fi
 
+############
+### Remove device rules
+###########
+
+rules="/etc/udev/rules.d/99-arduino.rules"
+if [ -f "$rules" ]; then
+  echo -e "\nRemoving udev rules."
+  udevadm control --reload-rules
+  udevadm trigger
+fi
+  
 ############
 ### Reset password
 ###########
