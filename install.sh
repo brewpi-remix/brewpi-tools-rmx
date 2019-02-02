@@ -33,28 +33,30 @@
 ### Init
 ############
 
-# Change to current dir so we can get the git info
-cd "$(dirname "$0")"
-
-# Set up some project constants
-THISSCRIPT="$(basename "$0")"
-SCRIPTNAME="${THISSCRIPT%%.*}"
-VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))"
-retval=$?
-if [ $retval -ne 0 ]; then
-  echo -e "\nNot a valid git repository. Did you copy this file here?"
-  exit 1
-fi
-GITURL="$(git config --get remote.origin.url)"
-GITPROJ="$(basename $GITURL)"
-GITPROJ="${GITPROJ%.*}"
-PACKAGE="${GITPROJ^^}"
-GITPROJWWW="brewpi-www-rmx"
-GITPROJSCRIPT="brewpi-script-rmx"
-# Concatenate URLs
-GITURLWWW="${GITURL/$GITPROJ/$GITPROJWWW}"
-GITURLSCRIPT="${GITURL/$GITPROJ/$GITPROJSCRIPT}"
-
+func_doinit() {
+  # Change to current dir so we can get the git info
+  cd "$(dirname "$0")"
+  
+  # Set up some project constants
+  THISSCRIPT="$(basename "$0")"
+  SCRIPTNAME="${THISSCRIPT%%.*}"
+  if [ -x "$(command -v git)" ] && [ -d .git ]; then
+    VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))"
+    GITURL="$(git config --get remote.origin.url)"
+    GITPROJ="$(basename $GITURL)"
+    GITPROJ="${GITPROJ%.*}"
+    PACKAGE="${GITPROJ^^}"
+    GITPROJWWW="brewpi-www-rmx"
+    GITPROJSCRIPT="brewpi-script-rmx"
+    # Concatenate URLs
+    GITURLWWW="${GITURL/$GITPROJ/$GITPROJWWW}"
+    GITURLSCRIPT="${GITURL/$GITPROJ/$GITPROJSCRIPT}"
+  else
+    echo -e "\nNot a valid git repository. Did you copy this file here?"
+    exit 1
+  fi
+}
+  
 ############
 ### Functions for --help and --version functionality
 ############
@@ -75,34 +77,38 @@ or (at your option) any later version.
 <https://www.gnu.org/licenses/>
 There is NO WARRANTY, to the extent permitted by law."
 }
-if test $# = 1; then
-  case "$1" in
-    --help | --hel | --he | --h )
-      func_usage; exit 0 ;;
-    --version | --versio | --versi | --vers | --ver | --ve | --v )
-      func_version; exit 0 ;;
-  esac
-fi
+func_arguments() {
+  if test $# = 1; then
+    case "$1" in
+      --help | --hel | --he | --h )
+        func_usage; exit 0 ;;
+      --version | --versio | --versi | --vers | --ver | --ve | --v )
+        func_version; exit 0 ;;
+    esac
+  fi
+}
 
 ############
-### Check privilges and permissions
+### Check privileges and permissions
 ############
 
-### Check if we have root privs to run
-if [[ $EUID -ne 0 ]]; then
-   echo -e "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
-   exit 1
-fi
-# And get the user home directory
-if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
-_shadow="$((getent passwd $REALUSER) 2>&1)"
-if [ $? -eq 0 ]; then
-  HOMEPATH="$(echo $_shadow | cut -d':' -f6)"
-else
-  echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install may be necessary."
-  exit 1
-fi
-
+func_checkroot() {
+  ### Check if we have root privs to run
+  if [[ $EUID -ne 0 ]]; then
+     echo -e "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
+     exit 1
+  fi
+  # And get the user home directory
+  if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
+  _shadow="$((getent passwd $REALUSER) 2>&1)"
+  if [ $? -eq 0 ]; then
+    HOMEPATH="$(echo $_shadow | cut -d':' -f6)"
+  else
+    echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install may be necessary."
+    exit 1
+  fi
+}
+  
 ############
 ### Functions to catch/display errors during execution
 ############
@@ -125,25 +131,341 @@ die () {
 }
 
 ############
-### See if BrewPi is already installed
+### Check network connection
+###########
+
+func_checknet() {
+  echo -e "\nChecking for connection to GitHub."
+  wget -q --spider "$GITURL"
+  if [ $? -ne 0 ]; then
+    echo -e "\n-----------------------------------------------------------------------------"
+    echo -e "\nCould not connect to GitHub.  Please check your network and try again. A"
+    echo -e "connection to GitHub is required to download the $PACKAGE packages."
+    die
+  else
+    echo -e "\nConnection to GitHub ok."
+  fi
+}
+
+############
+### Check for free space
 ############
 
-if [ -f "./brewpi.py" ]; then
-  echo -e "\nBrewPi seems to already be installed.  Would you like to run doUpdate.sh"
-  read -p "to check for updates instead?  [Y/n]: " yn  < /dev/tty
+func_checkfree() {
+  free_percentage=$(df /home | grep -vE '^Filesystem|tmpfs|cdrom|none' | awk '{ print $5 }')
+  free=$(df /home | grep -vE '^Filesystem|tmpfs|cdrom|none' | awk '{ print $4 }')
+  free_readable=$(df -H /home | grep -vE '^Filesystem|tmpfs|cdrom|none' | awk '{ print $4 }')
+  
+  if [ "$free" -le "524288" ]; then
+    echo -e "Disk usage is $free_percentage, free disk space is $free_readable,"
+    echo -e "\nNot enough space to continue setup. Installing BrewPi requires"
+    echo -e "at least 512mb free space.\n"
+    echo -e "Did you forget to expand your root partition? To do so run:"
+    echo -e "sudo raspi-config\nExpand your root partition via the options, and reboot.\n"
+    exit 1
+  else
+    echo -e "Disk usage is $free_percentage, free disk space is $free_readable.\n"
+  fi
+}
+
+############
+### Choose a name for the chamber, set script path
+############
+
+func_getscriptpath() {
+  echo -e "\nIf you would like to use BrewPi in multi-chamber mode, or simply not use the"
+  echo -e "defaults of /home/brewpi for scripts and /var/www/html for web pages, you may"
+  echo -e "choose a sub directory now.  Enter a name for this directory, or hit enter to"
+  read -p "accept the defaults. [default]: " chamber < /dev/tty
+  if [ -z "$chamber" ]; then
+    scriptPath="/home/brewpi"
+  else
+    scriptPath="/home/brewpi/$chamber"
+  fi
+  echo -e "\nUsing $scriptPath for scripts directory."
+}
+
+############
+### Stop all BrewPi processes
+############
+
+func_killproc() {
+  if [ $(getent passwd brewpi) ]; then
+   pidlist=$(pgrep -u brewpi)
+  fi
+  for pid in "$pidlist"
+  do
+    # Stop (kill) brewpi
+    sudo touch /var/www/html/do_not_run_brewpi > /dev/null 2>&1
+    if ps -p "$pid" > /dev/null 2>&1; then
+      echo -e "\nAttempting gracefull shutdown of process $pid."
+      sudo kill -15 "$pid"
+      sleep 2
+      if ps -p $pid > /dev/null 2>&1; then
+        echo -e "\nTrying a little harder to terminate process $pid."
+        sudo kill -2 "$pid"
+        sleep 2
+        if ps -p $pid > /dev/null 2>&1; then
+          echo -e "\nBeing more forcefull with process $pid."
+          sudo kill -1 "$pid"
+          sleep 2
+          while ps -p $pid > /dev/null 2>&1;
+          do
+            echo -e "\nBeing really insistent about killing process $pid now."
+            echo -e "(I'm going to keep doing this till the process(es) are gone.)"
+            sudo kill -9 "$pid"
+            sleep 2
+          done
+        fi
+      fi
+    fi
+  done
+}
+
+############
+### Backup existing scripts directory
+############
+
+func_backupscript() {
+  # Back up installpath if it has any files in it
+  if [ -d "$scriptPath" ] && [ "$(ls -A ${scriptPath})" ]; then
+    # Set place to put backups
+    BACKUPDIR="$HOMEPATH/$GITPROJ-backup"
+    # Stop (kill) brewpi
+    sudo touch /var/www/html/do_not_run_brewpi
+    func_killproc # Stop all BrewPi processes
+    dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-Script"
+    echo -e "\nScript install directory is not empty, backing up this users home directory to"
+    echo -e "'$dirName' and then deleting contents."
+    mkdir -p "$dirName"
+    cp -R "$scriptPath" "$dirName"/||die
+    rm -rf "$scriptPath"/*||die
+    find "$scriptPath"/ -name '.*' | xargs rm -rf||die
+  fi
+}
+
+############
+### Create/configure user account
+############
+
+func_makeuser() {
+  if ! id -u brewpi >/dev/null 2>&1; then
+    useradd -G dialout,sudo brewpi||die
+    echo -e "\nPlease enter a password for the new user 'brewpi':" # TODO: Consider a locked/passwordless account
+    until passwd brewpi < /dev/tty; do sleep 2; echo; done
+  fi
+  
+  # Create install path if it does not exist
+  if [ ! -d "$scriptPath" ]; then mkdir -p "$scriptPath"; fi
+  chown -R brewpi:brewpi "$scriptPath"||die
+}
+
+############
+### Clone BrewPi scripts
+############
+
+func_clonescripts() {
+  echo -e "\nDownloading most recent BrewPi codebase."
+  gitClone="sudo -u brewpi git clone $GITURLSCRIPT $scriptPath"
+  eval $gitClone||die
+}
+
+############
+### Install dependencies
+############
+
+func_dodepends() {
+  chmod +x "$scriptPath/utils/doDepends.sh"
+  eval "$scriptPath/utils/doDepends.sh"||die
+}
+
+############
+### Web path setup
+############
+
+func_getwwwpath() {
+  # TODO:  Can this be moved to func_makeuser()?
+  # Add brewpi user to www-data and sudo group
+  usermod -a -G www-data brewpi||warn
+  # Add pi user to www-data group
+  usermod -a -G www-data,brewpi pi||warn
+  # Add www-data user to brewpi group (allow access to logs)
+  usermod -a -G brewpi www-data||warn
+  
+  # Find web path based on Apache2 config
+  echo -e "\nSearching for default web location."
+  webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
+  if [ ! -z "$webPath" ]; then
+    echo -e "\nFound $webPath in /etc/apache2/sites-enabled/000-default*."
+  else
+    echo "Something went wrong searching for /etc/apache2/sites-enabled/000-default*."
+    echo "Fix that and come back to try again."
+    exit 1
+  fi
+  # Use chamber name if configured
+  if [ ! -z "$chamber" ]; then
+    webPath="webPath/$chamber"
+  fi
+  # Create web path if it does not exist
+  if [ ! -d "$webPath" ]; then mkdir -p "$webPath"; fi
+  chown -R www-data:www-data "$webPath"||die
+  
+  echo -e "\nUsing $webPath for scripts directory."
+}
+
+############
+### Back up WWW path
+############
+
+func_backupwww() {
+  # Back up webPath if it has any files in it
+  sudo /etc/init.d/apache2 stop||die
+  rm -rf "$webPath/do_not_run_brewpi" || true
+  rm -rf "$webPath/index.html" || true
+  if [ -d "$webPath" ] && [ "$(ls -A ${webPath})" ]; then
+    dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-WWW"
+    echo -e "\nWeb directory is not empty, backing up the web directory to:"
+    echo -e "'$dirName' and then deleting contents of web directory."
+    mkdir -p "$dirName"
+    cp -R "$webPath" "$dirName"/||die
+    rm -rf "$webPath"/*||die
+    find "$webPath"/ -name '.*' | xargs rm -rf||die
+  fi
+}
+
+############
+### Clone the web app
+############
+
+func_clonewww() {
+  echo -e "\nCloning web site."
+  gitClone="sudo -u www-data git clone $GITURLWWW $webPath"
+  eval $gitClone||die
+  # Keep BrewPi for running while we do this.
+  touch "$webPath/do_not_run_brewpi"
+}
+
+###########
+### If non-default paths are used, update config files accordingly
+##########
+
+func_updateconfig() {
+  if [[ "$scriptPath" != "/home/brewpi" ]]; then
+    echo -e "\nUsing non-default path for the script dir, updating config files.\n"
+    echo "scriptPath = $scriptPath" >> "$scriptPath"/settings/config.cfg
+  
+    echo "<?php " >> "$webPath"/config_user.php
+    echo "\$scriptPath = '$scriptPath';" >> "$webPath"/config_user.php
+  fi
+  
+  if [[ "$webPath" != "$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)" ]]; then
+    echo -e "\nUsing non-default path for the web dir, updating config files.\n"
+    echo "wwwPath = $webPath" >> "$scriptPath"/settings/config.cfg
+  fi
+}
+
+############
+### Fix permissions
+############
+
+func_doperms() {
+  chmod +x "$scriptPath/utils/doPerms.sh"
+  eval "$scriptPath/utils/doPerms.sh"||die
+}
+
+############
+### Install CRON job
+############
+
+func_docron() {
+  touch "$webPath/do_not_run_brewpi" # make sure BrewPi does not start yet
+  chmod +x "$scriptPath/utils/doCron.sh"
+  eval "$scriptPath/utils/doCron.sh"||die
+}
+
+############
+### Fix an issue with BrewPi and Safari-based browsers
+############
+
+func_fixsafari() {
+  echo -e "\nFixing apache2.conf."
+  sed -i -e 's/KeepAliveTimeout 5/KeepAliveTimeout 99/g' /etc/apache2/apache2.conf
+  /etc/init.d/apache2 restart
+}
+
+############
+### Flash controller
+############
+
+func_flash() {
+  echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
+  read -p "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
   case $yn in
-    [Nn]* )
-      echo -e "\nUnable to run install over an existing installation.  Exiting.";
-      exit 1;;
-    * )
-      # Get real location of link
-      scriptPath="$(readlink ./brewpi.py)"
-      scriptPath="$(dirname ${scriptPath})"
-      eval "$scriptPath/utils/doUpdate.sh"
-      exit 0
-      ;;
+    [Yy]* ) eval "$scriptPath/utils/updateFirmware.py"||die ;;
+    * ) ;;
   esac
-fi
+}
+
+############
+### Print final banner
+############
+
+func_complete() {  
+  localIP=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
+  
+  echo -e "\n                           BrewPi Install Complete"
+  echo -e "------------------------------------------------------------------------------"
+  echo -e "Review any uncaught errors above to be sure, but otherwise your initial"
+  echo -e "install is complete."
+  echo -e "\nBrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
+  echo -e "the following in your favorite browser:"
+  # Use chamber name if configured
+  if [ ! -z "$chamber" ]; then
+    echo -e "http://$localIP/$chamber"
+  else
+    echo -e "http://$localIP"
+  fi
+  echo -e "http://$localIP"
+  echo -e "\nIf you have Bonjour or another zeroconf utility installed, you may use this"
+  echo -e "easier to remember address to access BrewPi without having to remembering an"
+  echo -e "IP address:"
+  # Use chamber name if configured
+  if [ ! -z "$chamber" ]; then
+    echo -e "http://$(hostname).local/$chamber"
+  else
+    echo -e "http://$(hostname).local"
+  fi
+  echo -e "\nUnder Windows, Bonjour installs with iTunes or can be downloaded separately at:"
+  echo -e "https://support.apple.com/downloads/bonjour_for_windows"
+  echo -e "\nHappy Brewing!"
+}
+
+############
+### Main
+############
+
+func_main() {
+  func_doinit # Intialize constants and variables
+  func_arguments # Handle command line arguments
+  func_checkroot # Make sure we are using sudo
+  func_checknet # Check for connection to GitHub
+  func_checkfree # Make sure there's enough free space for install
+  func_getscriptpath # Choose a sub directory name or take default for scripts
+  func_backupscript # Backup anything in the scripts directory
+  func_makeuser # Create/configure user account
+  func_clonescripts # Clone scripts git repository
+  func_dodepends # Install dependencies
+  func_getwwwpath # Get WWW install location
+  func_backupwww # Backup anything in WWW location
+  func_clonewww # Clone WWW files
+  func_updateconfig # Update config files if non-default paths are used
+  func_doperms # Set script and www permissions
+  func_docron # Set up cron jobs
+  func_fixsafari # Fix display bug with Safari browsers
+  func_flash # Flash controller
+  rm "$webPath/do_not_run_brewpi" # Allow BrewPi to start via cron
+  func_complete # Cleanup and display instructions
+}
 
 ############
 ### Start the script
@@ -151,269 +473,6 @@ fi
 
 echo -e "\n***Script $THISSCRIPT starting.***"
 
-############
-### Check network connection
-###########
-
-echo -e "\nChecking for connection to GitHub."
-wget -q --spider "$GITURL"
-if [ $? -ne 0 ]; then
-  echo -e "\n-----------------------------------------------------------------------------"
-  echo -e "\nCould not connect to GitHub.  Please check your network and try again. A"
-  echo -e "\nconnection to GitHub is required to download the $PACKAGE packages."
-  die
-else
-  echo -e "\nConnection to GitHub ok."
-fi
-
-############
-### Check for free space
-############
-
-free_percentage=$(df /home | grep -vE '^Filesystem|tmpfs|cdrom|none' | awk '{ print $5 }')
-free=$(df /home | grep -vE '^Filesystem|tmpfs|cdrom|none' | awk '{ print $4 }')
-free_readable=$(df -H /home | grep -vE '^Filesystem|tmpfs|cdrom|none' | awk '{ print $4 }')
-
-if [ "$free" -le "524288" ]; then
-  echo -e "Disk usage is $free_percentage, free disk space is $free_readable,"
-  echo -e "\nNot enough space to continue setup. Installing BrewPi requires"
-  echo -e "at least 512mb free space.\n"
-  echo -e "Did you forget to expand your root partition? To do so run:"
-  echo -e "sudo raspi-config\nExpand your root partition via the options, and reboot.\n"
-  exit 1
-else
-  echo -e "Disk usage is $free_percentage, free disk space is $free_readable.\n"
-fi
-
-############
-### Install path setup
-############
-
-echo -e "Any data in the following location will be backed up during install."
-read -p "Where would you like to install BrewPi? [/home/brewpi]: " installPath < /dev/tty
-if [ -z "$installPath" ]; then
-  installPath="/home/brewpi"
-else
-  case "$installPath" in
-    y | Y | yes | YES| Yes )
-      installPath="/home/brewpi";; # accept default when y/yes is answered
-    * )
-      ;;
-  esac
-fi
-echo -e "\nInstalling application in $installPath."
-
-# Set place to put backups
-BACKUPDIR="$HOMEPATH/$GITPROJ-backup"
-
-# Back up installpath if it has any files in it
-if [ -d "$installPath" ] && [ "$(ls -A ${installPath})" ]; then
-  # Stop (kill) brewpi
-  sudo touch /var/www/html/do_not_run_brewpi
-  if pgrep -u brewpi >/dev/null 2>&1; then
-    echo -e "\nAttempting gracefull shutdown of process(es) $(pgrep -u brewpi)."
-    cmd="sudo kill -15 $(pgrep -u brewpi)"
-    eval $cmd
-    sleep 2
-    if pgrep -u brewpi >/dev/null 2>&1; then
-      echo -e "Trying a little harder to terminate process(es) $(pgrep -u brewpi)."
-      cmd="sudo kill -2 $(pgrep -u brewpi)"
-      eval $cmd
-      sleep 2
-      if pgrep -u brewpi >/dev/null 2>&1; then
-        echo -e "Being more forcefull with process(es) $(pgrep -u brewpi)."
-        cmd="sudo kill -1 $(pgrep -u brewpi)"
-        eval $cmd
-        sleep 2
-        while pgrep -u brewpi >/dev/null 2>&1;
-        do
-          echo -e "Being really insistent about killing process(es) $(pgrep -u brewpi) now."
-          echo -e "(I'm going to keep doing this till the process(es) are gone.)"
-          cmd="sudo kill -9 $(pgrep -u brewpi)"
-          eval $cmd
-          sleep 2
-        done
-      fi
-    fi
-  fi
-  dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-Script"
-  echo -e "\nScript install directory is not empty, backing up this users home directory to"
-  echo -e "'$dirName' and then deleting"
-  echo -e "contents of install directory."
-  mkdir -p "$dirName"
-  cp -R "$installPath" "$dirName"/||die
-  rm -rf "$installPath"/*||die
-  find "$installPath"/ -name '.*' | xargs rm -rf||die
-fi
-
-############
-### Create/configure user account
-############
-
-if ! id -u brewpi >/dev/null 2>&1; then
-  useradd -G dialout,sudo brewpi||die
-  echo -e "\nPlease enter a password for the new user 'brewpi':" # TODO: Consider a locked/passwordless account
-  until passwd brewpi < /dev/tty; do sleep 2; echo; done
-fi
-
-# Create install path if it does not exist
-if [ ! -d "$installPath" ]; then mkdir -p "$installPath"; fi
-chown -R brewpi:brewpi "$installPath"||die
-
-############
-### Clone BrewPi scripts
-############
-
-echo -e "\nDownloading most recent BrewPi codebase."
-echo -e "\nCloning scripts."
-gitClone="sudo -u brewpi git clone $GITURLSCRIPT $installPath"
-eval $gitClone||die
-
-############
-### Install dependencies
-############
-
-chmod +x "$installPath/utils/doDepends.sh"
-eval "$installPath/utils/doDepends.sh"||die
-
-############
-### Web path setup
-############
-
-# Add brewpi user to www-data and sudo group
-usermod -a -G www-data brewpi||warn
-# Add pi user to www-data group
-usermod -a -G www-data,brewpi pi||warn
-# Add www-data user to brewpi group (allow access to logs)
-usermod -a -G brewpi www-data||warn
-# Find web path based on Apache2 config
-echo -e "\nSearching for default web location."
-webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
-if [ ! -z "$webPath" ]; then
-  echo "Found $webPath in /etc/apache2/sites-enabled/000-default*."
-else
-  echo "Something went wrong searching for /etc/apache2/sites-enabled/000-default*."
-  echo "Fix that and come back to try again."
-  exit 1
-fi
-
-# Get WWW install path
-echo -e "\nAny data in the following location will be backed up during install."
-read -p "To where would you like to copy the BrewPi web files? [$webPath]: " webPathInput < /dev/tty
-if [ -z "$webPathInput" ]; then
-  webPathInput="$webPath"
-else
-  case "$webPathInput" in
-    y | Y | yes | YES| Yes )
-      webPathInput="$webPath";; # accept default when y/yes is answered
-    * )
-      ;;
-  esac
-fi
-webPath="$webPathInput"
-echo -e "\nInstalling web files in $webPath.\n"
-
-# Create web path if it does not exist
-if [ ! -d "$webPath" ]; then mkdir -p "$webPath"; fi
-chown -R www-data:www-data "$webPath"||die
-
-# Back up webPath if it has any files in it
-sudo /etc/init.d/apache2 stop||die
-rm -rf "$webPath/do_not_run_brewpi" || true
-rm -rf "$webPath/index.html" || true
-if [ -d "$webPath" ] && [ "$(ls -A ${webPath})" ]; then
-  dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-WWW"
-  echo -e "\nWeb directory is not empty, backing up the web directory to:"
-  echo -e "'$dirName' and then deleting contents of web directory."
-  mkdir -p "$dirName"
-  cp -R "$webPath" "$dirName"/||die
-  rm -rf "$webPath"/*||die
-  find "$webPath"/ -name '.*' | xargs rm -rf||die
-fi
-
-############
-### Clone the web app
-############
-
-echo -e "\nCloning web site."
-gitClone="sudo -u www-data git clone $GITURLWWW $webPath"
-eval $gitClone||die
-# Keep BrewPi for running while we do this.
-touch "$webPath/do_not_run_brewpi"
-
-###########
-### If non-default paths are used, update config files accordingly
-##########
-
-if [[ "$installPath" != "/home/brewpi" ]]; then
-  echo -e "\nUsing non-default path for the script dir, updating config files.\n"
-  echo "scriptPath = $installPath" >> "$installPath"/settings/config.cfg
-
-  echo "<?php " >> "$webPath"/config_user.php
-  echo "\$scriptPath = '$installPath';" >> "$webPath"/config_user.php
-fi
-
-if [[ "$webPath" != "$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)" ]]; then
-  echo -e "\nUsing non-default path for the web dir, updating config files.\n"
-  echo "wwwPath = $webPath" >> "$installPath"/settings/config.cfg
-fi
-
-############
-### Fix permisions
-############
-
-chmod +x "$installPath/utils/doPerms.sh"
-eval "$installPath/utils/doPerms.sh"||die
-
-############
-### Install CRON job
-############
-
-touch "$webPath/do_not_run_brewpi" # make sure BrewPi does not start yet
-chmod +x "$installPath/utils/doCron.sh"
-eval "$installPath/utils/doCron.sh"||die
-
-############
-### Fix an issue with BrewPi and Safari-based browsers
-############
-
-echo -e "\nFixing apache2.conf."
-sed -i -e 's/KeepAliveTimeout 5/KeepAliveTimeout 99/g' /etc/apache2/apache2.conf
-/etc/init.d/apache2 restart
-
-############
-### Flash controller
-############
-
-echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
-read -p "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
-case $yn in
-  [Yy]* ) eval "$installPath/utils/updateFirmware.py"||die ;;
-  * ) ;;
-esac
-
-############
-### Done
-############
-
-# Allow BrewPi to start via cron.
-rm "$webPath/do_not_run_brewpi"
-
-localIP=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
-
-echo -e "\n                           BrewPi Install Complete"
-echo -e "------------------------------------------------------------------------------"
-echo -e "Review any uncaught errors above to be sure, but otherwise your initial"
-echo -e "install is complete."
-echo -e "\nBrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
-echo -e "the following in your favorite browser:"
-echo -e "http://$localIP"
-echo -e "\nIf you have Bonjour or another zeroconf utility installed, you may use this"
-echo -e "easier to remember address to access BrewPi without having to remembering an"
-echo -e "IP address:"
-echo -e "http://$(hostname).local "
-echo -e "\nUnder Windows, Bonjour installs with iTunes or can be downloaded separately at:"
-echo -e "https://support.apple.com/downloads/bonjour_for_windows"
-echo -e "\nHappy Brewing!"
+func_main # Run the script functions
 
 exit 0
