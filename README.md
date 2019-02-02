@@ -112,13 +112,15 @@ Cheers!
  - "*Will you accept pull requests*?" - Maybe.  Here's the honest truth however:  Not being a software developer by trade means that working with typical software development tools in a collaborative environment like GitHub is new to me.  I am probably doing this wrong/poorly and in a way that doesn't easily allow such collaboration.  If you're willing to work with someone who does not have these skills in order that you may contribute your own work, it's likely best to [contact me directly](https://github.com/lbussy/) before you start so we can work out the details to avoid frustration for both of us (mostly you.)
  - "*What about older versions of the Pi or Raspbian Stretch, etc.?*" - I've no reason to believe older versions will not work, but they've not been tested.  In theory it should work fine, but at some point, on a platform like Raspberry Pi, you just need to say "flash a new card and get over it."  These are not desktop machines that accumulate "stuff" over the years.  If you have a Pi that's on it's original SD card for more than a couple years you have a rare bird indeed.  I'd be more than happy to discuss why it didn't work if you run into an issue, it would be interesting I think, but it might not be something I choose to address.
 
+
 # Known Issues
 You can view or log new issues via the links below:
-Project | Name | Known Issues
------------- | ------------- | ------------- 
-BrewPi-Tools-RMX | BrewPi Tools Remix | [Issues List](https://github.com/lbussy/brewpi-tools-rmx/issues)
-BrewPi-Script-RMX | BrewPi Script Remix | [Issues List](https://github.com/lbussy/brewpi-script-rmx/issues)
-BrewPi-WWW-RMX | BrewPi WWW Remox | [Issues List](https://github.com/lbussy/brewpi-www-rmx/issues)
-BrewPi-Firmware-RMX | BrewPi Firmware Remix | [Issues List](https://github.com/lbussy/brewpi-firmware-rmx/issues)
+
+| Project | Name | Known Issues |
+| ------------ | ------------- | ------------- |
+| BrewPi-Tools-RMX | BrewPi Tools Remix | [Issues List](https://github.com/lbussy/brewpi-tools-rmx/issues) |
+| BrewPi-Script-RMX | BrewPi Script Remix | [Issues List](https://github.com/lbussy/brewpi-script-rmx/issues) |
+| BrewPi-WWW-RMX | BrewPi WWW Remix | [Issues List](https://github.com/lbussy/brewpi-www-rmx/issues) |
+| BrewPi-Firmware-RMX | BrewPi Firmware Remix | [Issues List](https://github.com/lbussy/brewpi-firmware-rmx/issues) |
 
 Back up to [Getting Started](#getting-started).
