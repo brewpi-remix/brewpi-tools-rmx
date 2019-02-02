@@ -174,6 +174,14 @@ if getent group brewpi | grep &>/dev/null "\b${pi}\b"; then
   echo -e "\nRemoving pi from brewpi group."
   sudo deluser pi brewpi
 fi
+if getent group brewpi | grep &>/dev/null "\b${www-data}\b"; then
+  echo -e "\nRemoving www-data from brewpi group."
+  sudo deluser www-data brewpi
+fi
+if getent group www-data | grep &>/dev/null "\b${pi}\b"; then
+  echo -e "\nRemoving pi from www-data group."
+  sudo deluser pi www-data
+fi
 if sudo id "brewpi" > /dev/null 2>&1; then
   echo -e "\nRemoving user brewpi."
   sudo userdel brewpi
