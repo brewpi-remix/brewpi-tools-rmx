@@ -119,7 +119,7 @@ warn() {
   echo -e "${@}"
   echo -e "\n*** ERROR ERROR ERROR ERROR ERROR ***"
   echo -e "-------------------------------------"
-  echo -e "See above lines for error message."
+  echo -e "\nSee above lines for error message."
   echo -e "Setup NOT completed.\n"
 }
 
@@ -166,23 +166,37 @@ func_checkfree() {
 }
 
 ############
-### Choose a name for the chamber, set script path
+### Choose a name for the chamber & device, set script path
 ############
 
 func_getscriptpath() {
-  regex="^0-9a-zA-Z\[-]_$"
   echo -e "\nIf you would like to use BrewPi in multi-chamber mode, or simply not use the"
-  echo -e "defaults of /home/brewpi for scripts and /var/www/html for web pages, you may"
-  echo -e "choose a sub directory now.  Any character entered that is not [A-Z], [a-z],"
-  echo -e "[0-9], - or _ will be converted to an underscore.  Enter chamber name, or hit"
-  read -p "enter to accept the defaults. [/home/brewpi]: " chamber < /dev/tty
+  echo -e "defaults for scripts and web pages, you may choose a name for sub directory and"
+  echo -e "devices now.  Any character entered that is not [a-z], [0-9], - or _ will be"
+  echo -e "converted to an underscore.  Alpha characters will be converted to lowercase."
+  echo -e "Do not enter a full path, enter the name to be appended to the standard path."
+  echo -e "Enter device/directory name, or hit enter to accept the defaults."
+  read -p "[<Enter> = /home/brewpi && /var/www/html]: " chamber < /dev/tty
   if [ -z "$chamber" ]; then
     scriptPath="/home/brewpi"
   else
     chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
+	chamber="{$chamber,,}"
     scriptPath="/home/brewpi/$chamber"
   fi
-  echo -e "\nUsing $scriptPath for scripts directory."
+  echo -e "\nUsing $scriptPath for scripts directory and devices."
+  
+  echo -e "\nNow enter a friendly name to be used for the chamber as it is displayed."
+  echo -e "Capital letters may be used, however any character entered that is not [A-Z],"
+  echo -e "[a-z], [0-9], - or will be replaced with an underscore."
+  read -p "[<Enter> = $chamber]: " chamberName < /dev/tty
+  if [ -z "$chamberName" ]; then
+    chamberName="$chamber"
+  else
+    chamberName="$(echo "$chamberName" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
+	chamberName="{$chamberName,,}"
+  fi
+  echo -e "\nUsing $chamberName for chamber name."
 }
 
 ############
@@ -195,14 +209,18 @@ func_doport(){
     declare -a port
     declare -a serial
     declare -a manuf
-    rules="/etc/udev/rules.d/99-arduino.rules"
+	rules="/etc/udev/rules.d/99-arduino.rules"
     devices=$(ls /dev/ttyACM* /dev/ttyUSB* 2> /dev/null)
     # Get a list of USB TTY devices
     for device in $devices; do
-      # Walk device tree | awk out the "paragraph" with the last device in chain 
+      declare ok=false
+      # Walk device tree | awk out the stanza with the last device in chain
       board=$(udevadm info --a -n $device | awk -v RS='' '/ATTRS{maxchild}=="0"/')
-      if [ ! -z "$board" ]; then
-          ((count++))
+	  thisSerial=$(echo "$board" | grep "serial" | cut -d'"' -f 2)
+	  grep -q "$thisSerial" "$rules" 2> /dev/null || ok=true # Serial not in file
+	  [ -z "$board" ] && ok=false # Board exists
+	  if $ok; then
+        ((count++))
         # Get the device Product ID, Vendor ID and Serial Number
         #idProduct=$(echo "$board" | grep "idProduct" | cut -d'"' -f 2)
         #idVendor=$(echo "$board" | grep "idVendor" | cut -d'"' -f 2)
@@ -226,22 +244,29 @@ func_doport(){
           break
         fi
       done
+	  
+      if [ -L "/dev/$chamber" ]; then
+        echo "That name already exists as a /dev link, using it."
+      else
+        echo -e "\nCreating rule for board ${serial[board]} as /dev/$chamber."
+        # Concatenate the rule
+        rule='SUBSYSTEM=="tty", ATTRS{serial}=="sernum", SYMLINK+="chambr", '
+        rule+='GROUP="brewpi"'
+        # Replace placeholders with real values
+        rule="${rule/sernum/${serial[board]}}"
+        rule="${rule/chambr/$chamber}"
+        echo "$rule" >> "$rules"
+      fi
+      udevadm control --reload-rules
+      udevadm trigger
     fi
-    if [ -L "/dev/$chamber" ]; then
-      echo "That name already exists as a /dev link, using it."
-    else
-      echo -e "\nCreating rule for board ${serial[board]} as /dev/$chamber."
-      # Concatenate the rule
-      rule='SUBSYSTEM=="tty", ATTRS{serial}=="sernum", SYMLINK+="chambr", '
-      rule+='GROUP="brewpi"'
-      # Replace placeholders with real values
-      rule="${rule/sernum/${serial[board]}}"
-      rule="${rule/chambr/$chamber}"
-      echo "$rule" >> "$rules"
-    fi
-    udevadm control --reload-rules
-    udevadm trigger
+	# We have selected multichamber but there's no devices
+	echo -e "\nYou've configured the system for multi-chamber support however"
+    echo -e "no Arduinos were found to configure.  The $scriptPath/settings/config.cnf"
+    echo -e "file will be set to use /dev/$chamber however you must configure your device"
+    echo -e "manually in the $rules file."
   fi
+  echo -e "\nScripts will use default 'port = auto' setting."
 }
 
 ############
@@ -401,21 +426,23 @@ func_clonewww() {
 }
 
 ###########
-### If non-default paths are used, update config files accordingly
+### If non-default paths are used, create/update configuration files accordingly
 ##########
 
 func_updateconfig() {
   if [ ! -z "$chamber" ]; then
-    echo -e "\nUsing non-default paths, updating config files."
-    # Update brewpi scripts config
+    echo -e "\nCreating custom configurations for $chamber."
+    # Create script path in custom script configuration file
     echo "scriptPath = $scriptPath" >> "$scriptPath/settings/config.cfg"
-    # Update WWW page config
-    echo "<?php " >> "$webPath"/config_user.php
-    echo "\$scriptPath = '$scriptPath';" >> "$webPath/config_user.php"
-    # Update web path config
+    # Create web path in custom script configuration file
     echo "wwwPath = $webPath" >> "$scriptPath/settings/config.cfg"
-    # Update port setting
+    # Create port name in custom script configuration file
     echo "port = /dev/$chamber" >> "$scriptPath/settings/config.cfg"
+    # Create chamber name in custom script configuration file
+    echo "chamber = $chamberName" >> "$scriptPath/settings/config.cfg"
+    # Create script path in custom web configuration file
+    echo "<?php " >> "$webPath"/config_user.php
+	echo "\$scriptPath = '$scriptPath';" >> "$webPath/config_user.php"
   fi
 }
 
