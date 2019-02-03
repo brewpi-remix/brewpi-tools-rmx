@@ -309,10 +309,14 @@ func_backupscript() {
 
 func_makeuser() {
   if ! id -u brewpi >/dev/null 2>&1; then
-    useradd -G dialout,sudo brewpi||die
+    useradd -G dialout,sudo,www-data brewpi||die
     echo -e "\nPlease enter a password for the new user 'brewpi':" # TODO: Consider a locked/passwordless account
     until passwd brewpi < /dev/tty; do sleep 2; echo; done
   fi
+  # Add pi user to www-data group
+  usermod -a -G www-data,brewpi pi||die
+  # Add www-data user to brewpi group (allow access to logs)
+  usermod -a -G brewpi www-data||die
   
   # Create install path if it does not exist
   if [ ! -d "$scriptPath" ]; then mkdir -p "$scriptPath"; fi
@@ -343,14 +347,6 @@ func_dodepends() {
 ############
 
 func_getwwwpath() {
-  # TODO:  Can this be moved to func_makeuser()?
-  # Add brewpi user to www-data and sudo group
-  usermod -a -G www-data brewpi||warn
-  # Add pi user to www-data group
-  usermod -a -G www-data,brewpi pi||warn
-  # Add www-data user to brewpi group (allow access to logs)
-  usermod -a -G brewpi www-data||warn
-
   # Find web path based on Apache2 config
   echo -e "\nSearching for default web location."
   webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
