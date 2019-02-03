@@ -381,7 +381,7 @@ func_makeuser() {
     until passwd brewpi < /dev/tty; do sleep 2; echo; done
   fi
   # Add current user to www-data group
-  usermod -a -G www-data,brewpi $(logname)||die
+  usermod -a -G www-data,brewpi $SUDO_USER||die
   # Add www-data user to brewpi group (allow access to logs)
   usermod -a -G brewpi www-data||die
   
