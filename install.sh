@@ -186,7 +186,7 @@ func_getscriptpath() {
   fi
   echo -e "\nUsing $scriptPath for scripts directory and devices."
   
-  if { ! -z $chamber ]; then
+  if [ ! -z $chamber ]; then
     echo -e "\nNow enter a friendly name to be used for the chamber as it is displayed."
     echo -e "Capital letters may be used, however any character entered that is not [A-Z],"
     echo -e "[a-z], [0-9], - or will be replaced with an underscore."
