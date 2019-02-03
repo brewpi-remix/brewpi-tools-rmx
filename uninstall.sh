@@ -64,7 +64,7 @@ func_cron() {
     /etc/init.d/cron restart
   fi
 }
-  
+
 ############
 ### Stop all BrewPi processes
 ############
@@ -101,7 +101,7 @@ func_killproc() {
     fi
   done
 }
-  
+
 ############
 ### Remove all BrewPi Packages
 ############
@@ -329,7 +329,7 @@ func_resetudev() {
     udevadm trigger
   fi
 }
-  
+
 ############
 ### Reset password
 ###########
@@ -355,7 +355,7 @@ func_main() {
   func_delpip # Remove pip packages
   func_delapt # Remove BrewPi apt dependencies
   func_delphp5 # Remove php5 packages
-  func_delnginx # Remove nginx 
+  func_delnginx # Remove nginx
   func_cleanapt # Clean up apt packages locally
   func_resethost # Reset hostname
   func_resetudev # Remove udev rules
