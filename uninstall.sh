@@ -86,7 +86,7 @@ func_killproc() {
         kill -2 "$pid"
         sleep 2
         if ps -p $pid > /dev/null 2>&1; then
-          echo -e "\nBeing more forcefull with process $pid."
+          echo -e "\nBeing more forceful with process $pid."
           kill -1 "$pid"
           sleep 2
           while ps -p $pid > /dev/null 2>&1;
@@ -108,14 +108,14 @@ func_killproc() {
 
 func_delrepo() {
   # Wipe out tools
-  if [ -d /home/pi/brewpi-tools-rmx ]; then
-    echo -e "\nClearing /home/pi/brewpi-tools-rmx."
-    rm -fr /home/pi/brewpi-tools-rmx
+  if [ -d "/home/$(logname)/brewpi-tools-rmx" ]; then
+    echo -e "\nClearing /home/$(logname)/brewpi-tools-rmx."
+    rm -fr "/home/$(logname)/brewpi-tools-rmx"
   fi
   # Wipe out legacy tools
-  if [ -d /home/pi/brewpi-tools ]; then
-    echo -e "\nClearing /home/pi/brewpi-tools."
-    rm -fr /home/pi/brewpi-tools
+  if [ -d "/home/$(logname)/brewpi-tools" ]; then
+    echo -e "\nClearing /home/$(logname)/brewpi-tools."
+    rm -fr "/home/$(logname)/brewpi-tools"
   fi
   # Wipe out BrewPi scripts
   if [ -d /home/brewpi ]; then
@@ -139,14 +139,14 @@ func_delrepo() {
 ############
 
 func_cleanusers() {
-  username="pi"
+  username="$(logname)"
   if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
     echo
-    deluser pi brewpi
+    deluser $(logname) brewpi
   fi
   if getent group www-data | grep &>/dev/null "\b${username}\b"; then
     echo
-    deluser pi www-data
+    deluser $(logname) www-data
   fi
   username="www-data"
   if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
@@ -335,8 +335,10 @@ func_resetudev() {
 ###########
 
 func_resetpwd() {
-  echo -e "\nResetting password for 'pi' back to 'raspberry'."
-  echo "pi:raspberry" | chpasswd
+  if [ getent passwd "pi" > /dev/null 2&>1 ]; then
+    echo -e "\nResetting password for 'pi' back to 'raspberry'."
+    echo "pi:raspberry" | chpasswd
+  fi
 }
 
 ############
