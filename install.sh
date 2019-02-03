@@ -130,6 +130,21 @@ die () {
 }
 
 ############
+### See if BrewPi is already installed
+###########
+
+func_findbrewpi() {
+  declare home="/home/brewpi"
+  instances=$(find "$home" -name "brewpi.py")
+  if [ ${#instances} -eq 22 ]; then
+    echo -e "\nFound BrewPi installed and configured to run in single instance mode.  To"
+    echo -e "change to multi-chamber mode you must remove this instance configured as"
+    echo -e "single-use and re-run the installer to configure multi-chamber."
+    exit 1
+  fi
+}
+
+############
 ### Check network connection
 ###########
 
@@ -170,32 +185,56 @@ func_checkfree() {
 ############
 
 func_getscriptpath() {
-  echo -e "\nIf you would like to use BrewPi in multi-chamber mode, or simply not use the"
-  echo -e "defaults for scripts and web pages, you may choose a name for sub directory and"
-  echo -e "devices now.  Any character entered that is not [a-z], [0-9], - or _ will be"
-  echo -e "converted to an underscore.  Alpha characters will be converted to lowercase."
-  echo -e "Do not enter a full path, enter the name to be appended to the standard path."
-  echo -e "Enter device/directory name, or hit enter to accept the defaults."
-  read -p "[<Enter> = Single chamber only]: " chamber < /dev/tty
-  if [ -z "$chamber" ]; then
-    scriptPath="/home/brewpi"
-  else
+  # See if we already have chambers installed
+  if [ ! -z "$instances" ]; then
+    # We've already got BrewPi installed in multi-chamber
+    echo -e "\nThe following chambers are already configured on this Pi:"
+    for instance in $instances
+    do
+      echo -e "\t$(dirname "${instance}")"
+    done
+    echo -e "\nWhat device/directory name would you like to use for this installation?  Any"
+    echo -e "character entered that is not [a-z], [0-9], - or _ will be converted to an"
+    echo -e "underscore.  Alpha characters will be converted to lowercase.  Do not enter a"
+    echo -e "full path, enter the name to be appended to the standard path."
+    read -p "Enter device/directory name: " chamber < /dev/tty
+    while [[ "$chamber" == '' ]] || [ -d "/home/brewpi/${chamber,,}" ]
+    do
+      echo -e "\nError: Device/directory name blank or already exists."
+      read -p "Enter device/directory name: " chamber < /dev/tty
+    done 
     chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
-    chamber="{$chamber,,}"
+    chamber="${chamber,,}"
     scriptPath="/home/brewpi/$chamber"
+    echo -e "\nUsing $scriptPath for scripts directory and devices."
+  else
+    # First install; give option to do multi-chamber
+    echo -e "\nIf you would like to use BrewPi in multi-chamber mode, or simply not use the"
+    echo -e "defaults for scripts and web pages, you may choose a name for sub directory and"
+    echo -e "devices now.  Any character entered that is not [a-z], [0-9], - or _ will be"
+    echo -e "converted to an underscore.  Alpha characters will be converted to lowercase."
+    echo -e "Do not enter a full path, enter the name to be appended to the standard path."
+    echo -e "Enter device/directory name, or hit enter to accept the defaults."
+    read -p "[<Enter> = Single chamber only]:  " chamber < /dev/tty
+    if [ -z "$chamber" ]; then
+      scriptPath="/home/brewpi"
+    else
+      chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
+      chamber="${chamber,,}"
+      scriptPath="/home/brewpi/$chamber"
+    fi
+    echo -e "\nUsing $scriptPath for scripts directory and devices."
   fi
-  echo -e "\nUsing $scriptPath for scripts directory and devices."
-  
+
   if [ ! -z $chamber ]; then
     echo -e "\nNow enter a friendly name to be used for the chamber as it is displayed."
-    echo -e "Capital letters may be used, however any character entered that is not [A-Z],"
-    echo -e "[a-z], [0-9], - or will be replaced with an underscore."
+    echo -e "Capital letters may be used, however any character entered that is not"
+    echo -e "[A-Z], [a-z], [0-9], - or will be replaced with an underscore."
     read -p "[<Enter> = $chamber]: " chamberName < /dev/tty
     if [ -z "$chamberName" ]; then
       chamberName="$chamber"
     else
       chamberName="$(echo "$chamberName" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
-      chamberName="{$chamberName,,}"
     fi
     echo -e "\nUsing $chamberName for chamber name."
   fi
@@ -532,6 +571,7 @@ func_main() {
   func_doinit # Initialize constants and variables
   func_arguments # Handle command line arguments
   func_checkroot # Make sure we are using sudo
+  func_findbrewpi # See if BrewPi is already installed
   func_checknet # Check for connection to GitHub
   func_checkfree # Make sure there's enough free space for install
   func_getscriptpath # Choose a sub directory name or take default for scripts
