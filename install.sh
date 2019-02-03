@@ -335,6 +335,7 @@ func_backupscript() {
 ############
 
 func_makeuser() {
+  echo -e "\n Creating and configuring accounts."
   if ! id -u brewpi >/dev/null 2>&1; then
     useradd -G dialout,sudo,www-data brewpi||die
     echo -e "\nPlease enter a password for the new user 'brewpi':" # TODO: Consider a locked/passwordless account
