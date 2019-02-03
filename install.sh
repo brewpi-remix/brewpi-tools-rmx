@@ -107,7 +107,7 @@ func_checkroot() {
     exit 1
   fi
 }
-  
+
 ############
 ### Functions to catch/display errors during execution
 ############
@@ -181,22 +181,24 @@ func_getscriptpath() {
     scriptPath="/home/brewpi"
   else
     chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
-	chamber="{$chamber,,}"
+    chamber="{$chamber,,}"
     scriptPath="/home/brewpi/$chamber"
   fi
   echo -e "\nUsing $scriptPath for scripts directory and devices."
   
-  echo -e "\nNow enter a friendly name to be used for the chamber as it is displayed."
-  echo -e "Capital letters may be used, however any character entered that is not [A-Z],"
-  echo -e "[a-z], [0-9], - or will be replaced with an underscore."
-  read -p "[<Enter> = $chamber]: " chamberName < /dev/tty
-  if [ -z "$chamberName" ]; then
-    chamberName="$chamber"
-  else
-    chamberName="$(echo "$chamberName" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
-	chamberName="{$chamberName,,}"
+  if { ! -z $chamber ]; then
+    echo -e "\nNow enter a friendly name to be used for the chamber as it is displayed."
+    echo -e "Capital letters may be used, however any character entered that is not [A-Z],"
+    echo -e "[a-z], [0-9], - or will be replaced with an underscore."
+    read -p "[<Enter> = $chamber]: " chamberName < /dev/tty
+    if [ -z "$chamberName" ]; then
+      chamberName="$chamber"
+    else
+      chamberName="$(echo "$chamberName" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
+      chamberName="{$chamberName,,}"
+    fi
+    echo -e "\nUsing $chamberName for chamber name."
   fi
-  echo -e "\nUsing $chamberName for chamber name."
 }
 
 ############
@@ -209,17 +211,17 @@ func_doport(){
     declare -a port
     declare -a serial
     declare -a manuf
-	rules="/etc/udev/rules.d/99-arduino.rules"
+    rules="/etc/udev/rules.d/99-arduino.rules"
     devices=$(ls /dev/ttyACM* /dev/ttyUSB* 2> /dev/null)
     # Get a list of USB TTY devices
     for device in $devices; do
       declare ok=false
       # Walk device tree | awk out the stanza with the last device in chain
       board=$(udevadm info --a -n $device | awk -v RS='' '/ATTRS{maxchild}=="0"/')
-	  thisSerial=$(echo "$board" | grep "serial" | cut -d'"' -f 2)
-	  grep -q "$thisSerial" "$rules" 2> /dev/null || ok=true # Serial not in file
-	  [ -z "$board" ] && ok=false # Board exists
-	  if $ok; then
+      thisSerial=$(echo "$board" | grep "serial" | cut -d'"' -f 2)
+      grep -q "$thisSerial" "$rules" 2> /dev/null || ok=true # Serial not in file
+      [ -z "$board" ] && ok=false # Board exists
+      if $ok; then
         ((count++))
         # Get the device Product ID, Vendor ID and Serial Number
         #idProduct=$(echo "$board" | grep "idProduct" | cut -d'"' -f 2)
@@ -244,7 +246,7 @@ func_doport(){
           break
         fi
       done
-	  
+
       if [ -L "/dev/$chamber" ]; then
         echo "That name already exists as a /dev link, using it."
       else
@@ -260,8 +262,8 @@ func_doport(){
       udevadm control --reload-rules
       udevadm trigger
     fi
-	# We have selected multichamber but there's no devices
-	echo -e "\nYou've configured the system for multi-chamber support however"
+    # We have selected multichamber but there's no devices
+    echo -e "\nYou've configured the system for multi-chamber support however"
     echo -e "no Arduinos were found to configure.  The $scriptPath/settings/config.cnf"
     echo -e "file will be set to use /dev/$chamber however you must configure your device"
     echo -e "manually in the $rules file."
@@ -442,7 +444,7 @@ func_updateconfig() {
     echo "chamber = $chamberName" >> "$scriptPath/settings/config.cfg"
     # Create script path in custom web configuration file
     echo "<?php " >> "$webPath"/config_user.php
-	echo "\$scriptPath = '$scriptPath';" >> "$webPath/config_user.php"
+    echo "\$scriptPath = '$scriptPath';" >> "$webPath/config_user.php"
   fi
 }
 
@@ -494,7 +496,7 @@ func_flash() {
 
 func_complete() {  
   localIP=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
-  
+
   echo -e "\n                           BrewPi Install Complete"
   echo -e "------------------------------------------------------------------------------"
   echo -e "Review any uncaught errors above to be sure, but otherwise your initial"
