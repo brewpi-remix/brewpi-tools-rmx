@@ -36,7 +36,7 @@
 func_doinit() {
   # Change to current dir so we can get the git info
   cd "$(dirname "$0")"
-  
+
   # Set up some project constants
   SCRIPTNAME="${THISSCRIPT%%.*}"
   if [ -x "$(command -v git)" ] && [ -d .git ]; then
@@ -135,7 +135,7 @@ die () {
 
 func_findbrewpi() {
   declare home="/home/brewpi"
-  instances=$(find "$home" -name "brewpi.py")
+  instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
   if [ ${#instances} -eq 22 ]; then
     echo -e "\nFound BrewPi installed and configured to run in single instance mode.  To"
     echo -e "change to multi-chamber mode you must remove this instance configured as"
@@ -374,7 +374,7 @@ func_backupscript() {
 ############
 
 func_makeuser() {
-  echo -e "\n Creating and configuring accounts."
+  echo -e "\nCreating and configuring accounts."
   if ! id -u brewpi >/dev/null 2>&1; then
     useradd -G dialout,sudo,www-data brewpi||die
     echo -e "\nPlease enter a password for the new user 'brewpi':" # TODO: Consider a locked/passwordless account
@@ -599,6 +599,6 @@ func_main() {
 THISSCRIPT="$(basename "$0")"
 echo -e "\n***Script $THISSCRIPT starting.***"
 
-func_main # Run the script functions
+func_main
 
 exit 0
