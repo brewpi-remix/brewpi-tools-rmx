@@ -22,6 +22,12 @@ To begin installing BrewPi, you need only issue the following command in a [term
 
 If you choose to type either command in manually, the `-qO-` is "dash, lower-case 'Q', upper-case 'o', dash", with no spaces in between those characters.
 
+If you have a broken installation and/or need to run the uninstaller without it being installed correctly for some reason, you may use (all one line):
+
+`wget -qO- https://tinyurl.com/brewpi-clean - /| sudo bash`
+
+Please read the notes in the table below before running the uninstaller.
+
 Security-conscious or just plain curious folks will want to read this [security note](#security-note) before proceeding.
  
 When it is complete, you will have a working BrewPi Legacy setup.  I'm a little amazed that the work I've done is summed up in one "run this", but if I've done my work right that should be it. Do [let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) if you find differently.
@@ -32,7 +38,7 @@ Filename | Description
 ------------ | -------------
 bootstrap.sh | This script will handle all setup and prep of a new Raspberry Pi.  It will clone this repository and kick off the installer proper.  This should be the only touch-point you need to get going.
 install.sh | This script will install BrewPi on a Raspbian distro.  It is called by the bootstrap script.  This is not the right way forward to move an existing BrewPi Legacy system to this new fork.  At the moment the only tested way is to start fresh.
-uninstall.sh | This is an uninstaller I created for my own testing.  It may be of use to someone wanting to clean up their Raspberry Pi as they install/uninstall for their own testing.  It is rather brutal in that it does not care if you previously installed any of the dependencies for some other purpose.  This behavior is *likely* safe (but not tested) if you intend to reinstall BrewPi right away.  It will also uninstall all dependencies in BrewPi's list of dependencies.  It will remove the original Legacy BrewPi Tools, Script and WWW folders.  **It will reset the machine name and the pi password to their default of "`raspberry`."**  If you have a broken installation and/or need to run this without it being installed for some reason, you may use (all one line): `wget -qO- https://tinyurl.com/brewpi-clean - /| sudo bash`
+uninstall.sh | This is an uninstaller I created for my own testing.  It may be of use to someone wanting to clean up their Raspberry Pi as they install/uninstall for their own testing.  It is rather brutal in that it does not care if you previously installed any of the dependencies for some other purpose.  This behavior is *likely* safe (but not tested) if you intend to reinstall BrewPi right away.  It will also uninstall all dependencies in BrewPi's list of dependencies.  It will remove the original Legacy BrewPi Tools, Script and WWW folders.  **It will reset the machine name and the pi password to their default of "`raspberry`."**
 
 # <a name="assumptions-proceedings"></a>Assumptions and Proceedings
 This tool set adds a [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping) to install the BrewPi Legacy Remix packages on a completely fresh install of [Raspbian](https://www.raspberrypi.org/documentation/raspbian/) (codename "[Stretch](https://www.raspberrypi.org/blog/raspbian-stretch/)" at the time of this writing).  I do this because some steps required in previous iterations were a little alien to people new to Raspbian/Linux.  Additionally, some supporting software has been deprecated/upgraded which before now made the older BrewPi packages incompatible.
