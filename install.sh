@@ -233,7 +233,7 @@ func_doport(){
       echo -e "\nCreating rule for board ${serial[board]} as /dev/$chamber."
       # Concatenate the rule
       rule='SUBSYSTEM=="tty", ATTRS{serial}=="sernum", SYMLINK+="chambr", '
-      rule+='OWNER="root", GROUP="brewpi"'
+      rule+='GROUP="brewpi"'
       # Replace placeholders with real values
       rule="${rule/sernum/${serial[board]}}"
       rule="${rule/chambr/$chamber}"
