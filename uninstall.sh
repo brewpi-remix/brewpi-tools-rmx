@@ -60,8 +60,8 @@ func_cron() {
   # Clear out the old brewpi cron if it exists
   if [ -f /etc/cron.d/brewpi ]; then
     echo -e "\nResetting cron."
-    sudo rm -f /etc/cron.d/brewpi
-    sudo /etc/init.d/cron restart
+    rm -f /etc/cron.d/brewpi
+    /etc/init.d/cron restart
   fi
 }
   
@@ -76,24 +76,24 @@ func_killproc() {
   for pid in "$pidlist"
   do
     # Stop (kill) brewpi
-    sudo touch /var/www/html/do_not_run_brewpi > /dev/null 2>&1
+    touch /var/www/html/do_not_run_brewpi > /dev/null 2>&1
     if ps -p "$pid" > /dev/null 2>&1; then
-      echo -e "\nAttempting gracefull shutdown of process $pid."
-      sudo kill -15 "$pid"
+      echo -e "\nAttempting graceful shutdown of process $pid."
+      kill -15 "$pid"
       sleep 2
       if ps -p $pid > /dev/null 2>&1; then
         echo -e "\nTrying a little harder to terminate process $pid."
-        sudo kill -2 "$pid"
+        kill -2 "$pid"
         sleep 2
         if ps -p $pid > /dev/null 2>&1; then
           echo -e "\nBeing more forcefull with process $pid."
-          sudo kill -1 "$pid"
+          kill -1 "$pid"
           sleep 2
           while ps -p $pid > /dev/null 2>&1;
           do
             echo -e "\nBeing really insistent about killing process $pid now."
             echo -e "(I'm going to keep doing this till the process(es) are gone.)"
-            sudo kill -9 "$pid"
+            kill -9 "$pid"
             sleep 2
           done
         fi
@@ -110,26 +110,26 @@ func_delrepo() {
   # Wipe out tools
   if [ -d /home/pi/brewpi-tools-rmx ]; then
     echo -e "\nClearing /home/pi/brewpi-tools-rmx."
-    sudo rm -fr /home/pi/brewpi-tools-rmx
+    rm -fr /home/pi/brewpi-tools-rmx
   fi
   # Wipe out legacy tools
   if [ -d /home/pi/brewpi-tools ]; then
     echo -e "\nClearing /home/pi/brewpi-tools."
-    sudo rm -fr /home/pi/brewpi-tools
+    rm -fr /home/pi/brewpi-tools
   fi
   # Wipe out BrewPi scripts
   if [ -d /home/brewpi ]; then
     echo -e "\nClearing /home/brewpi."
-    sudo rm -fr /home/brewpi
+    rm -fr /home/brewpi
   fi
   # Wipe out www if it exists and is not empty
   if [ -d /var/www/html ]; then
     if [ ! -z "$(ls -A /var/www/html)" ]; then
       echo -e "\nClearing /var/www/html."
-      sudo rm -fr /var/www/html
+      rm -fr /var/www/html
   	# Re-create html durectory
-      sudo mkdir /var/www/html
-      sudo chown www-data:www-data /var/www/html
+      mkdir /var/www/html
+      chown www-data:www-data /var/www/html
     fi
   fi
 }
@@ -141,26 +141,26 @@ func_delrepo() {
 func_cleanusers() {
   username="pi"
   if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
-    echo -e "\nRemoving $username from brewpi group."
-    sudo deluser pi brewpi
+    echo
+    deluser pi brewpi
   fi
   if getent group www-data | grep &>/dev/null "\b${username}\b"; then
-    echo -e "\nRemoving $username from www-data group."
-    sudo deluser pi www-data
+    echo
+    deluser pi www-data
   fi
   username="www-data"
   if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
-    echo -e "\nRemoving $username from brewpi group."
-    sudo deluser www-data brewpi
+    echo
+    deluser www-data brewpi
   fi
   username="brewpi"
   if getent group www-data | grep &>/dev/null "\b${username}\b"; then
-    echo -e "\nRemoving $username from www-data group."
-    sudo deluser brewpi www-data
+    echo
+    deluser brewpi www-data
   fi
-  if sudo id "$username" > /dev/null 2>&1; then
+  if id "$username" > /dev/null 2>&1; then
     echo -e "\nRemoving user $username."
-    sudo userdel "$username"
+    userdel "$username"
   fi
   egrep -i "^$username" /etc/group;
   if [ $? -eq 0 ]; then
@@ -177,8 +177,8 @@ func_resetapache() {
   if [ -f /etc/apache2/apache2.conf ]; then
     if grep -qF "KeepAliveTimeout 99" /etc/apache2/apache2.conf; then
       echo -e "\nResetting /etc/apache2/apache2.conf."
-      sudo sed -i -e 's/KeepAliveTimeout 99/KeepAliveTimeout 5/g' /etc/apache2/apache2.conf
-      sudo /etc/init.d/apache2 restart
+      sed -i -e 's/KeepAliveTimeout 99/KeepAliveTimeout 5/g' /etc/apache2/apache2.conf
+      /etc/init.d/apache2 restart
     fi
   fi
 }
@@ -190,13 +190,13 @@ func_resetapache() {
 func_delpip() {
   echo -e "\nChecking for pip packages installed with BrewPi."
   if pip &>/dev/null; then
-    pipInstalled=$(sudo pip list --format=legacy)
+    pipInstalled=$(pip list --format=legacy)
     if [ $? -eq 0 ]; then
       pipInstalled=$(echo "$pipInstalled" | awk '{ print $1 }')
       for pkg in ${PIPPACKAGES,,}; do
         if [[ ${pipInstalled,,} == *"$pkg"* ]]; then
           echo -e "\nRemoving '$pkg'.\n"
-          sudo pip uninstall $pkg -y
+          pip uninstall $pkg -y
         fi
       done
     fi
@@ -210,12 +210,12 @@ func_delpip() {
 func_delapt() {
   echo -e "\nChecking for apt packages installed with BrewPi."
   # Get list of installed packages
-  packagesInstalled=$(sudo dpkg --get-selections | awk '{ print $1 }')
+  packagesInstalled=$(dpkg --get-selections | awk '{ print $1 }')
   # Loop through the required packages and uninstall those in $APTPACKAGES
   for pkg in ${APTPACKAGES,,}; do
     if [[ ${packagesInstalled,,} == *"$pkg"* ]]; then
       echo -e "\nRemoving '$pkg'.\n"
-  	sudo apt remove --purge $pkg -y
+  	apt remove --purge $pkg -y
     fi
   done
 }
@@ -243,7 +243,7 @@ func_delphp5() {
         # Loop through the php5 packages that we've found
         for pkg in ${php_packages,,}; do
           echo -e "\nRemoving '$pkg'.\n"
-          sudo apt remove --purge $pkg -y
+          apt remove --purge $pkg -y
         done
   	  echo -e "\nCleanup of the php environment complete."
         ;;
@@ -273,7 +273,7 @@ func_delnginx() {
         # Loop through the php5 packages that we've found
         for pkg in ${NGINXPACKAGES,,}; do
           echo -e "\nRemoving '$pkg'.\n"
-          sudo apt remove --purge $pkg -y
+          apt remove --purge $pkg -y
         done
   	  echo -e "\nCleanup of the nginx environment complete."
         ;;
@@ -288,9 +288,9 @@ func_delnginx() {
 func_cleanapt() {
   # Cleanup
   echo -e "\nCleaning up local apt packages."
-  sudo apt clean -y
-  sudo apt autoclean -y
-  sudo apt autoremove --purge -y
+  apt clean -y
+  apt autoclean -y
+  apt autoremove --purge -y
 }
 
 ############
@@ -302,12 +302,12 @@ func_resethost() {
   newHostName="raspberrypi"
   if [ "$oldHostName" != "$newHostName" ]; then
     echo -e "\nResetting hostname from $oldhostname back to $newhostname."
-    sed1="sudo sed -i 's/$oldHostName/$newHostName/g' /etc/hosts"
-    sed2="sudo sed -i 's/$oldHostName/$newHostName/g' /etc/hostname"
+    sed1="sed -i 's/$oldHostName/$newHostName/g' /etc/hosts"
+    sed2="sed -i 's/$oldHostName/$newHostName/g' /etc/hostname"
     eval $sed1
     eval $sed2
-    sudo hostnamectl set-hostname $newHostName
-    sudo /etc/init.d/avahi-daemon restart
+    hostnamectl set-hostname $newHostName
+    /etc/init.d/avahi-daemon restart
     echo -e "\nYour hostname has been changed back to '$newHostName'.\n"
     echo -e "(If your hostname is part of your prompt, your prompt will"
     echo -e "not change untill you log out and in again.  This will have"
@@ -336,7 +336,7 @@ func_resetudev() {
 
 func_resetpwd() {
   echo -e "\nResetting password for 'pi' back to 'raspberry'."
-  echo "pi:raspberry" | sudo chpasswd
+  echo "pi:raspberry" | chpasswd
 }
 
 ############
