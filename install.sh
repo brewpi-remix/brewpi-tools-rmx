@@ -323,7 +323,7 @@ func_killproc() {
     # Stop (kill) brewpi
     touch /var/www/html/do_not_run_brewpi > /dev/null 2>&1
     if ps -p "$pid" > /dev/null 2>&1; then
-      echo -e "\nAttempting gracefull shutdown of process $pid."
+      echo -e "\nAttempting graceful shutdown of process $pid."
       kill -15 "$pid"
       sleep 2
       if ps -p $pid > /dev/null 2>&1; then
@@ -331,7 +331,7 @@ func_killproc() {
         kill -2 "$pid"
         sleep 2
         if ps -p $pid > /dev/null 2>&1; then
-          echo -e "\nBeing more forcefull with process $pid."
+          echo -e "\nBeing more forceful with process $pid."
           kill -1 "$pid"
           sleep 2
           while ps -p $pid > /dev/null 2>&1;
@@ -380,8 +380,8 @@ func_makeuser() {
     echo -e "\nPlease enter a password for the new user 'brewpi':" # TODO: Consider a locked/passwordless account
     until passwd brewpi < /dev/tty; do sleep 2; echo; done
   fi
-  # Add pi user to www-data group
-  usermod -a -G www-data,brewpi pi||die
+  # Add current user to www-data group
+  usermod -a -G www-data,brewpi $(logname)||die
   # Add www-data user to brewpi group (allow access to logs)
   usermod -a -G brewpi www-data||die
   
