@@ -321,24 +321,24 @@ func_killproc() {
   for pid in "$pidlist"
   do
     # Stop (kill) brewpi
-    sudo touch /var/www/html/do_not_run_brewpi > /dev/null 2>&1
+    touch /var/www/html/do_not_run_brewpi > /dev/null 2>&1
     if ps -p "$pid" > /dev/null 2>&1; then
       echo -e "\nAttempting gracefull shutdown of process $pid."
-      sudo kill -15 "$pid"
+      kill -15 "$pid"
       sleep 2
       if ps -p $pid > /dev/null 2>&1; then
         echo -e "\nTrying a little harder to terminate process $pid."
-        sudo kill -2 "$pid"
+        kill -2 "$pid"
         sleep 2
         if ps -p $pid > /dev/null 2>&1; then
           echo -e "\nBeing more forcefull with process $pid."
-          sudo kill -1 "$pid"
+          kill -1 "$pid"
           sleep 2
           while ps -p $pid > /dev/null 2>&1;
           do
             echo -e "\nBeing really insistent about killing process $pid now."
             echo -e "(I'm going to keep doing this till the process(es) are gone.)"
-            sudo kill -9 "$pid"
+            kill -9 "$pid"
             sleep 2
           done
         fi
@@ -357,7 +357,7 @@ func_backupscript() {
     # Set place to put backups
     BACKUPDIR="$HOMEPATH/$GITPROJ-backup"
     # Stop (kill) brewpi
-    sudo touch /var/www/html/do_not_run_brewpi
+    touch /var/www/html/do_not_run_brewpi
     func_killproc # Stop all BrewPi processes
     dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-Script"
     echo -e "\nScript install directory is not empty, backing up this users home directory to"
@@ -397,7 +397,7 @@ func_makeuser() {
 func_clonescripts() {
   echo -e "\nDownloading most recent BrewPi codebase."
   gitClone="sudo -u brewpi git clone $GITURLSCRIPT $scriptPath"
-  eval $gitClone||die
+  eval "$gitClone"||die
 }
 
 ############
@@ -441,7 +441,7 @@ func_getwwwpath() {
 
 func_backupwww() {
   # Back up webPath if it has any files in it
-  sudo /etc/init.d/apache2 stop||die
+  /etc/init.d/apache2 stop||die
   rm -rf "$webPath/do_not_run_brewpi" || true
   rm -rf "$webPath/index.html" || true
   if [ -d "$webPath" ] && [ "$(ls -A ${webPath})" ]; then
@@ -462,7 +462,7 @@ func_backupwww() {
 func_clonewww() {
   echo -e "\nCloning web site."
   gitClone="sudo -u www-data git clone $GITURLWWW $webPath"
-  eval $gitClone||die
+  eval "$gitClone"||die
   # Keep BrewPi for running while we do this.
   touch "$webPath/do_not_run_brewpi"
 }
