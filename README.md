@@ -1,4 +1,5 @@
 
+
 # ![BrewPi Legacy Remix Logo](https://raw.githubusercontent.com/lbussy/brewpi-www-rmx/master/brewpi_logo.png)
 *[@LBussy](https://github.com/lbussy)'s forks of the original [BrewPi Project](https://github.com/BrewPi)*
 
@@ -31,7 +32,7 @@ Filename | Description
 ------------ | -------------
 bootstrap.sh | This script will handle all setup and prep of a new Raspberry Pi.  It will clone this repository and kick off the installer proper.  This should be the only touch-point you need to get going.
 install.sh | This script will install BrewPi on a Raspbian distro.  It is called by the bootstrap script.  This is not the right way forward to move an existing BrewPi Legacy system to this new fork.  At the moment the only tested way is to start fresh.
-uninstall.sh | This is an uninstaller I created for my own testing.  It may be of use to someone wanting to clean up their Raspberry Pi as they install/uninstall for their own testing.  It is rather brutal in that it does not care if you previously installed any of the dependencies for some other purpose.  This behavior is *likely* safe (but not tested) if you intend to reinstall BrewPi right away.  It will uninstall all dependencies in BrewPi's list of dependencies.  It will remove the original Legacy BrewPi Script and WWW folders, but not the tools directory in pi home.
+uninstall.sh | This is an uninstaller I created for my own testing.  It may be of use to someone wanting to clean up their Raspberry Pi as they install/uninstall for their own testing.  It is rather brutal in that it does not care if you previously installed any of the dependencies for some other purpose.  This behavior is *likely* safe (but not tested) if you intend to reinstall BrewPi right away.  It will also uninstall all dependencies in BrewPi's list of dependencies.  It will remove the original Legacy BrewPi Tools, Script and WWW folders.  **It will reset the machine name and the pi password to their default of "`raspberry`."**  If you have a broken installation and/or need to run this without it being installed for some reason, you may use (all one line): `wget -qO- https://tinyurl.com/brewpi-clean - /| sudo bash`
 
 # <a name="assumptions-proceedings"></a>Assumptions and Proceedings
 This tool set adds a [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping) to install the BrewPi Legacy Remix packages on a completely fresh install of [Raspbian](https://www.raspberrypi.org/documentation/raspbian/) (codename "[Stretch](https://www.raspberrypi.org/blog/raspbian-stretch/)" at the time of this writing).  I do this because some steps required in previous iterations were a little alien to people new to Raspbian/Linux.  Additionally, some supporting software has been deprecated/upgraded which before now made the older BrewPi packages incompatible.
@@ -48,13 +49,12 @@ In order to make this work well, I have to make some assumptions about the envir
  - This has been developed and tested on a Raspberry Pi 3 B+ because that's what I have laying around.  I have absolutely no reason to believe it would not work on a Zero, 2B, or other versions of the Raspberry Pi line.  I've just not tested it.
  - This has been developed and tested on the Raspbian OS.  Raspbian is based on Debian so using a Debian (or derivative) OS distribution *may* work, however that's not been tested.  I am not at all sure that it would work on a different flavor of Linux.
  - This has been developed and tested on the Raspbian Stretch distribution.  If a new distribution for the Raspberry Pi is released it *may* no longer work.  I hope I've future-proofed it, however the original/core code may have some non future-proofed areas waiting to rear their ugly head (or I may not be as good at future-proofing as I believe.)
- - I've assumed throughout that this is the only function the Pi will handle.  This is not unique to this project; the original did not support very well differences like multiple chambers, different user, etc.  Theoretically such functionality is trivial to implement, and I might try my hand at it, but not yet.
- - This will not create a BrewPi which is secure enough to attach to the Internet.  There's a whole host of reasons for this, but please, do not do it unless you know what you are doing.  I suggest you consider [Dataplicity](https://www.dataplicity.com) if you really need/want to do this.
- - This has been developed and tested using the default user 'pi' which by default has password-less `sudo` rights.  This is how Raspbian is shipped, and this is how I'll continue to test it.  If you know enough to change any of those assumptions, you know enough to figure out why this process will not work for you.  If you simply MUST change that, I suggest you do it after you get BrewPi Legacy Remix running.
- - You need for your Pi to have access to the Internet.  I think this is obvious, but the Pi needs to access GitHub and standard Raspbian repositories to download code.  Generally speaking, plugging your Pi into your home network with an Ethernet cable will do this without any configuration necessary.  Attaching to wireless will take a little more work that's not in scope of this project.
+ - I've assumed throughout that this is the only function the Pi will handle.  This is not unique to this project; the original did not easily support differences like multiple chambers, different user, etc.
+ - This will not create a BrewPi which is secure enough to connect to *from* the Internet.  There's a whole host of reasons for this, but please, do not do it unless you know what you are doing.  I suggest you consider [Dataplicity](https://www.dataplicity.com) if you really need/want to do this.
+ - This has been developed and tested using the default user 'pi' which by default has password-less `sudo` rights.  This is how Raspbian is shipped, and this is how I'll continue to test it.  If you know enough to change any of those assumptions, you know enough to figure out why this process will not work for you.  If you simply MUST change that, I suggest you do it after you get BrewPi Remix running.
+ - You need for your Pi to have access *to* the Internet.  I think this is obvious, but the Pi needs to access GitHub and standard Raspbian repositories to download code.  Generally speaking, plugging your Pi into your home network with an Ethernet cable will do this without any configuration necessary.  Attaching to wireless will take a little more work that's not in scope of this project.
  - This has been developed and tested on a bone-stock Raspbian setup, with no user or local customization implemented.  The only things that has been tested which do not inherently work on a fresh setup is wireless connectivity and ssh over wireless.  The bootstrap script will:
-   1. Check to make sure `pi` is executing the script (I may remove this part)
-   2. Check to make sure the script has executed with `sudo` to `root`(this is how the [instructions above](#getting-started) will work if you follow them)
+   1. Check to make sure the script has executed with `sudo` to `root` (this is how the [instructions above](#getting-started) will work if you follow them)
    3. Provide some rudimentary instructions
    4. Check for default password, and prompt to change it if so
    5. Set the proper timezone
@@ -72,9 +72,9 @@ These scripts were originally a part of [brewpi-tools](https://github.com/BrewPi
 
 All credit for the original [brewpi-tools](https://github.com/BrewPi/brewpi-tools) goes to [@elcojacobs](https://github.com/elcojacobs), [@vanosg](https://github.com/vanosg), [@routhcr](https://github.com/routhcr), [@ajt2](https://github.com/ajt2) and I'm sure many more contributors around the world.  My apologies if I have missed anyone; those were the names listed as contributors on the Legacy branch.
 
-In order that I can assure myself that these scripts will always have access to that which they need to operate (and to facillitate other changes which branch from there), all the [BrewPi](https://github.com/BrewPi) projects' Legacy branches have been forked to my own repositories:
+In order that I can assure myself that these scripts will always have access to that which they need to operate (and to facilitate other changes which branch from there), all the [BrewPi](https://github.com/BrewPi) projects' Legacy branches have been forked to my own repositories:
 
-Original Repository | Description | New Repository
+Original Repository | Description | Remix Repository
 ------------ | ------------- | ------------- 
 [brewpi-tools](https://github.com/BrewPi/brewpi-tools) | The original version of this tools repository. | [BrewPi Tools Remix](https://github.com/lbussy/brewpi-tools-rmx)
 [brewpi-script](https://github.com/BrewPi/brewpi-script) | Scripts which log the data, monitor the temperature profile and communicate with the BrewPi slave and the web server. | [BrewPi Script Remix](https://github.com/lbussy/brewpi-script-rmx)
@@ -118,9 +118,9 @@ You can view or log new issues via the links below:
 
 | Project | Name | Known Issues |
 | ------------ | ------------- | ------------- |
-| BrewPi-Tools-RMX | BrewPi Tools Remix | [Issues List](https://github.com/lbussy/brewpi-tools-rmx/issues) |
-| BrewPi-Script-RMX | BrewPi Script Remix | [Issues List](https://github.com/lbussy/brewpi-script-rmx/issues) |
-| BrewPi-WWW-RMX | BrewPi WWW Remix | [Issues List](https://github.com/lbussy/brewpi-www-rmx/issues) |
-| BrewPi-Firmware-RMX | BrewPi Firmware Remix | [Issues List](https://github.com/lbussy/brewpi-firmware-rmx/issues) |
+| BrewPi-Tools-RMX | Install and uninstall tools | [Issues List](https://github.com/lbussy/brewpi-tools-rmx/issues) |
+| BrewPi-Script-RMX | Python scripts supporting BrewPi website | [Issues List](https://github.com/lbussy/brewpi-script-rmx/issues) |
+| BrewPi-WWW-RMX | Website files | [Issues List](https://github.com/lbussy/brewpi-www-rmx/issues) |
+| BrewPi-Firmware-RMX | Arduino firmware | [Issues List](https://github.com/lbussy/brewpi-firmware-rmx/issues) |
 
 Back up to [Getting Started](#getting-started).
