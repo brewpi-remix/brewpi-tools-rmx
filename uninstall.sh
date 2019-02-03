@@ -108,14 +108,14 @@ func_killproc() {
 
 func_delrepo() {
   # Wipe out tools
-  if [ -d "/home/$(logname)/brewpi-tools-rmx" ]; then
-    echo -e "\nClearing /home/$(logname)/brewpi-tools-rmx."
-    rm -fr "/home/$(logname)/brewpi-tools-rmx"
+  if [ -d "/home/$SUDO_USER/brewpi-tools-rmx" ]; then
+    echo -e "\nClearing /home/$SUDO_USER/brewpi-tools-rmx."
+    rm -fr "/home/$SUDO_USER/brewpi-tools-rmx"
   fi
   # Wipe out legacy tools
-  if [ -d "/home/$(logname)/brewpi-tools" ]; then
-    echo -e "\nClearing /home/$(logname)/brewpi-tools."
-    rm -fr "/home/$(logname)/brewpi-tools"
+  if [ -d "/home/$SUDO_USER/brewpi-tools" ]; then
+    echo -e "\nClearing /home/$SUDO_USER/brewpi-tools."
+    rm -fr "/home/$SUDO_USER/brewpi-tools"
   fi
   # Wipe out BrewPi scripts
   if [ -d /home/brewpi ]; then
@@ -139,14 +139,14 @@ func_delrepo() {
 ############
 
 func_cleanusers() {
-  username="$(logname)"
+  username="$SUDO_USER"
   if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
     echo
-    deluser $(logname) brewpi
+    deluser $SUDO_USER brewpi
   fi
   if getent group www-data | grep &>/dev/null "\b${username}\b"; then
     echo
-    deluser $(logname) www-data
+    deluser $SUDO_USER www-data
   fi
   username="www-data"
   if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
