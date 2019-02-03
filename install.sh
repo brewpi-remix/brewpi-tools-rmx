@@ -300,14 +300,17 @@ func_doport(){
       fi
       udevadm control --reload-rules
       udevadm trigger
+    else
+      # We have selected multichamber but there's no devices
+      echo -e "\nYou've configured the system for multi-chamber support however"
+      echo -e "no Arduinos were found to configure.  The $scriptPath/settings/config.cnf"
+      echo -e "file will be set to use /dev/$chamber however you must configure your device"
+      echo -e "manually in the $rules file."
+      echo -e "\nScripts will use default 'port = auto' setting."
     fi
-    # We have selected multichamber but there's no devices
-    echo -e "\nYou've configured the system for multi-chamber support however"
-    echo -e "no Arduinos were found to configure.  The $scriptPath/settings/config.cnf"
-    echo -e "file will be set to use /dev/$chamber however you must configure your device"
-    echo -e "manually in the $rules file."
+  else
+    echo -e "\nScripts will use default 'port = auto' setting."
   fi
-  echo -e "\nScripts will use default 'port = auto' setting."
 }
 
 ############
