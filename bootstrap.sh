@@ -163,15 +163,15 @@ func_instructions() {
 ############
 
 func_checkpass() {
-  declare -i badpwd=0
-  passd="786iJiN5YLlrsce7g3taQv8TiQYfcfBTXmwPs"
-  if grep -q $passd /etc/shadow ; then badpwd=1
-  elif [ -e /run/sshwarn ]; then badpwd=1; fi
-  if [ $badpwd -gt 0 ]; then
+  salt=$(sudo getent shadow "pi" | cut -d$ -f3)
+  extpass=$(sudo getent shadow "pi" | cut -d: -f2)
+  match=$(python -c 'import crypt; print crypt.crypt("'"raspberry"'", "$6$'${salt}'")')
+  [ "${match}" == "${extpass}" ] && badpwd=true || badpwd=false
+  if [ "$badpwd" = true ]; then
     echo -e "\nDefault password found for the 'pi' account. This should be changed."
     while true; do
         read -p "Do you want to change the password now? [Y/n]: " yn  < /dev/tty
-        case $yn in
+        case "$yn" in
             '' ) setpass=1; break ;;
             [Yy]* ) setpass=1; break ;;
             [Nn]* ) break ;;
@@ -179,13 +179,14 @@ func_checkpass() {
         esac
     done
   fi
-  if [ ! -z $setpass ]; then
+  if [ ! -z "$setpass" ]; then
     echo
     until passwd pi < /dev/tty; do sleep 2; echo; done
     echo -e "\nYour password has been changed, remember it or write it down now."
     sleep 5
   fi
 }
+
 
 ############
 ### Set timezone
