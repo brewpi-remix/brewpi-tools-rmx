@@ -197,6 +197,9 @@ func_getscriptpath() {
     echo -e "character entered that is not [a-z], [0-9], - or _ will be converted to an"
     echo -e "underscore.  Alpha characters will be converted to lowercase.  Do not enter a"
     echo -e "full path, enter the name to be appended to the standard path."
+    echo -e "\n***IMPORTANT NOTE:***"
+    echo -e "Multi-chamber support is not complete, you are strongly advised to take the"
+    echo -e "defaults here.  You have been warned.\n"
     read -p "Enter device/directory name: " chamber < /dev/tty
     while [[ "$chamber" == '' ]] || [ -d "/home/brewpi/${chamber,,}" ]
     do
