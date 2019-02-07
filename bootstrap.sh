@@ -36,9 +36,9 @@
 func_init() {
   # Set up some project variables we won't have running as a bootstrap
   PACKAGE="BrewPi-Tools-RMX"
-  GITBRNCH="master"
+  GITBRNCH="devel"
   THISSCRIPT="bootstrap.sh"
-  VERSION="0.4.0.0"
+  VERSION="0.4.0.1"
   # These should stay the same
   GITRAW="https://raw.githubusercontent.com/lbussy"
   GITHUB="https://github.com/lbussy"
