@@ -539,8 +539,8 @@ func_doperms() {
 
 func_dodaemon() {
   touch "$webPath/do_not_run_brewpi" # make sure BrewPi does not start yet
-  chmod +x "$scriptPath/utils/doWiFi.sh"
-  eval "$scriptPath/utils/doWiFi.sh"||die
+  chmod +x "$scriptPath/utils/doDaemon.sh"
+  eval "$scriptPath/utils/doDaemon.sh"||die
 }
 
 ############
