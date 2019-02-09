@@ -398,8 +398,10 @@ func_wipelevel () {
 ### Main
 ###########
 
-func_main() {
+main() {
   func_getroot # Check for root privs
+  echo -e "\n***Script BrewPi Uninstaller starting.***" > /dev/tty
+  cd ~ # Start from home
   level="$(func_wipelevel)"
   [ "$level" -le 2 ] && func_cron # Clean up crontab
   [ "$level" -le 2 ] && func_syslogd # Cleanup syslogd
@@ -415,6 +417,7 @@ func_main() {
   [ "$level" -le 1 ] && func_resethost # Reset hostname
   [ "$level" -le 2 ] && func_resetudev # Remove udev rules
   [ "$level" -le 1 ] && func_resetpwd # Reset pi password
+  echo -e "\n***Script BrewPi Uninstaller complete.***" > /dev/tty
 }
 
 ############
@@ -422,14 +425,10 @@ func_main() {
 ############
 
 sleep 2
-echo -e "\n***Script BrewPi Uninstaller starting.***" > /dev/tty
-cd ~ # Start from home
-func_main # Moved to functions to prevent broken execution with wget
+main # Moved to functions to prevent broken execution with wget
 
 ############
 ### Work Complete
 ###########
-
-echo -e "\n***Script BrewPi Uninstaller complete.***" > /dev/tty
 
 exit 0
