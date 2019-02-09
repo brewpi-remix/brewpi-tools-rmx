@@ -181,6 +181,37 @@ func_checkfree() {
 }
 
 ############
+### Ensure chosen chamber name does not conflict with others
+############
+
+func_checkchamber() {
+    local chamber="$1"
+    local retval=0
+    # Check /dev/$chamber
+    if [ -L "/dev/$chamber" ]; then
+      echo -e "\nA device with the name of /dev/$chamber already exists." > /dev/tty
+      ((retval++))
+    fi
+    # Check /home/brewpi/$chamber
+    if [ -d "/home/brewpi/$chamber" ]; then
+      echo -e "\nA chamber with the name of /brewpi/$chamber already exists." > /dev/tty
+      ((retval++))
+    fi
+    # Check /var/www/html/$chamber
+    if [ -d "/var/www/html/$chamber" ]; then
+      echo -e "\nA website with the name of /var/www/html/$chamber already exists." > /dev/tty
+      ((retval++))
+    fi
+    # Check /etc/systemd/system/$chamber.service
+    if [ -f "/etc/systemd/system/$chamber.service" ]; then
+      echo -e "\nA daemon with the name of /etc/systemd/system/$chamber.service already exists." > /dev/tty
+      ((retval++))
+    fi
+    # If we found a daemon, device, web or directory by that name, return false
+    [ "$retval" -gt 0 ] && echo false || echo true
+}
+
+############
 ### Choose a name for the chamber & device, set script path
 ############
 
@@ -197,17 +228,16 @@ func_getscriptpath() {
     echo -e "character entered that is not [a-z], [0-9], - or _ will be converted to an"
     echo -e "underscore.  Alpha characters will be converted to lowercase.  Do not enter a"
     echo -e "full path, enter the name to be appended to the standard path."
-    echo -e "\n***IMPORTANT NOTE:***"
-    echo -e "Multi-chamber support is not complete, you are strongly advised to take the"
-    echo -e "defaults here.  You have been warned.\n"
-    read -p "Enter device/directory name: " chamber < /dev/tty
-    while [[ "$chamber" == '' ]] || [ -d "/home/brewpi/${chamber,,}" ]
-    do
-      echo -e "\nError: Device/directory name blank or already exists."
-      read -p "Enter device/directory name: " chamber < /dev/tty
-    done 
+    read -p "Enter chamber name: " chamber < /dev/tty
     chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
     chamber="${chamber,,}"
+    while [ -z "$chamber" ] || [ "$(func_checkchamber "$chamber")" == false ]
+    do
+      echo -e "\nError: Device/directory name blank or already exists."
+      read -p "Enter chamber name: " chamber < /dev/tty
+      chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
+      chamber="${chamber,,}"
+    done
     scriptPath="/home/brewpi/$chamber"
     echo -e "\nUsing $scriptPath for scripts directory and devices."
   else
