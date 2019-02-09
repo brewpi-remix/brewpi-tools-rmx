@@ -38,7 +38,7 @@ func_init() {
   PACKAGE="BrewPi-Tools-RMX"
   GITBRNCH="devel"
   THISSCRIPT="bootstrap.sh"
-  VERSION="0.4.0.1"
+  VERSION="0.5.1"
   # These should stay the same
   GITRAW="https://raw.githubusercontent.com/lbussy"
   GITHUB="https://github.com/lbussy"
