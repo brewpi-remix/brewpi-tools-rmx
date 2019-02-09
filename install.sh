@@ -38,6 +38,7 @@ func_doinit() {
   cd "$(dirname "$0")"
 
   # Set up some project constants
+  THISSCRIPT="$(basename "$0")"
   SCRIPTNAME="${THISSCRIPT%%.*}"
   if [ -x "$(command -v git)" ] && [ -d .git ]; then
     VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))"
@@ -45,6 +46,7 @@ func_doinit() {
     GITPROJ="$(basename $GITURL)"
     GITPROJ="${GITPROJ%.*}"
     PACKAGE="${GITPROJ^^}"
+    GITBRNCH=$(git rev-parse --abbrev-ref HEAD)
     GITPROJWWW="brewpi-www-rmx"
     GITPROJSCRIPT="brewpi-script-rmx"
     # Concatenate URLs
@@ -57,33 +59,33 @@ func_doinit() {
 }
 
 ############
-### Include file for --help and --version functionality
+### Functions for --help and --version functionality
 ############
 
 # func_usage outputs to stdout the --help usage message.
 func_usage () {
-  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
+  echo -e "$PACKAGE $THISSCRIPT version $VERSION
 Usage: sudo ./$THISSCRIPT"
 }
 # func_version outputs to stdout the --version message.
 func_version () {
   echo -e "$THISSCRIPT ($PACKAGE) $VERSION
 Copyright (C) 2018 Lee C. Bussy (@LBussy)
-
 This is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published
 by the Free Software Foundation, either version 3 of the License,
 or (at your option) any later version.
 <https://www.gnu.org/licenses/>
-
 There is NO WARRANTY, to the extent permitted by law."
 }
-
-func_arguments(){
-  if [ -n "$1" ]; then
-    arg="${1//-}" # Strip out all dashes
-    if [[ "$arg" == "h"* ]]; then func_usage; exit 0; fi
-    if [[ "$arg" == "v"* ]]; then func_version; exit 0; fi
+func_arguments() {
+  if test $# = 1; then
+    case "$1" in
+      --help | --hel | --he | --h )
+        func_usage; exit 0 ;;
+      --version | --versio | --versi | --vers | --ver | --ve | --v )
+        func_version; exit 0 ;;
+    esac
   fi
 }
 
@@ -169,7 +171,7 @@ func_checkfree() {
   free_percentage=$(df /home | grep -vE '^Filesystem|tmpfs|cdrom|none' | awk '{ print $5 }')
   free=$(df /home | grep -vE '^Filesystem|tmpfs|cdrom|none' | awk '{ print $4 }')
   free_readable=$(df -H /home | grep -vE '^Filesystem|tmpfs|cdrom|none' | awk '{ print $4 }')
-  
+
   if [ "$free" -le "524288" ]; then
     echo -e "\nDisk usage is $free_percentage, free disk space is $free_readable,"
     echo -e "Not enough space to continue setup. Installing BrewPi requires"
@@ -239,7 +241,7 @@ func_getscriptpath() {
       chamber="${chamber,,}"
     done
     scriptPath="/home/brewpi/$chamber"
-    echo -e "\nUsing $scriptPath for scripts directory and devices."
+    echo -e "\nUsing $scriptPath for scripts directory."
   else
     # First install; give option to do multi-chamber
     echo -e "\nIf you would like to use BrewPi in multi-chamber mode, or simply not use the"
@@ -260,9 +262,9 @@ func_getscriptpath() {
   fi
 
   if [ ! -z $chamber ]; then
-    echo -e "\nNow enter a friendly name to be used for the chamber as it is displayed."
-    echo -e "Capital letters may be used, however any character entered that is not"
-    echo -e "[A-Z], [a-z], [0-9], - or will be replaced with an underscore."
+    echo -e "\nNow enter a friendly name to be used for the chamber as it will be displayed."
+    echo -e "Capital letters may be used, however any character entered that is not [A-Z],"
+    echo -e "[a-z], [0-9], - or _ will be replaced with an underscore."
     read -p "[<Enter> = $chamber]: " chamberName < /dev/tty
     if [ -z "$chamberName" ]; then
       chamberName="$chamber"
@@ -335,11 +337,12 @@ func_doport(){
       udevadm trigger
     else
       # We have selected multichamber but there's no devices
-      echo -e "\nYou've configured the system for multi-chamber support however"
-      echo -e "no Arduinos were found to configure.  The $scriptPath/settings/config.cnf"
-      echo -e "file will be set to use /dev/$chamber however you must configure your device"
+      echo -e "\nYou've configured the system for multi-chamber support however no Arduinos were"
+      echo -e "found to configure.  The following configuration file:"
+      echo -e "$scriptPath/settings/config.cnf"
+      echo -e "... will be set to use /dev/$chamber however you must configure your device"
       echo -e "manually in the $rules file."
-      echo -e "\nScripts will use default 'port = auto' setting."
+      sleep 5
     fi
   else
     echo -e "\nScripts will use default 'port = auto' setting."
@@ -432,7 +435,7 @@ func_makeuser() {
 
 func_clonescripts() {
   echo -e "\nDownloading most recent BrewPi codebase."
-  gitClone="sudo -u brewpi git clone $GITURLSCRIPT $scriptPath"
+  gitClone="sudo -u brewpi git clone -b $GITBRNCH --single-branch $GITURLSCRIPT $scriptPath"
   eval "$gitClone"||die
 }
 
@@ -497,9 +500,9 @@ func_backupwww() {
 
 func_clonewww() {
   echo -e "\nCloning web site."
-  gitClone="sudo -u www-data git clone $GITURLWWW $webPath"
+  gitClone="sudo -u www-data git clone -b $GITBRNCH --single-branch $GITURLWWW $webPath"
   eval "$gitClone"||die
-  # Keep BrewPi for running while we do this.
+  # Keep BrewPi from running while we do things
   touch "$webPath/do_not_run_brewpi"
 }
 
@@ -534,7 +537,7 @@ func_doperms() {
 }
 
 ############
-### Install CRON job
+### Install daemons
 ############
 
 func_dodaemon() {
@@ -560,18 +563,10 @@ func_fixsafari() {
 func_flash() {
   echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
   read -p "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
-  case $yn in
+  case "$yn" in
     [Yy]* ) eval "$scriptPath/utils/updateFirmware.py"||die ;;
     * ) ;;
   esac
-}
-
-############
-### Print standard banner
-############
-
-func_banner(){
-  echo -e "\n***Script $THISSCRIPT $1.***"
 }
 
 ############
@@ -580,7 +575,7 @@ func_banner(){
 
 func_complete() {
   localIP=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
-
+  clear
   echo -e "\n                           BrewPi Install Complete"
   echo -e "------------------------------------------------------------------------------"
   echo -e "Review any uncaught errors above to be sure, but otherwise your initial"
@@ -611,12 +606,12 @@ func_complete() {
 ### Main
 ############
 
-func_main() {
-  func_doinit "$@" # Initialize constants and variables
-  func_arguments "$@" # Handle command line arguments
+main() {
+  func_doinit # Initialize constants and variables
+  func_arguments # Handle command line arguments
   func_checkroot # Make sure we are using sudo
+  echo -e "\n***Script $THISSCRIPT starting.***"
   func_findbrewpi # See if BrewPi is already installed
-  func banner "starting" # Print initial banner
   func_checknet # Check for connection to GitHub
   func_checkfree # Make sure there's enough free space for install
   func_getscriptpath # Choose a sub directory name or take default for scripts
@@ -630,10 +625,10 @@ func_main() {
   func_clonewww # Clone WWW files
   func_updateconfig # Update config files if non-default paths are used
   func_doperms # Set script and www permissions
-  func_dodaemon # Set up daemon units
+  func_dodaemon # Set up daemons
   func_fixsafari # Fix display bug with Safari browsers
   func_flash # Flash controller
-  rm "$webPath/do_not_run_brewpi" # Allow BrewPi to start via cron
+  rm "$webPath/do_not_run_brewpi" # Allow BrewPi to start via daemon
   func_complete # Cleanup and display instructions
 }
 
@@ -641,8 +636,7 @@ func_main() {
 ### Start the script
 ############
 
-THISSCRIPT="$(basename "$0")"
-
-func_main "$@"
+main
 
 exit 0
+

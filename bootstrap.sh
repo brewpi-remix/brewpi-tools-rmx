@@ -36,9 +36,9 @@
 func_init() {
   # Set up some project variables we won't have running as a bootstrap
   PACKAGE="BrewPi-Tools-RMX"
-  GITBRNCH="devel"
+  GITBRNCH="devel" # TODO:  Get this from URL
   THISSCRIPT="bootstrap.sh"
-  VERSION="0.5.1"
+  VERSION="Online"
   # These should stay the same
   GITRAW="https://raw.githubusercontent.com/lbussy"
   GITHUB="https://github.com/lbussy"
@@ -49,7 +49,7 @@ func_init() {
   GITRAW="$GITRAW/$GITPROJ/$GITBRNCH/$THISSCRIPT"
   GITCMD="-b $GITBRNCH --single-branch $GITHUB"
   # Website for network test
-  GITTEST=$GITHUB
+  GITTEST="$GITHUB"
   # Packages to be installed/checked via apt
   APTPACKAGES="git"
 }
@@ -139,13 +139,13 @@ die() {
 func_instructions() {
   clear
   echo -e "\n           -----      BrewPi Remix Installation      -----"
-  
+
   echo -e "\nYou will be presented with some choices during the install. Most frequently"
   echo -e "you will see a 'yes or no' choice, with the default choice capitalized like"
   echo -e "so: [y/N]. Default means if you hit <enter> without typing anything, you will"
   echo -e "make the capitalized choice, i.e. hitting <enter> when you see [Y/n] will"
   echo -e "default to 'yes.'"
-  
+
   echo -e "\nYes/no choices are not case sensitive. However; passwords, system names and"
   echo -e "install paths are. Be aware of this. There is generally no difference between"
   echo -e "'y', 'yes', 'YES', 'Yes'; you get the idea. In some areas you are asked for a"
@@ -154,7 +154,7 @@ func_instructions() {
   echo -e "choice. In general, unless you know what you are doing, going with a non-"
   echo -e "default path is not recommended as not all possibilities can be reasonably"
   echo -e "tested.\n"
-  
+
   read -p "Press <enter> when you are ready to proceed. " yn  < /dev/tty
 }
 
@@ -186,7 +186,6 @@ func_checkpass() {
     sleep 5
   fi
 }
-
 
 ############
 ### Set timezone
@@ -283,7 +282,7 @@ func_packages() {
     apt update||die
     echo
   fi
-  
+
   # Now install any necessary packages if they are not installed
   echo -e "Checking and installing required dependencies via apt.\n"
   for pkg in $APTPACKAGES; do
@@ -295,7 +294,7 @@ func_packages() {
           echo
     fi
   done
-  
+
   # Get list of installed packages with updates available
   upgradesAvail=$(dpkg --get-selections | xargs apt-cache policy {} | \
     grep -1 Installed | sed -r 's/(:|Installed: |Candidate: )//' | \
@@ -333,7 +332,7 @@ func_clonetools() {
       exit 1
     fi
   fi
-  
+
   gitClone="git clone $GITCMD $homepath/$GITPROJ"
   eval $gitClone||die
 }
@@ -342,7 +341,7 @@ func_clonetools() {
 ### Main function
 ############
 
-func_main() {
+main() {
   func_init # Get constants
   func_comline # Check command line arguments
   func_checkroot # Make sure we are su into root
@@ -363,13 +362,11 @@ func_main() {
 ############
 
 sleep 1 # Avoid weird pipe broken errors from wget
-
-# Wrapping everything in a function to prevent getting half a file 
-# from being fatal
-func_main
+main
 
 ############
 ### Work complete
 ############
 
 exit 0
+
