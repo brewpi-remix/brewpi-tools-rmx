@@ -57,33 +57,33 @@ func_doinit() {
 }
 
 ############
-### Functions for --help and --version functionality
+### Include file for --help and --version functionality
 ############
 
 # func_usage outputs to stdout the --help usage message.
 func_usage () {
-  echo -e "$PACKAGE $THISSCRIPT version $VERSION
+  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
 Usage: sudo ./$THISSCRIPT"
 }
 # func_version outputs to stdout the --version message.
 func_version () {
   echo -e "$THISSCRIPT ($PACKAGE) $VERSION
 Copyright (C) 2018 Lee C. Bussy (@LBussy)
+
 This is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published
 by the Free Software Foundation, either version 3 of the License,
 or (at your option) any later version.
 <https://www.gnu.org/licenses/>
+
 There is NO WARRANTY, to the extent permitted by law."
 }
-func_arguments() {
-  if test $# = 1; then
-    case "$1" in
-      --help | --hel | --he | --h )
-        func_usage; exit 0 ;;
-      --version | --versio | --versi | --vers | --ver | --ve | --v )
-        func_version; exit 0 ;;
-    esac
+
+func_arguments(){
+  if [ -n "$1" ]; then
+    arg="${1//-}" # Strip out all dashes
+    if [[ "$arg" == "h"* ]]; then func_usage; exit 0; fi
+    if [[ "$arg" == "v"* ]]; then func_version; exit 0; fi
   fi
 }
 
@@ -390,7 +390,7 @@ func_makeuser() {
   usermod -a -G www-data,brewpi $SUDO_USER||die
   # Add www-data user to brewpi group (allow access to logs)
   usermod -a -G brewpi www-data||die
-  
+
   # Create install path if it does not exist
   if [ ! -d "$scriptPath" ]; then mkdir -p "$scriptPath"; fi
   chown -R brewpi:brewpi "$scriptPath"||die
@@ -437,7 +437,7 @@ func_getwwwpath() {
   # Create web path if it does not exist
   if [ ! -d "$webPath" ]; then mkdir -p "$webPath"; fi
   chown -R www-data:www-data "$webPath"||die
-  
+
   echo -e "\nUsing $webPath for web directory."
 }
 
@@ -507,10 +507,10 @@ func_doperms() {
 ### Install CRON job
 ############
 
-func_docron() {
+func_dodaemon() {
   touch "$webPath/do_not_run_brewpi" # make sure BrewPi does not start yet
-  chmod +x "$scriptPath/utils/doCron.sh"
-  eval "$scriptPath/utils/doCron.sh"||die
+  chmod +x "$scriptPath/utils/doWiFi.sh"
+  eval "$scriptPath/utils/doWiFi.sh"||die
 }
 
 ############
@@ -537,10 +537,18 @@ func_flash() {
 }
 
 ############
+### Print standard banner
+############
+
+func_banner(){
+  echo -e "\n***Script $THISSCRIPT $1.***"
+}
+
+############
 ### Print final banner
 ############
 
-func_complete() {  
+func_complete() {
   localIP=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
 
   echo -e "\n                           BrewPi Install Complete"
@@ -574,10 +582,11 @@ func_complete() {
 ############
 
 func_main() {
-  func_doinit # Initialize constants and variables
-  func_arguments # Handle command line arguments
+  func_doinit "$@" # Initialize constants and variables
+  func_arguments "$@" # Handle command line arguments
   func_checkroot # Make sure we are using sudo
   func_findbrewpi # See if BrewPi is already installed
+  func banner "starting" # Print initial banner
   func_checknet # Check for connection to GitHub
   func_checkfree # Make sure there's enough free space for install
   func_getscriptpath # Choose a sub directory name or take default for scripts
@@ -591,7 +600,7 @@ func_main() {
   func_clonewww # Clone WWW files
   func_updateconfig # Update config files if non-default paths are used
   func_doperms # Set script and www permissions
-  func_docron # Set up cron jobs
+  func_dodaemon # Set up daemon units
   func_fixsafari # Fix display bug with Safari browsers
   func_flash # Flash controller
   rm "$webPath/do_not_run_brewpi" # Allow BrewPi to start via cron
@@ -603,8 +612,7 @@ func_main() {
 ############
 
 THISSCRIPT="$(basename "$0")"
-echo -e "\n***Script $THISSCRIPT starting.***"
 
-func_main
+func_main "$@"
 
 exit 0
