@@ -163,27 +163,30 @@ func_instructions() {
 ############
 
 func_checkpass() {
-  salt=$(sudo getent shadow "pi" | cut -d$ -f3)
-  extpass=$(sudo getent shadow "pi" | cut -d: -f2)
-  match=$(python -c 'import crypt; print crypt.crypt("'"raspberry"'", "$6$'${salt}'")')
-  [ "${match}" == "${extpass}" ] && badpwd=true || badpwd=false
-  if [ "$badpwd" = true ]; then
-    echo -e "\nDefault password found for the 'pi' account. This should be changed."
-    while true; do
-        read -p "Do you want to change the password now? [Y/n]: " yn  < /dev/tty
-        case "$yn" in
-            '' ) setpass=1; break ;;
-            [Yy]* ) setpass=1; break ;;
-            [Nn]* ) break ;;
-            * ) echo "Enter [y]es or [n]o." ;;
-        esac
-    done
-  fi
-  if [ ! -z "$setpass" ]; then
-    echo
-    until passwd pi < /dev/tty; do sleep 2; echo; done
-    echo -e "\nYour password has been changed, remember it or write it down now."
-    sleep 5
+  local user_exists=$(id -u 'pi' > /dev/null 2>&1; echo $?)
+  if [ "$user_exists" -eq 0 ]; then
+    salt=$(sudo getent shadow "pi" | cut -d$ -f3)
+    extpass=$(sudo getent shadow "pi" | cut -d: -f2)
+    match=$(python -c 'import crypt; print crypt.crypt("'"raspberry"'", "$6$'${salt}'")')
+    [ "${match}" == "${extpass}" ] && badpwd=true || badpwd=false
+    if [ "$badpwd" = true ]; then
+      echo -e "\nDefault password found for the 'pi' account. This should be changed."
+      while true; do
+          read -p "Do you want to change the password now? [Y/n]: " yn  < /dev/tty
+          case "$yn" in
+              '' ) setpass=1; break ;;
+              [Yy]* ) setpass=1; break ;;
+              [Nn]* ) break ;;
+              * ) echo "Enter [y]es or [n]o." ;;
+          esac
+      done
+    fi
+    if [ ! -z "$setpass" ]; then
+      echo
+      until passwd pi < /dev/tty; do sleep 2; echo; done
+      echo -e "\nYour password has been changed, remember it or write it down now."
+      sleep 5
+    fi
   fi
 }
 
