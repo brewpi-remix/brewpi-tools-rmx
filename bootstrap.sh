@@ -320,9 +320,11 @@ func_clonetools() {
     else
       echo "Warning: $homepath/$GITPROJ exists."
     fi
-    echo -e "\nIf you are sure you do not need it or you are starting over"
-    echo -e "completely, we can delete the old repo by accepting the below"
-    echo -e "prompt:\n"
+    echo -e "\nIf you are sure you do not need it or you are starting over completely, we can"
+    echo =e "delete the old repo by accepting the below prompt."
+    echo -e "\nIf you are running multi-chamber and are trying to add a new chamber, select"
+    echo -e "'N' below, and add a new chamber by executing:"
+    echo -e "'sudo $homepath/$GITPROJ/install.sh'\n"
     read -p "Remove $homepath/$GITPROJ? [y/N] " < /dev/tty
     if [[ $REPLY =~ ^[Yy]$ ]]; then
       rm -fr $homepath/$GITPROJ
