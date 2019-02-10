@@ -258,7 +258,7 @@ func_getscriptpath() {
       chamber="${chamber,,}"
       scriptPath="/home/brewpi/$chamber"
     fi
-    echo -e "\nUsing $scriptPath for scripts directory and devices."
+    echo -e "\nUsing $scriptPath for scripts directory."
   fi
 
   if [ ! -z $chamber ]; then
@@ -639,4 +639,3 @@ main() {
 main
 
 exit 0
-
