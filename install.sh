@@ -249,7 +249,7 @@ func_getscriptpath() {
     echo -e "devices now.  Any character entered that is not [a-z], [0-9], - or _ will be"
     echo -e "converted to an underscore.  Alpha characters will be converted to lowercase."
     echo -e "Do not enter a full path, enter the name to be appended to the standard path."
-    echo -e "Enter device/directory name, or hit enter to accept the defaults."
+    echo -e "Enter device/directory name or hit enter to accept the defaults."
     read -p "[<Enter> = Single chamber only]:  " chamber < /dev/tty
     if [ -z "$chamber" ]; then
       scriptPath="/home/brewpi"

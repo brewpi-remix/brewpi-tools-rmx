@@ -36,9 +36,9 @@
 func_init() {
   # Set up some project variables we won't have running as a bootstrap
   PACKAGE="BrewPi-Tools-RMX"
-  GITBRNCH="master" # TODO:  Get this from URL
+  GITBRNCH="devel" # TODO:  Get this from URL
   THISSCRIPT="bootstrap.sh"
-  VERSION="0.5.1"
+  VERSION="0.5.1.1"
   # These should stay the same
   GITRAW="https://raw.githubusercontent.com/lbussy"
   GITHUB="https://github.com/lbussy"
@@ -246,7 +246,7 @@ func_hostname() {
       /etc/init.d/avahi-daemon restart
       echo -e "\nYour hostname has been changed to '$newHostName'.\n"
       echo -e "(If your hostname is part of your prompt, your prompt will"
-      echo -e "not change untill you log out and in again.  This will have"
+      echo -e "not change until you log out and in again.  This will have"
       echo -e "no effect on anything but the way the prompt looks.)\n"
       sleep 5
     fi
