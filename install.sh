@@ -481,8 +481,8 @@ func_getwwwpath() {
 func_backupwww() {
   # Back up webPath if it has any files in it
   /etc/init.d/apache2 stop||die
-  rm -rf "$webPath/do_not_run_brewpi" || true
-  rm -rf "$webPath/index.html" || true
+  rm -rf "$webPath/do_not_run_brewpi" 2> /dev/null || true
+  rm -rf "$webPath/index.html" 2> /dev/null || true
   if [ -d "$webPath" ] && [ "$(ls -A ${webPath})" ]; then
     dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-WWW"
     echo -e "\nWeb directory is not empty, backing up the web directory to:"
@@ -628,7 +628,8 @@ main() {
   func_dodaemon # Set up daemons
   func_fixsafari # Fix display bug with Safari browsers
   func_flash # Flash controller
-  rm "$webPath/do_not_run_brewpi" # Allow BrewPi to start via daemon
+  # Allow BrewPi to start via daemon
+  rm "$webPath/do_not_run_brewpi" 2> /dev/null 
   func_complete # Cleanup and display instructions
 }
 
