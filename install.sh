@@ -564,7 +564,7 @@ func_flash() {
   echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
   read -p "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
   case "$yn" in
-    [Yy]* ) eval "$scriptPath/utils/updateFirmware.py"||die ;;
+    [Yy]* ) eval "$scriptPath/utils/updateFirmware.py" ;;
     * ) ;;
   esac
 }
