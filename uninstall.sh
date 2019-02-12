@@ -362,7 +362,7 @@ func_resetudev() {
 ###########
 
 func_resetpwd() {
-  if [ getent passwd "pi" > /dev/null 2&>1 ]; then
+  if getent passwd "pi" > /dev/null; then
     echo -e "\nResetting password for 'pi' back to 'raspberry'." > /dev/tty
     echo "pi:raspberry" | chpasswd
   fi
