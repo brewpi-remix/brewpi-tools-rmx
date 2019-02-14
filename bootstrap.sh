@@ -38,7 +38,7 @@ func_init() {
   PACKAGE="BrewPi-Tools-RMX"
   GITBRNCH="master" # TODO:  Get this from URL
   THISSCRIPT="bootstrap.sh"
-  VERSION="0.5.1"
+  VERSION="0.5.1.1"
   # These should stay the same
   GITRAW="https://raw.githubusercontent.com/lbussy"
   GITHUB="https://github.com/lbussy"
@@ -92,10 +92,8 @@ func_comline() {
 
 func_checkroot() {
   if [ "$SUDO_USER" ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
-  if [[ $EUID -ne 0 ]]; then UIDERROR="root";
-  elif [[ $REALUSER != "pi" ]]; then UIDERROR="pi"; fi
-  if [[ ! $UIDERROR == ""  ]]; then
-    echo -e "This script must be run by user 'pi' with sudo."
+  if [[ $EUID -ne 0 ]]; then
+    echo -e "This script must be run with root priviledges."
     echo -e "Enter the following command as one line:"
     echo -e "wget -q $GITRAW -O - /| sudo bash\n" 1>&2
     exit 1
@@ -246,7 +244,7 @@ func_hostname() {
       /etc/init.d/avahi-daemon restart
       echo -e "\nYour hostname has been changed to '$newHostName'.\n"
       echo -e "(If your hostname is part of your prompt, your prompt will"
-      echo -e "not change untill you log out and in again.  This will have"
+      echo -e "not change until you log out and in again.  This will have"
       echo -e "no effect on anything but the way the prompt looks.)\n"
       sleep 5
     fi
@@ -329,8 +327,8 @@ func_clonetools() {
     echo -e "'N' below, and add a new chamber by executing:"
     echo -e "'sudo $homepath/$GITPROJ/install.sh'\n"
     read -p "Remove $homepath/$GITPROJ? [y/N] " < /dev/tty
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-      rm -fr $homepath/$GITPROJ
+    if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+      rm -fr "$homepath/$GITPROJ"
       echo
     else
       echo -e "\nLeaving $homepath/$GITPROJ in place and exiting.\n"
@@ -338,8 +336,8 @@ func_clonetools() {
     fi
   fi
 
-  gitClone="git clone $GITCMD $homepath/$GITPROJ"
-  eval $gitClone||die
+  gitClone="sudo -u $REALUSER git clone $GITCMD $homepath/$GITPROJ"
+  eval "$gitClone"||die
 }
 
 ############

@@ -249,7 +249,7 @@ func_getscriptpath() {
     echo -e "devices now.  Any character entered that is not [a-z], [0-9], - or _ will be"
     echo -e "converted to an underscore.  Alpha characters will be converted to lowercase."
     echo -e "Do not enter a full path, enter the name to be appended to the standard path."
-    echo -e "Enter device/directory name, or hit enter to accept the defaults."
+    echo -e "Enter device/directory name or hit enter to accept the defaults."
     read -p "[<Enter> = Single chamber only]:  " chamber < /dev/tty
     if [ -z "$chamber" ]; then
       scriptPath="/home/brewpi"
@@ -481,8 +481,8 @@ func_getwwwpath() {
 func_backupwww() {
   # Back up webPath if it has any files in it
   /etc/init.d/apache2 stop||die
-  rm -rf "$webPath/do_not_run_brewpi" || true
-  rm -rf "$webPath/index.html" || true
+  rm -rf "$webPath/do_not_run_brewpi" 2> /dev/null || true
+  rm -rf "$webPath/index.html" 2> /dev/null || true
   if [ -d "$webPath" ] && [ "$(ls -A ${webPath})" ]; then
     dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-WWW"
     echo -e "\nWeb directory is not empty, backing up the web directory to:"
@@ -564,7 +564,7 @@ func_flash() {
   echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
   read -p "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
   case "$yn" in
-    [Yy]* ) eval "$scriptPath/utils/updateFirmware.py"||die ;;
+    [Yy]* ) eval "$scriptPath/utils/updateFirmware.py" ;;
     * ) ;;
   esac
 }
@@ -628,7 +628,8 @@ main() {
   func_dodaemon # Set up daemons
   func_fixsafari # Fix display bug with Safari browsers
   func_flash # Flash controller
-  rm "$webPath/do_not_run_brewpi" # Allow BrewPi to start via daemon
+  # Allow BrewPi to start via daemon
+  rm "$webPath/do_not_run_brewpi" 2> /dev/null 
   func_complete # Cleanup and display instructions
 }
 
