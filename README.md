@@ -14,17 +14,17 @@ Check [Assumptions and Proceedings](#assumptions-proceedings) before moving forw
 
 To begin installing BrewPi, you need only issue the following command in a [terminal window](https://www.raspberrypi.org/documentation/usage/terminal/) (or via [ssh](https://www.raspberrypi.org/documentation/remote-access/ssh/)) on your Internet-connected Raspberry Pi:
 
-`wget -qO- https://raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/bootstrap.sh - /| sudo bash`
+`wget -qO- https://raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/bootstrap.sh | sudo bash`
 
 *or*
 
-`wget -qO- https://tinyurl.com/brewpi-tools-rmx - /| sudo bash`
+`wget -qO- https://u.nu/brewpi-tools-remix | sudo bash`
 
 If you choose to type either command in manually, the `-qO-` is "dash, lower-case 'Q', upper-case 'o', dash", with no spaces in between those characters.
 
-If you have a broken installation and/or need to run the uninstaller without it being installed correctly for some reason, you may use (all one line):
+If you have a broken installation and/or need to run the uninstaller without BrewPi being installed correctly for some reason, you may use (all one line):
 
-`wget -qO- https://tinyurl.com/brewpi-clean - /| sudo bash`
+`wget -qO- https://u.nu/brewpi-tools-clean | sudo bash`
 
 Please read the notes in the table below before running the uninstaller.
 
@@ -37,8 +37,8 @@ When it is complete, you will have a working BrewPi Legacy setup.  I'm a little 
 Filename | Description
 ------------ | -------------
 bootstrap.sh | This script will handle all setup and prep of a new Raspberry Pi.  It will clone this repository and kick off the installer proper.  This should be the only touch-point you need to get going.
-install.sh | This script will install BrewPi on a Raspbian distro.  It is called by the bootstrap script.  This is not the right way forward to move an existing BrewPi Legacy system to this new fork.  At the moment the only tested way is to start fresh.
-uninstall.sh | This is an uninstaller I created for my own testing.  It may be of use to someone wanting to clean up their Raspberry Pi as they install/uninstall for their own testing.  It is rather brutal in that it does not care if you previously installed any of the dependencies for some other purpose.  This behavior is *likely* safe (but not tested) if you intend to reinstall BrewPi right away.  It will also uninstall all dependencies in BrewPi's list of dependencies.  It will remove the original Legacy BrewPi Tools, Script and WWW folders.  **It will reset the machine name and the pi password to their default of "`raspberry`."**
+install.sh | This script will install BrewPi on a Raspbian distro.  It is called by the bootstrap script.  This is not the right way forward to move an existing BrewPi Legacy system to this new fork.  At the moment the only tested way is to start fresh.  See uninstall.sh below.
+uninstall.sh | This is an uninstaller I created for my own testing.  It may be of use to someone wanting to clean up their Raspberry Pi as they install/uninstall for their own testing.  It has three 'levels' of uninstall, the lowest-level being rather brutal in that it does not care if you previously installed any of the dependencies for some other purpose.  This behavior is *likely* safe (but not tested) if you intend to reinstall BrewPi right away.  It will at minumum remove the original as well as Remix Legacy BrewPi Tools, Script and WWW folders.
 
 # <a name="assumptions-proceedings"></a>Assumptions and Proceedings
 This tool set adds a [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping) to install the BrewPi Legacy Remix packages on a completely fresh install of [Raspbian](https://www.raspberrypi.org/documentation/raspbian/) (codename "[Stretch](https://www.raspberrypi.org/blog/raspbian-stretch/)" at the time of this writing).  I do this because some steps required in previous iterations were a little alien to people new to Raspbian/Linux.  Additionally, some supporting software has been deprecated/upgraded which before now made the older BrewPi packages incompatible.
@@ -55,7 +55,7 @@ In order to make this work well, I have to make some assumptions about the envir
  - This has been developed and tested on a Raspberry Pi 3 B+ because that's what I have laying around.  I have absolutely no reason to believe it would not work on a Zero, 2B, or other versions of the Raspberry Pi line.  I've just not tested it.
  - This has been developed and tested on the Raspbian OS.  Raspbian is based on Debian so using a Debian (or derivative) OS distribution *may* work, however that's not been tested.  I am not at all sure that it would work on a different flavor of Linux.
  - This has been developed and tested on the Raspbian Stretch distribution.  If a new distribution for the Raspberry Pi is released it *may* no longer work.  I hope I've future-proofed it, however the original/core code may have some non future-proofed areas waiting to rear their ugly head (or I may not be as good at future-proofing as I believe.)
- - I've assumed throughout that this is the only function the Pi will handle.  This is not unique to this project; the original did not easily support differences like multiple chambers, different user, etc.
+ - I've assumed throughout that this is the only function the Pi will handle.  This is not unique to this remix project.
  - This will not create a BrewPi which is secure enough to connect to *from* the Internet.  There's a whole host of reasons for this, but please, do not do it unless you know what you are doing.  I suggest you consider [Dataplicity](https://www.dataplicity.com) if you really need/want to do this.
  - This has been developed and tested using the default user 'pi' which by default has password-less `sudo` rights.  This is how Raspbian is shipped, and this is how I'll continue to test it.  If you know enough to change any of those assumptions, you know enough to figure out why this process will not work for you.  If you simply MUST change that, I suggest you do it after you get BrewPi Remix running.
  - You need for your Pi to have access *to* the Internet.  I think this is obvious, but the Pi needs to access GitHub and standard Raspbian repositories to download code.  Generally speaking, plugging your Pi into your home network with an Ethernet cable will do this without any configuration necessary.  Attaching to wireless will take a little more work that's not in scope of this project.
@@ -71,7 +71,7 @@ In order to make this work well, I have to make some assumptions about the envir
    10. Clone the BrewPi Tools RMX into the `~/brewpi-tools-rmx` folder
    11. Execute install.sh which is responsible for the rest of the setup
 
-I am certain that someone will find an important assumption I did not list here.  We'll see how long that takes.  [Let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) what you find
+I am certain that someone will find an important assumption I did not list here.  We'll see how long that takes.  [Let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) what you find.
 
 # Credits
 These scripts were originally a part of [brewpi-tools](https://github.com/BrewPi/brewpi-tools), an installer for the [BrewPi project](https://github.com/BrewPi).  My original intent was to simply make the Legacy branch of BrewPi work again since the original install scripts called for PHP5 explicitly and that's no longer available from the regular repositories.  The project grew from there to address some other shortcomings in the original, as well as to make it easier for beginners to get started.
@@ -93,7 +93,7 @@ This project takes us back to the days when Arduino was King, firmware v2.10 was
 # <a name="security-note"></a>Security Note
 My instructions above tell you to copy and paste a command into your terminal window.  Despite me telling you to do that, I am now going to tell you how unsafe that is.  Many people browse the Internet, find the command they need, and blindly paste it into their terminal window.  This one is blatantly (potentially) dangerous from a non-trusted source:
 
-> `wget -qO- https://tinyurl.com/brewpi-tools-rmx - /| sudo bash`
+> `wget -qO- https://u.nu/brewpi-tools-remix | sudo bash`
 
 It's going to download a script to your Raspberry Pi, and pipe (`|`) it through the command `sudo bash`.  When you use `sudo` without any other arguments it will run the command which follows with `root` privileges.  So, you basically found someone on the Internet telling you to run their code as root, without even knowing what it all does.  Despite the inherent risk, installing an application as root is often necessary since some applications have to make global changes to your system.
 
@@ -118,7 +118,6 @@ Cheers!
  - "*Will you accept pull requests*?" - Maybe.  Here's the honest truth however:  Not being a software developer by trade means that working with typical software development tools in a collaborative environment like GitHub is new to me.  I am probably doing this wrong/poorly and in a way that doesn't easily allow such collaboration.  If you're willing to work with someone who does not have these skills in order that you may contribute your own work, it's likely best to [contact me directly](https://github.com/lbussy/) before you start so we can work out the details to avoid frustration for both of us (mostly you.)
  - "*What about older versions of the Pi or Raspbian Stretch, etc.?*" - I've no reason to believe older versions will not work, but they've not been tested.  In theory it should work fine, but at some point, on a platform like Raspberry Pi, you just need to say "flash a new card and get over it."  These are not desktop machines that accumulate "stuff" over the years.  If you have a Pi that's on it's original SD card for more than a couple years you have a rare bird indeed.  I'd be more than happy to discuss why it didn't work if you run into an issue, it would be interesting I think, but it might not be something I choose to address.
 
-
 # Known Issues
 You can view or log new issues via the links below:
 
@@ -130,3 +129,4 @@ You can view or log new issues via the links below:
 | BrewPi-Firmware-RMX | Arduino firmware | [Issues List](https://github.com/lbussy/brewpi-firmware-rmx/issues) |
 
 Back up to [Getting Started](#getting-started).
+
