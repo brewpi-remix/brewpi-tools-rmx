@@ -314,7 +314,7 @@ func_doport(){
       done
       echo
       while :; do
-        read -p "Please select an Arduino [0-$count] to associate with this chamber. [0]:  " board < /dev/tty
+        read -p "Please select an Arduino [0-$count] to associate with this chamber:  " board < /dev/tty
         [[ $board =~ ^[0-$count]+$ ]] || { echo "Please enter a valid choice."; continue; }
         if ((board >= 0 && board <= count)); then
           break
