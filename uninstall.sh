@@ -53,7 +53,7 @@ func_getroot() {
 }
 
 ############
-### Cleanup cron
+### Remove cron for brewpi
 ############
 
 func_cron() {
@@ -66,7 +66,7 @@ func_cron() {
 }
 
 ############
-### Cleanup syslogd
+### Remove syslogd unit files for brewpi and wificheck
 ############
 
 func_syslogd() {
@@ -130,7 +130,7 @@ func_killproc() {
 }
 
 ############
-### Remove all BrewPi Packages
+### Remove all BrewPi repositories
 ############
 
 func_delrepo() {
@@ -321,7 +321,7 @@ func_cleanapt() {
 }
 
 ############
-### Change hostname
+### Reset hostname
 ###########
 
 func_resethost() {
@@ -358,7 +358,7 @@ func_resetudev() {
 }
 
 ############
-### Reset password
+### Reset pi password
 ###########
 
 func_resetpwd() {
@@ -374,9 +374,6 @@ func_resetpwd() {
 
 func_wipelevel () {
   local level=""
-  # Return 2 = least (stop and kill, remove repos, remove users/groups, reset Apache)
-  # Return 1 = middle (Additionally reset host name, reset Pi password)
-  # Return 0 = harsh (Additionally wipe all apt and pip packages)
   echo -e "\nSelect the level of uninstall you wish to execute.  The least is level [2]" > /dev/tty
   echo -e "which is probably appropriate if you have an issue and are looking to cleanup" > /dev/tty
   echo -e "and reinstall.  Level [1] will reset the hostname and the password for 'pi'" > /dev/tty
@@ -384,14 +381,32 @@ func_wipelevel () {
   echo -e "apt and pip package removals.  [0] is likely only appropriate for testers and" > /dev/tty
   echo -e "you should not run it unless you know what you are doing or someone tells you" > /dev/tty
   echo -e "that you need to.\n" > /dev/tty
-  echo -e "   [2] - Normal uninstall of BrewPi repositories, services and devices" > /dev/tty
-  echo -e "   [1] - Everything in [2] plus reset hostname and pi password" > /dev/tty
-  echo -e "   [0] - Everything in [2] and [1] plus wipe pip and apt packages\n" > /dev/tty
-  while [ -z "$level" ] || ! [[ "$level" =~ ^[0-9]+$ ]] || ([ "$level" -lt 0 ] || [ "$level" -gt 2 ])
+  echo -e "   [1] - Normal uninstall of BrewPi repositories, services and devices" > /dev/tty
+  echo -e "   [2] - Everything in [1] plus reset hostname and pi password" > /dev/tty
+  echo -e "   [3] - Everything in [1] and [2] plus wipe pip and apt packages\n" > /dev/tty
+  
+  while :
   do
-    read -p "Enter level of uninstall to execute 0, 1, or 2.: " level < /dev/tty
+    read -p "Enter level of uninstall to execute 1, 2, 3 or Q to quit [Q]: " level < /dev/tty
+    case "$level" in
+      1 )
+        echo -e "\nExecuting a level one (mild) uninstall." > /dev/tty
+        echo 1
+        break ;;
+      2 )
+        echo -e "\nExecuting a level two (medium) uninstall." > /dev/tty
+        echo 2
+        break ;;
+      3 )
+        echo -e "\nExecuting a level three (hard) uninstall." > /dev/tty
+        echo 3
+        break ;;
+      * )
+        echo -e "\nUninstall canceled." > /dev/tty
+        echo "Q"
+        break ;;
+    esac
   done
-  echo "$level"
 }
 
 ############
@@ -403,21 +418,23 @@ main() {
   echo -e "\n***Script BrewPi Uninstaller starting.***" > /dev/tty
   cd ~ # Start from home
   level="$(func_wipelevel)"
-  [ "$level" -le 2 ] && func_cron # Clean up crontab
-  [ "$level" -le 2 ] && func_syslogd # Cleanup syslogd
-  [ "$level" -le 2 ] && func_killproc # Kill all brewpi procs
-  [ "$level" -le 2 ] && func_delrepo # Remove all the repos
-  [ "$level" -le 2 ] && func_cleanusers # Clean up users and groups
-  [ "$level" -le 2 ] && func_resetapache # Reset Apache config to stock
-  [ "$level" -le 0 ] && func_delpip # Remove pip packages
-  [ "$level" -le 0 ] && func_delapt # Remove apt dependencies
-  [ "$level" -le 2 ] && func_delphp5 # Remove php5 packages
-  [ "$level" -le 2 ] && func_delnginx # Remove nginx
-  [ "$level" -le 2 ] && func_cleanapt # Clean up apt packages locally
-  [ "$level" -le 1 ] && func_resethost # Reset hostname
-  [ "$level" -le 2 ] && func_resetudev # Remove udev rules
-  [ "$level" -le 1 ] && func_resetpwd # Reset pi password
-  echo -e "\n***Script BrewPi Uninstaller complete.***" > /dev/tty
+  if [ ! "$level" == "Q" ]; then
+    [ "$level" -ge 1 ] && func_cron # Clean up crontab
+    [ "$level" -ge 1 ] && func_syslogd # Cleanup syslogd
+    [ "$level" -ge 1 ] && func_killproc # Kill all brewpi procs
+    [ "$level" -ge 1 ] && func_delrepo # Remove all the repos
+    [ "$level" -ge 1 ] && func_cleanusers # Clean up users and groups
+    [ "$level" -ge 1 ] && func_resetapache # Reset Apache config to stock
+    [ "$level" -ge 3 ] && func_delpip # Remove pip packages
+    [ "$level" -ge 3 ] && func_delapt # Remove apt dependencies
+    [ "$level" -ge 1 ] && func_delphp5 # Remove php5 packages
+    [ "$level" -ge 1 ] && func_delnginx # Remove nginx
+    [ "$level" -ge 1 ] && func_cleanapt # Clean up apt packages locally
+    [ "$level" -ge 2 ] && func_resethost # Reset hostname
+    [ "$level" -ge 1 ] && func_resetudev # Remove udev rules
+    [ "$level" -ge 2 ] && func_resetpwd # Reset pi password
+    echo -e "\n***Script BrewPi Uninstaller complete.***" > /dev/tty
+  fi
 }
 
 ############
