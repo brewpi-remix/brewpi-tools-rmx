@@ -196,13 +196,24 @@ func_settime() {
   date=$(date)
   while true; do
     echo -e "\nThe time is currently set to $date."
-    read -p "Is this correct? [y/N]: " yn  < /dev/tty
-    case $yn in
-      '' ) dpkg-reconfigure tzdata; break ;;
-      [Nn]* ) dpkg-reconfigure tzdata; break ;;
-      [Yy]* ) echo ; break ;;
-      * ) echo "Enter [y]es or [n]o." ;;
-    esac
+    if [ "$(date | cut -d ' ' -f 5)" == "GMT" ]; then
+      # Probably never been set
+      read -p "Is this correct? [y/N]: " yn  < /dev/tty
+      case $yn in
+        '' ) dpkg-reconfigure tzdata; break ;;
+        [Nn]* ) dpkg-reconfigure tzdata; break ;;
+        [Yy]* ) echo ; break ;;
+        * ) echo "Enter [y]es or [n]o." ;;
+      esac
+    else
+      # Probably been set
+      read -p "Is this correct? [Y/n]: " yn  < /dev/tty
+      case $yn in
+        [Nn]* ) dpkg-reconfigure tzdata; break ;;
+        [Yy]* ) echo ; break ;;
+        * ) echo ; break ;;
+      esac
+    fi
   done
 }
 
