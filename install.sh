@@ -306,7 +306,8 @@ func_doport(){
       fi
     done
     # Display a menu of devices to associate with this chamber
-    if [ $count -gt -1 ]; then
+    if [ $count -gt 0 ]; then
+      # There's more than one (it's 0-based)
       echo -e "\nThe following seem to be the Arduinos available on this system:\n"
       for (( c=0; c<=count; c++ ))
       do
@@ -322,7 +323,7 @@ func_doport(){
       done
 
       if [ -L "/dev/$chamber" ]; then
-        echo "That name already exists as a /dev link, using it."
+        echo -e "\nPort /dev/$chamber already exists as a link; using it but check your setup."
       else
         echo -e "\nCreating rule for board ${serial[board]} as /dev/$chamber."
         # Concatenate the rule
@@ -330,6 +331,22 @@ func_doport(){
         #rule+=', GROUP="brewpi"'
         # Replace placeholders with real values
         rule="${rule/sernum/${serial[board]}}"
+        rule="${rule/chambr/$chamber}"
+        echo "$rule" >> "$rules"
+      fi
+      udevadm control --reload-rules
+      udevadm trigger
+    elif [ $count -eq 0 ]; then
+      # Only one (it's 0-based), use it
+      if [ -L "/dev/$chamber" ]; then
+        echo -e "\nPort /dev/$chamber already exists as a link; using it but check your setup."
+      else
+        echo -e "\nCreating rule for board ${serial[0]} as /dev/$chamber."
+        # Concatenate the rule
+        rule='SUBSYSTEM=="tty", ATTRS{serial}=="sernum", SYMLINK+="chambr"'
+        #rule+=', GROUP="brewpi"'
+        # Replace placeholders with real values
+        rule="${rule/sernum/${serial[0]}}"
         rule="${rule/chambr/$chamber}"
         echo "$rule" >> "$rules"
       fi
