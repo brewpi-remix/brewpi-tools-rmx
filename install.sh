@@ -630,6 +630,8 @@ main() {
   func_arguments # Handle command line arguments
   func_checkroot # Make sure we are using sudo
   echo -e "\n***Script $THISSCRIPT starting.***"
+  arg="${1//-}" # Strip out all dashes
+  if [[ "$arg" == "q"* ]]; then quick=true; else quick=false; fi
   func_findbrewpi # See if BrewPi is already installed
   func_checknet # Check for connection to GitHub
   func_checkfree # Make sure there's enough free space for install
@@ -638,7 +640,9 @@ main() {
   func_backupscript # Backup anything in the scripts directory
   func_makeuser # Create/configure user account
   func_clonescripts # Clone scripts git repository
-  func_dodepends # Install dependencies
+  if [ ! "$quick" == "true" ]; then
+    func_dodepends # Install dependencies
+  fi
   func_getwwwpath # Get WWW install location
   func_backupwww # Backup anything in WWW location
   func_clonewww # Clone WWW files
@@ -656,7 +660,5 @@ main() {
 ### Start the script
 ############
 
-main
-
+main "$@"
 exit 0
-
