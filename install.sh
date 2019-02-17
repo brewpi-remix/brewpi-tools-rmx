@@ -222,7 +222,7 @@ func_getscriptpath() {
   # See if we already have chambers installed
   if [ ! -z "$instances" ]; then
     # We've already got BrewPi installed in multi-chamber
-    echo -e "\nThe following chambers are already configured on this Pi:"
+    echo -e "\nThe following chambers are already configured on this Pi:\n"
     for instance in $instances
     do
       echo -e "\t$(dirname "${instance}")"
@@ -230,7 +230,7 @@ func_getscriptpath() {
     echo -e "\nWhat device/directory name would you like to use for this installation?  Any"
     echo -e "character entered that is not [a-z], [0-9], - or _ will be converted to an"
     echo -e "underscore.  Alpha characters will be converted to lowercase.  Do not enter a"
-    echo -e "full path, enter the name to be appended to the standard path."
+    echo -e "full path, enter the name to be appended to the standard paths.\n"
     read -p "Enter chamber name: " chamber < /dev/tty
     chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
     chamber="${chamber,,}"
@@ -249,7 +249,7 @@ func_getscriptpath() {
     echo -e "defaults for scripts and web pages, you may choose a name for sub directory and"
     echo -e "devices now.  Any character entered that is not [a-z], [0-9], - or _ will be"
     echo -e "converted to an underscore.  Alpha characters will be converted to lowercase."
-    echo -e "Do not enter a full path, enter the name to be appended to the standard path."
+    echo -e "Do not enter a full path, enter the name to be appended to the standard path.\n"
     echo -e "Enter device/directory name or hit enter to accept the defaults."
     read -p "[<Enter> = Single chamber only]:  " chamber < /dev/tty
     if [ -z "$chamber" ]; then
@@ -265,12 +265,12 @@ func_getscriptpath() {
   if [ ! -z $chamber ]; then
     echo -e "\nNow enter a friendly name to be used for the chamber as it will be displayed."
     echo -e "Capital letters may be used, however any character entered that is not [A-Z],"
-    echo -e "[a-z], [0-9], - or _ will be replaced with an underscore."
+    echo -e "[a-z], [0-9], - or _ will be replaced with an underscore.\n"
     read -p "[<Enter> = $chamber]: " chamberName < /dev/tty
     if [ -z "$chamberName" ]; then
       chamberName="$chamber"
     else
-      chamberName="$(echo "$chamberName" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
+      chamberName="$(echo "$chamberName" | sed -e 's/[^A-Za-z0-9._-\ ]/_/g')"
     fi
     echo -e "\nUsing $chamberName for chamber name."
   fi
@@ -538,7 +538,7 @@ func_updateconfig() {
     # Create port name in custom script configuration file
     echo "port = /dev/$chamber" >> "$scriptPath/settings/config.cfg"
     # Create chamber name in custom script configuration file
-    echo "chamber = $chamberName" >> "$scriptPath/settings/config.cfg"
+    echo "chamber = \"$chamberName\"" >> "$scriptPath/settings/config.cfg"
     # Create script path in custom web configuration file
     echo "<?php " >> "$webPath"/config_user.php
     echo "\$scriptPath = '$scriptPath';" >> "$webPath/config_user.php"
