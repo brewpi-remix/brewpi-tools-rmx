@@ -138,9 +138,10 @@ die () {
 func_findbrewpi() {
   declare home="/home/brewpi"
   instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
+  IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list
   if [ ${#instances} -eq 22 ]; then
     echo -e "\nFound BrewPi installed and configured to run in single instance mode.  To"
-    echo -e "change to multi-chamber mode you must remove this instance configured as"
+    echo -e "change to multi-chamber mode you must uninstall this instance configured as"
     echo -e "single-use and re-run the installer to configure multi-chamber."
     exit 1
   fi
@@ -592,8 +593,7 @@ func_flash() {
 
 func_complete() {
   localIP=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
-  clear
-  echo -e "\n                           BrewPi Install Complete"
+  echo -e "\n\n\n                           BrewPi Install Complete"
   echo -e "------------------------------------------------------------------------------"
   echo -e "BrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
   echo -e "the following in your favorite browser:"
@@ -648,7 +648,7 @@ main() {
   func_fixsafari # Fix display bug with Safari browsers
   func_flash # Flash controller
   # Allow BrewPi to start via daemon
-  rm "$webPath/do_not_run_brewpi" 2> /dev/null 
+  rm "$webPath/do_not_run_brewpi" 2> /dev/null
   func_complete # Cleanup and display instructions
 }
 
@@ -659,3 +659,4 @@ main() {
 main
 
 exit 0
+
