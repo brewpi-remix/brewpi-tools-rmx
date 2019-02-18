@@ -38,7 +38,7 @@ func_init() {
   PACKAGE="BrewPi-Tools-RMX"
   GITBRNCH="master" # TODO:  Get this from URL
   THISSCRIPT="bootstrap.sh"
-  VERSION="0.5.1.1"
+  VERSION="0.5.1.2"
   # These should stay the same
   GITRAW="https://raw.githubusercontent.com/lbussy"
   GITHUB="https://github.com/lbussy"
@@ -196,13 +196,24 @@ func_settime() {
   date=$(date)
   while true; do
     echo -e "\nThe time is currently set to $date."
-    read -p "Is this correct? [y/N]: " yn  < /dev/tty
-    case $yn in
-      '' ) dpkg-reconfigure tzdata; break ;;
-      [Nn]* ) dpkg-reconfigure tzdata; break ;;
-      [Yy]* ) echo ; break ;;
-      * ) echo "Enter [y]es or [n]o." ;;
-    esac
+    if [ "$(date | cut -d ' ' -f 5)" == "GMT" ]; then
+      # Probably never been set
+      read -p "Is this correct? [y/N]: " yn  < /dev/tty
+      case $yn in
+        '' ) dpkg-reconfigure tzdata; break ;;
+        [Nn]* ) dpkg-reconfigure tzdata; break ;;
+        [Yy]* ) echo ; break ;;
+        * ) echo "Enter [y]es or [n]o." ;;
+      esac
+    else
+      # Probably been set
+      read -p "Is this correct? [Y/n]: " yn  < /dev/tty
+      case $yn in
+        [Nn]* ) dpkg-reconfigure tzdata; break ;;
+        [Yy]* ) echo ; break ;;
+        * ) echo ; break ;;
+      esac
+    fi
   done
 }
 

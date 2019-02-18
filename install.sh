@@ -138,9 +138,10 @@ die () {
 func_findbrewpi() {
   declare home="/home/brewpi"
   instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
+  IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list
   if [ ${#instances} -eq 22 ]; then
     echo -e "\nFound BrewPi installed and configured to run in single instance mode.  To"
-    echo -e "change to multi-chamber mode you must remove this instance configured as"
+    echo -e "change to multi-chamber mode you must uninstall this instance configured as"
     echo -e "single-use and re-run the installer to configure multi-chamber."
     exit 1
   fi
@@ -221,7 +222,7 @@ func_getscriptpath() {
   # See if we already have chambers installed
   if [ ! -z "$instances" ]; then
     # We've already got BrewPi installed in multi-chamber
-    echo -e "\nThe following chambers are already configured on this Pi:"
+    echo -e "\nThe following chambers are already configured on this Pi:\n"
     for instance in $instances
     do
       echo -e "\t$(dirname "${instance}")"
@@ -229,7 +230,7 @@ func_getscriptpath() {
     echo -e "\nWhat device/directory name would you like to use for this installation?  Any"
     echo -e "character entered that is not [a-z], [0-9], - or _ will be converted to an"
     echo -e "underscore.  Alpha characters will be converted to lowercase.  Do not enter a"
-    echo -e "full path, enter the name to be appended to the standard path."
+    echo -e "full path, enter the name to be appended to the standard paths.\n"
     read -p "Enter chamber name: " chamber < /dev/tty
     chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
     chamber="${chamber,,}"
@@ -248,7 +249,7 @@ func_getscriptpath() {
     echo -e "defaults for scripts and web pages, you may choose a name for sub directory and"
     echo -e "devices now.  Any character entered that is not [a-z], [0-9], - or _ will be"
     echo -e "converted to an underscore.  Alpha characters will be converted to lowercase."
-    echo -e "Do not enter a full path, enter the name to be appended to the standard path."
+    echo -e "Do not enter a full path, enter the name to be appended to the standard path.\n"
     echo -e "Enter device/directory name or hit enter to accept the defaults."
     read -p "[<Enter> = Single chamber only]:  " chamber < /dev/tty
     if [ -z "$chamber" ]; then
@@ -264,12 +265,12 @@ func_getscriptpath() {
   if [ ! -z $chamber ]; then
     echo -e "\nNow enter a friendly name to be used for the chamber as it will be displayed."
     echo -e "Capital letters may be used, however any character entered that is not [A-Z],"
-    echo -e "[a-z], [0-9], - or _ will be replaced with an underscore."
+    echo -e "[a-z], [0-9], - or _ will be replaced with an underscore. Spaces are allowed.\n"
     read -p "[<Enter> = $chamber]: " chamberName < /dev/tty
     if [ -z "$chamberName" ]; then
       chamberName="$chamber"
     else
-      chamberName="$(echo "$chamberName" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
+      chamberName="$(echo "$chamberName" | sed -e 's/[^A-Za-z0-9._-\ ]/_/g')"
     fi
     echo -e "\nUsing $chamberName for chamber name."
   fi
@@ -306,7 +307,8 @@ func_doport(){
       fi
     done
     # Display a menu of devices to associate with this chamber
-    if [ $count -gt -1 ]; then
+    if [ $count -gt 0 ]; then
+      # There's more than one (it's 0-based)
       echo -e "\nThe following seem to be the Arduinos available on this system:\n"
       for (( c=0; c<=count; c++ ))
       do
@@ -314,7 +316,7 @@ func_doport(){
       done
       echo
       while :; do
-        read -p "Please select an Arduino [0-$count] to associate with this chamber. [0]:  " board < /dev/tty
+        read -p "Please select an Arduino [0-$count] to associate with this chamber:  " board < /dev/tty
         [[ $board =~ ^[0-$count]+$ ]] || { echo "Please enter a valid choice."; continue; }
         if ((board >= 0 && board <= count)); then
           break
@@ -322,7 +324,7 @@ func_doport(){
       done
 
       if [ -L "/dev/$chamber" ]; then
-        echo "That name already exists as a /dev link, using it."
+        echo -e "\nPort /dev/$chamber already exists as a link; using it but check your setup."
       else
         echo -e "\nCreating rule for board ${serial[board]} as /dev/$chamber."
         # Concatenate the rule
@@ -330,6 +332,22 @@ func_doport(){
         #rule+=', GROUP="brewpi"'
         # Replace placeholders with real values
         rule="${rule/sernum/${serial[board]}}"
+        rule="${rule/chambr/$chamber}"
+        echo "$rule" >> "$rules"
+      fi
+      udevadm control --reload-rules
+      udevadm trigger
+    elif [ $count -eq 0 ]; then
+      # Only one (it's 0-based), use it
+      if [ -L "/dev/$chamber" ]; then
+        echo -e "\nPort /dev/$chamber already exists as a link; using it but check your setup."
+      else
+        echo -e "\nCreating rule for board ${serial[0]} as /dev/$chamber."
+        # Concatenate the rule
+        rule='SUBSYSTEM=="tty", ATTRS{serial}=="sernum", SYMLINK+="chambr"'
+        #rule+=', GROUP="brewpi"'
+        # Replace placeholders with real values
+        rule="${rule/sernum/${serial[0]}}"
         rule="${rule/chambr/$chamber}"
         echo "$rule" >> "$rules"
       fi
@@ -520,7 +538,7 @@ func_updateconfig() {
     # Create port name in custom script configuration file
     echo "port = /dev/$chamber" >> "$scriptPath/settings/config.cfg"
     # Create chamber name in custom script configuration file
-    echo "chamber = $chamberName" >> "$scriptPath/settings/config.cfg"
+    echo "chamber = \"$chamberName\"" >> "$scriptPath/settings/config.cfg"
     # Create script path in custom web configuration file
     echo "<?php " >> "$webPath"/config_user.php
     echo "\$scriptPath = '$scriptPath';" >> "$webPath/config_user.php"
@@ -575,12 +593,9 @@ func_flash() {
 
 func_complete() {
   localIP=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
-  clear
-  echo -e "\n                           BrewPi Install Complete"
+  echo -e "\n\n\n                           BrewPi Install Complete"
   echo -e "------------------------------------------------------------------------------"
-  echo -e "Review any uncaught errors above to be sure, but otherwise your initial"
-  echo -e "install is complete."
-  echo -e "\nBrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
+  echo -e "BrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
   echo -e "the following in your favorite browser:"
   # Use chamber name if configured
   if [ ! -z "$chamber" ]; then
@@ -597,8 +612,13 @@ func_complete() {
   else
     echo -e "http://$(hostname).local"
   fi
-  echo -e "\nUnder Windows, Bonjour installs with iTunes or can be downloaded separately at:"
-  echo -e "https://support.apple.com/downloads/bonjour_for_windows"
+  if [ -n "$chamber" ]; then
+    echo -e "\nIf you would like to install another chamber, issue the command:"
+    echo -e "sudo ~/brewpi-tools-rmx/install.sh"
+    echo -e "\nYour multi-chamber index is available at:"
+    echo -e "http://$localIP - or -"
+    echo -e "http://$(hostname).local"
+  fi
   echo -e "\nHappy Brewing!"
 }
 
@@ -611,6 +631,8 @@ main() {
   func_arguments # Handle command line arguments
   func_checkroot # Make sure we are using sudo
   echo -e "\n***Script $THISSCRIPT starting.***"
+  arg="${1//-}" # Strip out all dashes
+  if [[ "$arg" == "q"* ]]; then quick=true; else quick=false; fi
   func_findbrewpi # See if BrewPi is already installed
   func_checknet # Check for connection to GitHub
   func_checkfree # Make sure there's enough free space for install
@@ -619,7 +641,9 @@ main() {
   func_backupscript # Backup anything in the scripts directory
   func_makeuser # Create/configure user account
   func_clonescripts # Clone scripts git repository
-  func_dodepends # Install dependencies
+  if [ ! "$quick" == "true" ]; then
+    func_dodepends # Install dependencies
+  fi
   func_getwwwpath # Get WWW install location
   func_backupwww # Backup anything in WWW location
   func_clonewww # Clone WWW files
@@ -627,9 +651,14 @@ main() {
   func_doperms # Set script and www permissions
   func_dodaemon # Set up daemons
   func_fixsafari # Fix display bug with Safari browsers
+  # Add links for multi-chamber dashboard
+  if [ -n "$chamber" ]; then
+    webRoot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
+    [ ! -L "$webRoot/index.php" ] && (eval "$scriptPath/utils/doIndex.sh"||warn)
+  fi
   func_flash # Flash controller
   # Allow BrewPi to start via daemon
-  rm "$webPath/do_not_run_brewpi" 2> /dev/null 
+  rm "$webPath/do_not_run_brewpi" 2> /dev/null
   func_complete # Cleanup and display instructions
 }
 
@@ -637,6 +666,5 @@ main() {
 ### Start the script
 ############
 
-main
-
+main "$@"
 exit 0
