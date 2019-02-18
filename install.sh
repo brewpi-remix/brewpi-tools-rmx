@@ -650,6 +650,11 @@ main() {
   func_doperms # Set script and www permissions
   func_dodaemon # Set up daemons
   func_fixsafari # Fix display bug with Safari browsers
+  # Add links for multi-chamber dashboard
+  if [ -n "$chamber" ]; then
+    webRoot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
+    [ ! -L "$webRoot/index.php" ] && (eval "$scriptPath/utils/doIndex.sh"||warn)
+  fi
   func_flash # Flash controller
   # Allow BrewPi to start via daemon
   rm "$webPath/do_not_run_brewpi" 2> /dev/null
