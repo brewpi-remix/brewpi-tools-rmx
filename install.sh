@@ -612,11 +612,12 @@ func_complete() {
   else
     echo -e "http://$(hostname).local"
   fi
-  echo -e "\nUnder Windows, Bonjour installs with iTunes or can be downloaded separately at:"
-  echo -e "https://support.apple.com/downloads/bonjour_for_windows"
   if [ -n "$chamber" ]; then
     echo -e "\nIf you would like to install another chamber, issue the command:"
     echo -e "sudo ~/brewpi-tools-rmx/install.sh"
+    echo -e "\nYour multi-chamber index is available at:"
+    echo -e "http://$localIP - or -"
+    echo -e "http://$(hostname).local"
   fi
   echo -e "\nHappy Brewing!"
 }
