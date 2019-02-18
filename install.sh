@@ -265,7 +265,7 @@ func_getscriptpath() {
   if [ ! -z $chamber ]; then
     echo -e "\nNow enter a friendly name to be used for the chamber as it will be displayed."
     echo -e "Capital letters may be used, however any character entered that is not [A-Z],"
-    echo -e "[a-z], [0-9], - or _ will be replaced with an underscore.\n"
+    echo -e "[a-z], [0-9], - or _ will be replaced with an underscore. Spaces are allowed.\n"
     read -p "[<Enter> = $chamber]: " chamberName < /dev/tty
     if [ -z "$chamberName" ]; then
       chamberName="$chamber"
