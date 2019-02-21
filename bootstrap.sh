@@ -359,7 +359,7 @@ main() {
   func_init # Get constants
   func_comline # Check command line arguments
   func_checkroot # Make sure we are su into root
-  func_log # Create install log
+  #func_log # Create install log
   echo -e "\n***Script $THISSCRIPT starting.***"
   func_instructions # Show instructions
   func_checkpass # Check for default password
