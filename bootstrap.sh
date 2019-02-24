@@ -214,8 +214,8 @@ func_settime() {
       read -p "Is this correct? [Y/n]: " yn  < /dev/tty
       case $yn in
         [Nn]* ) dpkg-reconfigure tzdata; break ;;
-        [Yy]* ) echo ; break ;;
-        * ) echo ; break ;;
+        [Yy]* ) break ;;
+        * ) break ;;
       esac
     fi
   done
