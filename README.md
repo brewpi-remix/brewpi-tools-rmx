@@ -1,5 +1,3 @@
-
-
 # ![BrewPi Legacy Remix Logo](https://raw.githubusercontent.com/lbussy/brewpi-www-rmx/master/brewpi_logo.png)
 *[@LBussy](https://github.com/lbussy)'s forks of the original [BrewPi Project](https://github.com/BrewPi)*
 
@@ -14,17 +12,15 @@ Check [Assumptions and Proceedings](#assumptions-proceedings) before moving forw
 
 To begin installing BrewPi, you need only issue the following command in a [terminal window](https://www.raspberrypi.org/documentation/usage/terminal/) (or via [ssh](https://www.raspberrypi.org/documentation/remote-access/ssh/)) on your Internet-connected Raspberry Pi:
 
-`wget -qO- https://raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/bootstrap.sh | sudo bash`
+`curl -L raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/bootstrap.sh | sudo bash`
 
 *or*
 
-`wget -qO- https://u.nu/brewpi-tools-remix | sudo bash`
-
-If you choose to type either command in manually, the `-qO-` is "dash, lower-case 'Q', upper-case 'o', dash", with no spaces in between those characters.
+`curl -L install.brewpiremix.com | sudo bash`
 
 If you have a broken installation and/or need to run the uninstaller without BrewPi being installed correctly for some reason, you may use (all one line):
 
-`wget -qO- https://u.nu/brewpi-tools-clean | sudo bash`
+`curl -L uninstall.brewpiremix.com | sudo bash`
 
 Please read the notes in the table below before running the uninstaller.
 
@@ -93,7 +89,7 @@ This project takes us back to the days when Arduino was King, firmware v2.10 was
 # <a name="security-note"></a>Security Note
 My instructions above tell you to copy and paste a command into your terminal window.  Despite me telling you to do that, I am now going to tell you how unsafe that is.  Many people browse the Internet, find the command they need, and blindly paste it into their terminal window.  This one is blatantly (potentially) dangerous from a non-trusted source:
 
-> `wget -qO- https://u.nu/brewpi-tools-remix | sudo bash`
+> `curl -L install.brewpiremix.com | sudo bash`
 
 It's going to download a script to your Raspberry Pi, and pipe (`|`) it through the command `sudo bash`.  When you use `sudo` without any other arguments it will run the command which follows with `root` privileges.  So, you basically found someone on the Internet telling you to run their code as root, without even knowing what it all does.  Despite the inherent risk, installing an application as root is often necessary since some applications have to make global changes to your system.
 

@@ -93,9 +93,9 @@ func_comline() {
 func_checkroot() {
   if [ "$SUDO_USER" ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
   if [[ $EUID -ne 0 ]]; then
-    echo -e "This script must be run with root priviledges."
+    echo -e "\nThis script must be run with root priviledges."
     echo -e "Enter the following command as one line:"
-    echo -e "wget -q $GITRAW -O - /| sudo bash\n" 1>&2
+    echo -e "wget -q $GITRAW -O - /| sudo bash" 1>&2
     exit 1
   fi
   # And get the user home directory
@@ -103,8 +103,8 @@ func_checkroot() {
   if [ $? -eq 0 ]; then
     homepath=$(echo $_shadow | cut -d':' -f6)
   else
-    echo "Unable to retrieve $REALUSER's home directory. Manual install"
-    echo "may be necessary."
+    echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install"
+    echo -e "may be necessary."
     exit 1
   fi
 }
@@ -116,7 +116,7 @@ func_checkroot() {
 warn() {
   local fmt="$1"
   command shift 2>/dev/null
-  echo -e "$fmt"
+  echo -e "\n$fmt"
   echo -e "${@}"
   echo -e "\n*** ERROR ERROR ERROR ERROR ERROR ***"
   echo -e "-------------------------------------"
@@ -136,7 +136,11 @@ die() {
 
 func_instructions() {
   clear
-  echo -e "\n           -----      BrewPi Remix Installation      -----"
+  echo -e "         ___                ___ _   ___           _     "
+  echo -e "        | _ )_ _ _____ __ _| _ (_) | _ \___ _ __ (_)_ __"
+  echo -e "        | _ \ '_/ -_) V  V /  _/ | |   / -_) '  \| \ \ /"
+  echo -e "        |___/_| \___|\_/\_/|_| |_| |_|_\___|_|_|_|_/_\_\ "
+  echo -e "                                                        "
 
   echo -e "\nYou will be presented with some choices during the install. Most frequently"
   echo -e "you will see a 'yes or no' choice, with the default choice capitalized like"
@@ -267,16 +271,16 @@ func_hostname() {
 ###########
 
 func_checknet() {
-  echo -e "Checking for connection to GitHub.\n"
+  echo -e "\nChecking for connection to GitHub."
   wget -q --spider "$GITTEST"
   if [ $? -ne 0 ]; then
     echo -e "-------------------------------------------------------------\n" \
             "Could not connect to GitHub.  Please check your network and " \
                     "try again. A connection to GitHub is required to download the" \
-                    "$PACKAGE package.\n"
+                    "$PACKAGE package."
     exit 1
   else
-    echo -e "Connection to GitHub ok.\n"
+    echo -e "\nConnection to GitHub ok."
   fi
 }
 
@@ -289,19 +293,19 @@ func_packages() {
   lastUpdate=$(stat -c %Y /var/lib/apt/lists)
   nowTime=$(date +%s)
   if [ $(($nowTime - $lastUpdate)) -gt 604800 ] ; then
-    echo -e "\nLast apt update was over a week ago. Running"
-    echo -e "apt update before updating dependencies.\n"
+    echo -e "\nLast apt update was over a week ago. Running apt update before updating"
+    echo -e "dependencies."
     apt update||die
     echo
   fi
 
   # Now install any necessary packages if they are not installed
-  echo -e "Checking and installing required dependencies via apt.\n"
+  echo -e "\nChecking and installing required dependencies via apt."
   for pkg in $APTPACKAGES; do
     pkgOk=$(dpkg-query -W --showformat='${Status}\n' $pkg | \
       grep "install ok installed")
     if [ -z "$pkgOk" ]; then
-      echo -e "\nInstalling '$pkg'.\n"
+      echo -e "\nInstalling '$pkg'."
       apt install $pkg -y||die
           echo
     fi
@@ -314,7 +318,7 @@ func_packages() {
   # Loop through the required packages and see if they need an upgrade
   for pkg in $APTPACKAGES; do
     if [[ $upgradesAvail == *"$pkg"* ]]; then
-      echo -e "\nUpgrading '$pkg'.\n"
+      echo -e "\nUpgrading '$pkg'."
       apt install $pkg||die
     fi
   done
@@ -325,12 +329,12 @@ func_packages() {
 ############
 
 func_clonetools() {
-  echo -e "Cloning $GITPROJ repo.\n"
+  echo -e "\nCloning $GITPROJ repo."
   if [ -d "$homepath/$GITPROJ" ]; then
     if [ "$(ls -A $homepath/$GITPROJ)" ]; then
-      echo "Warning: $homepath/$GITPROJ exists and is not empty."
+      echo -e "\nWarning: $homepath/$GITPROJ exists and is not empty."
     else
-      echo "Warning: $homepath/$GITPROJ exists."
+      echo -e "\nWarning: $homepath/$GITPROJ exists."
     fi
     echo -e "\nIf you are sure you do not need it or you are starting over completely, we can"
     echo =e "delete the old repo by accepting the below prompt."
@@ -342,7 +346,7 @@ func_clonetools() {
       rm -fr "$homepath/$GITPROJ"
       echo
     else
-      echo -e "\nLeaving $homepath/$GITPROJ in place and exiting.\n"
+      echo -e "\nLeaving $homepath/$GITPROJ in place and exiting."
       exit 1
     fi
   fi
@@ -375,7 +379,6 @@ main() {
 ### Start the script
 ############
 
-sleep 1 # Avoid weird pipe broken errors from wget
 main
 
 ############

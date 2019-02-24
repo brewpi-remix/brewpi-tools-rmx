@@ -593,8 +593,11 @@ func_flash() {
 
 func_complete() {
   localIP=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
-  echo -e "\n\n\n                           BrewPi Install Complete"
-  echo -e "------------------------------------------------------------------------------"
+  echo -e "\n\n\n  ___         _        _ _    ___                _     _       ";
+  echo -e " |_ _|_ _  __| |_ __ _| | |  / __|___ _ __  _ __| |___| |_ ___ ";
+  echo -e "  | || ' \(_-<  _/ _\`| | | | (__/ _ \ '  \| '_ \ / -_)  _/ -_)";
+  echo -e " |___|_||_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|";
+  echo -e "                                           |_|                 ";
   echo -e "BrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
   echo -e "the following in your favorite browser:"
   # Use chamber name if configured
