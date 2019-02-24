@@ -402,6 +402,8 @@ func_clonetools() {
 main() {
   func_init # Get constants
   func_comline # Check command line arguments
+  exec > >(tee -ai install.log)
+  exec 2>&1
   func_checkroot # Make sure we are su into root
   func_term # Add term command constants
   #func_log # Create install log
