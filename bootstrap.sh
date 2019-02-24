@@ -154,9 +154,10 @@ func_instructions() {
   echo -e "Pressing <enter> without typing anything will take the default/recommended"
   echo -e "choice. In general, unless you know what you are doing, going with a non-"
   echo -e "default path is not recommended as not all possibilities can be reasonably"
-  echo -e "tested.\n"
+  echo -e "tested."
 
-  read -p "Press <enter> when you are ready to proceed. " yn  < /dev/tty
+  echo -e "\nPress <enter> when you are ready to proceed."
+  read < /dev/tty
 }
 
 ############
