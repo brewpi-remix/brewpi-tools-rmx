@@ -147,6 +147,8 @@ func_term() {
     BGCYN=$(tput setab 6)   # BG Cyan
     BGWHT=$(tput setab 7)   # BG White
     BGRST=$(tput setab 9)   # BG Reset to default color
+    HHR=$(eval printf %.0s═ '{1..'"${COLUMNS:-$(tput cols)}"\}; echo)
+    LHR=$(eval printf %.0s─ '{1..'"${COLUMNS:-$(tput cols)}"\}; echo)
     RESET=$(tput sgr0)  # FG/BG reset to default color
   fi
 }
