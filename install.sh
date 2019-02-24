@@ -620,7 +620,7 @@ func_flash() {
   echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
   read -p "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
   case "$yn" in
-    [Yy]* ) eval "$scriptPath/utils/updateFirmware.py" ;;
+    [Yy]* ) eval "python -u $scriptPath/utils/updateFirmware.py" ;;
     * ) ;;
   esac
 }
@@ -670,6 +670,8 @@ func_complete() {
 main() {
   func_doinit # Initialize constants and variables
   func_arguments "$@" # Handle command line arguments
+  exec > >(tee -ai "~/install.log")
+  exec 2>&1
   func_checkroot "$@" # Make sure we are using sudo
   func_term # Provide term codes
   echo -e "\n***Script $THISSCRIPT starting.***"

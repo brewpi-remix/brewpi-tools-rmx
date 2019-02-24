@@ -402,7 +402,7 @@ func_clonetools() {
 main() {
   func_init # Get constants
   func_comline # Check command line arguments
-  exec > >(tee -ai install.log)
+  exec > >(tee -ai "~/install.log")
   exec 2>&1
   func_checkroot # Make sure we are su into root
   func_term # Add term command constants
@@ -415,6 +415,7 @@ main() {
   func_checknet # Check internet connection
   func_packages # Install and update required packages
   func_clonetools # Clone tools repo
+  #pkill tee # Kludge to keep from getting double-output when install.sh runs
   eval "$homepath/$GITPROJ/install.sh" || die # Start installer
 }
 
