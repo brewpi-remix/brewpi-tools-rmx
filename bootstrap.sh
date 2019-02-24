@@ -39,6 +39,7 @@ func_init() {
   GITBRNCH="devel" # TODO:  Get this from URL
   THISSCRIPT="bootstrap.sh"
   VERSION="0.5.1.3"
+  CMDLINE="curl -L devinstall.brewpiremix.com | sudo bash"
   # These should stay the same
   GITRAW="https://raw.githubusercontent.com/lbussy"
   GITHUB="https://github.com/lbussy"
@@ -48,7 +49,6 @@ func_init() {
   GITHUB="$GITHUB/$GITPROJ.git"
   GITRAW="$GITRAW/$GITPROJ/$GITBRNCH/$THISSCRIPT"
   GITCMD="-b $GITBRNCH --single-branch $GITHUB"
-  CMDLINE="curl -L install.brewpiremix.com | sudo bash"
   # Website for network test
   GITTEST="$GITHUB"
   # Packages to be installed/checked via apt
@@ -98,7 +98,7 @@ func_checkroot() {
     if [[ ${?} == "0" ]]; then
       echo -e "\nNot runing as root, relaunching correctly.\n"
       sleep 2
-      exec "$CMDLINE"
+      eval "$CMDLINE"
       exit $?
     else
       # sudo not available, give instructions
