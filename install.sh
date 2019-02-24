@@ -34,12 +34,11 @@
 ############
 
 func_doinit() {
-  # Change to current dir so we can get the git info
-  cd "$(dirname "$0")"
-
   # Set up some project constants
-  THISSCRIPT="$(basename "$0")"
+  THISSCRIPT="$(basename $(realpath $0))"
   SCRIPTNAME="${THISSCRIPT%%.*}"
+  SCRIPTPATH="$( cd $(dirname $0) ; pwd -P )"
+  cd "$SCRIPTPATH"
   if [ -x "$(command -v git)" ] && [ -d .git ]; then
     VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))"
     GITURL="$(git config --get remote.origin.url)"
@@ -100,7 +99,7 @@ func_checkroot() {
     if [[ ${?} == "0" ]]; then
       echo -e "\nNot runing as root, relaunching correctly.\n"
       sleep 2
-      eval sudo bash "$0" "$@"
+      echo "sudo bash $SCRIPTPATH/$THISSCRIPT $@"
       exit $?
     else
       # sudo not available, give instructions
@@ -135,7 +134,7 @@ func_term() {
     declare INVS=$(tput invis)  # Start invisible text
     declare SMSO=$(tput smso)   # Start "standout" mode
     declare RMSO=$(tput rmso)   # End "standout" mode
-    
+
     declare FGBLK=$(tput setaf 0)   # FG Black
     declare FGRED=$(tput setaf 1)   # FG Red
     declare FGGRN=$(tput setaf 2)   # FG Green
@@ -145,7 +144,7 @@ func_term() {
     declare FGCYN=$(tput setaf 6)   # FG Cyan
     declare FGWHT=$(tput setaf 7)   # FG White
     declare FGRST=$(tput setaf 9)   # FG Reset to default color
-    
+
     declare BGBLK=$(tput setab 0)   # BG Black
     declare BGRED=$(tput setab 1)   # BG Red
     declare BGGRN=$(tput setab 2)   # BG Green$(tput setaf $fg_color)
@@ -155,7 +154,7 @@ func_term() {
     declare BGCYN=$(tput setab 6)   # BG Cyan
     declare BGWHT=$(tput setab 7)   # BG White
     declare BGRST=$(tput setab 9)   # BG Reset to default color
-    
+
     declare RESET=$(tput sgr0)  # FG/BG reset to default color
   fi
 }
@@ -676,8 +675,8 @@ func_complete() {
 
 main() {
   func_doinit # Initialize constants and variables
-  func_arguments # Handle command line arguments
-  func_checkroot # Make sure we are using sudo
+  func_arguments "$@" # Handle command line arguments
+  func_checkroot "$@" # Make sure we are using sudo
   func_term # Provide term codes
   echo -e "\n***Script $THISSCRIPT starting.***"
   arg="${1//-}" # Strip out all dashes
