@@ -135,7 +135,7 @@ die() {
 ############
 
 func_instructions() {
-  echo -e "\n\n\n         ___                ___ _   ___           _     "
+  echo -e "         ___                ___ _   ___           _     "
   echo -e "        | _ )_ _ _____ __ _| _ (_) | _ \___ _ __ (_)_ __"
   echo -e "        | _ \ '_/ -_) V  V /  _/ | |   / -_) '  \| \ \ /"
   echo -e "        |___/_| \___|\_/\_/|_| |_| |_|_\___|_|_|_|_/_\_\ "
@@ -362,7 +362,7 @@ main() {
   func_comline # Check command line arguments
   func_checkroot # Make sure we are su into root
   #func_log # Create install log
-  echo -e "\n***Script $THISSCRIPT starting.***"
+  echo -e "\n***Script $THISSCRIPT starting.***\n"
   func_instructions # Show instructions
   func_checkpass # Check for default password
   func_settime # Set timesone
