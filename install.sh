@@ -96,8 +96,17 @@ func_arguments() {
 func_checkroot() {
   ### Check if we have root privs to run
   if [[ $EUID -ne 0 ]]; then
-     echo -e "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
-     exit 1
+    sudo -n true 2> /dev/null
+    if [[ ${?} == "0" ]]; then
+      echo -e "\nNot runing as root, relaunching correctly.\n"
+      sleep 2
+      exec sudo bash "$0" "$@"
+      exit $?
+    else
+      # sudo not available, give instructions
+      echo -e "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
+      exit 1
+    fi
   fi
   # And get the user home directory
   if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
