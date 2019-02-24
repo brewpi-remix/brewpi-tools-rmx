@@ -100,7 +100,7 @@ func_checkroot() {
     if [[ ${?} == "0" ]]; then
       echo -e "\nNot runing as root, relaunching correctly.\n"
       sleep 2
-      exec sudo bash "$0" "$@"
+      eval sudo bash "$0" "$@"
       exit $?
     else
       # sudo not available, give instructions
