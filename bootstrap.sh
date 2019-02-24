@@ -172,7 +172,7 @@ func_checkpass() {
     match=$(python -c 'import crypt; print crypt.crypt("'"raspberry"'", "$6$'${salt}'")')
     [ "${match}" == "${extpass}" ] && badpwd=true || badpwd=false
     if [ "$badpwd" = true ]; then
-      echo -e "\nDefault password found for the 'pi' account. This should be changed."
+      echo -e "Default password found for the 'pi' account. This should be changed."
       while true; do
           read -p "Do you want to change the password now? [Y/n]: " yn  < /dev/tty
           case "$yn" in
@@ -260,7 +260,7 @@ func_hostname() {
       echo -e "\nYour hostname has been changed to '$newHostName'.\n"
       echo -e "(If your hostname is part of your prompt, your prompt will"
       echo -e "not change until you log out and in again.  This will have"
-      echo -e "no effect on anything but the way the prompt looks.)\n"
+      echo -e "no effect on anything but the way the prompt looks.)"
       sleep 5
     fi
   fi
@@ -274,10 +274,10 @@ func_checknet() {
   echo -e "\nChecking for connection to GitHub."
   wget -q --spider "$GITTEST"
   if [ $? -ne 0 ]; then
-    echo -e "-------------------------------------------------------------\n" \
-            "Could not connect to GitHub.  Please check your network and " \
-                    "try again. A connection to GitHub is required to download the" \
-                    "$PACKAGE package."
+    echo -e "\n-------------------------------------------------------------\n"
+    echo -e "Could not connect to GitHub.  Please check your network and "
+    echo -e "try again. A connection to GitHub is required to download the"
+    echo -s "$PACKAGE package."
     exit 1
   else
     echo -e "\nConnection to GitHub ok."
@@ -296,7 +296,6 @@ func_packages() {
     echo -e "\nLast apt update was over a week ago. Running apt update before updating"
     echo -e "dependencies."
     apt update||die
-    echo
   fi
 
   # Now install any necessary packages if they are not installed
@@ -307,7 +306,6 @@ func_packages() {
     if [ -z "$pkgOk" ]; then
       echo -e "\nInstalling '$pkg'."
       apt install $pkg -y||die
-          echo
     fi
   done
 

@@ -169,17 +169,18 @@ func_checknet() {
 ############
 
 func_checkfree() {
-  free_percentage=$(df /home | grep -vE '^Filesystem|tmpfs|cdrom|none' | awk '{ print $5 }')
-  free=$(df /home | grep -vE '^Filesystem|tmpfs|cdrom|none' | awk '{ print $4 }')
-  free_readable=$(df -H /home | grep -vE '^Filesystem|tmpfs|cdrom|none' | awk '{ print $4 }')
+  local req=512
+  local freek=$(df -Pk | grep -m1 '\/$' | awk '{print $4}')
+  local freem="$(expr $freek / 1024)"
+  local freep=$(df -Pk | grep -m1 '\/$' | awk '{print $5}')
 
-  if [ "$free" -le "524288" ]; then
-    echo -e "\nDisk usage is $free_percentage, free disk space is $free_readable,"
-    echo -e "Not enough space to continue setup. Installing BrewPi requires"
-    echo -e "at least 512mb free space."
+  if [ "$freem" -le "$req" ]; then
+    echo -e "\nDisk usage is $freep, free disk space is $free MB,"
+    echo -e "Not enough space to continue setup. Installing $PACKAGE requires"
+    echo -e "at least $req MB free space."
     exit 1
   else
-    echo -e "\nDisk usage is $free_percentage, free disk space is $free_readable."
+    echo -e "\nDisk usage is $freep, free disk space is $freem MB."
   fi
 }
 
@@ -433,15 +434,13 @@ func_backupscript() {
 func_makeuser() {
   echo -e "\nCreating and configuring accounts."
   if ! id -u brewpi >/dev/null 2>&1; then
-    useradd -G dialout,sudo,www-data brewpi||die
-    echo -e "\nPlease enter a password for the new user 'brewpi':" # TODO: Consider a locked/passwordless account
-    until passwd brewpi < /dev/tty; do sleep 2; echo; done
+  #useradd testuser -m
+    useradd brewpi -m -G dialout,sudo,www-data||die
+    #echo -e "\nPlease enter a password for the new user 'brewpi':" # TODO: Consider a locked/passwordless account
+    #until passwd brewpi < /dev/tty; do sleep 1; echo; done
   fi
-  # Add current user to www-data group
+  # Add current user to www-data & brewpi group
   usermod -a -G www-data,brewpi $SUDO_USER||die
-  # Add www-data user to brewpi group (allow access to logs)
-  usermod -a -G brewpi www-data||die
-
   # Create install path if it does not exist
   if [ ! -d "$scriptPath" ]; then mkdir -p "$scriptPath"; fi
   chown -R brewpi:brewpi "$scriptPath"||die
@@ -593,13 +592,13 @@ func_flash() {
 
 func_complete() {
   localIP=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
-  echo -e "\n\n\n"
-  echo -e "       ___         _        _ _    ___                _     _       ";
-  echo -e "      |_ _|_ _  __| |_ __ _| | |  / __|___ _ __  _ __| |___| |_ ___ ";
-  echo -e "       | || ' \(_-<  _/ _\`| | | | (__/ _ \ '  \| '_ \ / -_)  _/ -_)";
-  echo -e "      |___|_||_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|";
-  echo -e "                                                |_|                 ";
-  echo -e "BrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
+  echo -e "\n\n"
+  echo -e "       ___         _        _ _    ___                _     _       "
+  echo -e "      |_ _|_ _  __| |_ __ _| | |  / __|___ _ __  _ __| |___| |_ ___ "
+  echo -e "       | || ' \(_-<  _/ _\` | | | | (__/ _ \ '  \| '_ \ / -_)  _/ -_)"
+  echo -e "      |___|_||_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|"
+  echo -e "                                                |_|                 "
+  echo -e "\nBrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
   echo -e "the following in your favorite browser:"
   # Use chamber name if configured
   if [ ! -z "$chamber" ]; then
@@ -608,8 +607,7 @@ func_complete() {
     echo -e "http://$localIP"
   fi
   echo -e "\nIf you have Bonjour or another zeroconf utility installed, you may use this"
-  echo -e "easier to remember address to access BrewPi without having to remembering an"
-  echo -e "IP address:"
+  echo -e "easier to remember address to access BrewPi:"
   # Use chamber name if configured
   if [ ! -z "$chamber" ]; then
     echo -e "http://$(hostname).local/$chamber"
@@ -619,7 +617,7 @@ func_complete() {
   if [ -n "$chamber" ]; then
     echo -e "\nIf you would like to install another chamber, issue the command:"
     echo -e "sudo ~/brewpi-tools-rmx/install.sh"
-    echo -e "\nYour multi-chamber index is available at:"
+    echo -e "\nYour multi-chamber web index is available at:"
     echo -e "http://$localIP - or -"
     echo -e "http://$(hostname).local"
   fi
