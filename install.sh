@@ -30,6 +30,16 @@
 # license and credits.
 
 ############
+### Timestamp logs
+############
+
+timestamp() {
+  while read -r; do
+    printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
+  done
+}
+
+############
 ### Init
 ############
 
@@ -668,10 +678,9 @@ func_complete() {
 ############
 
 main() {
+  exec > >(tee >(timestamp >>"~/logfile.txt")) 2>&1 # Logfile
   func_doinit # Initialize constants and variables
   func_arguments "$@" # Handle command line arguments
-  exec > >(tee -ai "~/install.log")
-  exec 2>&1
   func_checkroot "$@" # Make sure we are using sudo
   func_term # Provide term codes
   echo -e "\n***Script $THISSCRIPT starting.***"
@@ -711,4 +720,9 @@ main() {
 ############
 
 main "$@"
+
+############
+### Exit
+############
+
 exit 0

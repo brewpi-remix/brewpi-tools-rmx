@@ -30,6 +30,16 @@
 # license and credits.
 
 ############
+### Timestamp logs
+############
+
+timestamp() {
+  while read -r; do
+    printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
+  done
+}
+
+############
 ### Init
 ############
 
@@ -400,13 +410,11 @@ func_clonetools() {
 ############
 
 main() {
+  exec > >(tee >(timestamp >>"~/logfile.txt")) 2>&1 # Logfile
   func_init # Get constants
   func_comline # Check command line arguments
-  exec > >(tee -ai "~/install.log")
-  exec 2>&1
   func_checkroot # Make sure we are su into root
   func_term # Add term command constants
-  #func_log # Create install log
   echo -e "\n***Script $THISSCRIPT starting.***\n"
   func_instructions # Show instructions
   func_checkpass # Check for default password
@@ -430,4 +438,3 @@ main
 ############
 
 exit 0
-
