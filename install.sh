@@ -103,7 +103,7 @@ func_checkroot() {
       exit $?
     else
       # sudo not available, give instructions
-      echo -e "This script must be run as root: sudo $SCRIPTPATH/$THISSCRIPT $@" 1>&2
+      echo -e "\nThis script must be run as root: sudo $SCRIPTPATH/$THISSCRIPT $@" 1>&2
       exit 1
     fi
   fi
