@@ -126,36 +126,28 @@ func_term() {
   tput colors > /dev/null 2>&1
   retval=$?
   if [ "$retval" == "0" ]; then
-    declare BOLD=$(tput bold)   # Start bold text
-    declare SMUL=$(tput smul)   # Start underlined text
-    declare RMUL=$(tput rmul)   # End underlined text
-    declare REVV=$(tput rev)    # Start reverse video
-    declare BLNK=$(tput blink)  # Start blinking text
-    declare INVS=$(tput invis)  # Start invisible text
-    declare SMSO=$(tput smso)   # Start "standout" mode
-    declare RMSO=$(tput rmso)   # End "standout" mode
-
-    declare FGBLK=$(tput setaf 0)   # FG Black
-    declare FGRED=$(tput setaf 1)   # FG Red
-    declare FGGRN=$(tput setaf 2)   # FG Green
-    declare FGYLW=$(tput setaf 3)   # FG Yellow
-    declare FGBLU=$(tput setaf 4)   # FG Blue
-    declare FGMAG=$(tput setaf 5)   # FG Magenta
-    declare FGCYN=$(tput setaf 6)   # FG Cyan
-    declare FGWHT=$(tput setaf 7)   # FG White
-    declare FGRST=$(tput setaf 9)   # FG Reset to default color
-
-    declare BGBLK=$(tput setab 0)   # BG Black
-    declare BGRED=$(tput setab 1)   # BG Red
-    declare BGGRN=$(tput setab 2)   # BG Green$(tput setaf $fg_color)
-    declare BGYLW=$(tput setab 3)   # BG Yellow
-    declare BGBLU=$(tput setab 4)   # BG Blue
-    declare BGMAG=$(tput setab 5)   # BG Magenta
-    declare BGCYN=$(tput setab 6)   # BG Cyan
-    declare BGWHT=$(tput setab 7)   # BG White
-    declare BGRST=$(tput setab 9)   # BG Reset to default color
-
-    declare RESET=$(tput sgr0)  # FG/BG reset to default color
+    BOLD=$(tput bold)   # Start bold text
+    SMSO=$(tput smso)   # Start "standout" mode
+    RMSO=$(tput rmso)   # End "standout" mode
+    FGBLK=$(tput setaf 0)   # FG Black
+    FGRED=$(tput setaf 1)   # FG Red
+    FGGRN=$(tput setaf 2)   # FG Green
+    FGYLW=$(tput setaf 3)   # FG Yellow
+    FGBLU=$(tput setaf 4)   # FG Blue
+    FGMAG=$(tput setaf 5)   # FG Magenta
+    FGCYN=$(tput setaf 6)   # FG Cyan
+    FGWHT=$(tput setaf 7)   # FG White
+    FGRST=$(tput setaf 9)   # FG Reset to default color
+    BGBLK=$(tput setab 0)   # BG Black
+    BGRED=$(tput setab 1)   # BG Red
+    BGGRN=$(tput setab 2)   # BG Green$(tput setaf $fg_color)
+    BGYLW=$(tput setab 3)   # BG Yellow
+    BGBLU=$(tput setab 4)   # BG Blue
+    BGMAG=$(tput setab 5)   # BG Magenta
+    BGCYN=$(tput setab 6)   # BG Cyan
+    BGWHT=$(tput setab 7)   # BG White
+    BGRST=$(tput setab 9)   # BG Reset to default color
+    RESET=$(tput sgr0)  # FG/BG reset to default color
   fi
 }
 
