@@ -135,12 +135,10 @@ die() {
 ############
 
 func_instructions() {
-  clear
-  echo -e "         ___                ___ _   ___           _     "
+  echo -e "\n\n\n         ___                ___ _   ___           _     "
   echo -e "        | _ )_ _ _____ __ _| _ (_) | _ \___ _ __ (_)_ __"
   echo -e "        | _ \ '_/ -_) V  V /  _/ | |   / -_) '  \| \ \ /"
   echo -e "        |___/_| \___|\_/\_/|_| |_| |_|_\___|_|_|_|_/_\_\ "
-  echo -e "                                                        "
 
   echo -e "\nYou will be presented with some choices during the install. Most frequently"
   echo -e "you will see a 'yes or no' choice, with the default choice capitalized like"
