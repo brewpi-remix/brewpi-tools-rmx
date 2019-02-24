@@ -479,9 +479,6 @@ func_makeuser() {
   fi
   # Add current user to www-data & brewpi group
   usermod -a -G www-data,brewpi $SUDO_USER||die
-  # Create install path if it does not exist
-  if [ ! -d "$scriptPath" ]; then mkdir -p "$scriptPath"; fi
-  chown -R brewpi:brewpi "$scriptPath"||die
 }
 
 ############
@@ -489,9 +486,12 @@ func_makeuser() {
 ############
 
 func_clonescripts() {
+  # Clean out install path
+  rm -fr "$scriptPath" >/dev/null 2>&1
+  if [ ! -d "$scriptPath" ]; then mkdir -p "$scriptPath"; fi
+  chown -R brewpi:brewpi "$scriptPath"||die
   echo -e "\nDownloading most recent BrewPi codebase."
-  gitClone="sudo -u brewpi git clone -b $GITBRNCH --single-branch $GITURLSCRIPT $scriptPath"
-  eval "$gitClone"||die
+  eval "sudo -u brewpi git clone -b $GITBRNCH --single-branch $GITURLSCRIPT $scriptPath"||die
 }
 
 ############
@@ -555,8 +555,7 @@ func_backupwww() {
 
 func_clonewww() {
   echo -e "\nCloning web site."
-  gitClone="sudo -u www-data git clone -b $GITBRNCH --single-branch $GITURLWWW $webPath"
-  eval "$gitClone"||die
+  eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $GITURLWWW $webPath"||die
   # Keep BrewPi from running while we do things
   touch "$webPath/do_not_run_brewpi"
 }

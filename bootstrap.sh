@@ -251,10 +251,8 @@ func_hostname() {
       done
       echo
       newHostName=$(echo "$host1" | awk '{print tolower($0)}')
-      sed1="sed -i 's/$oldHostName/$newHostName/g' /etc/hosts"
-      sed2="sed -i 's/$oldHostName/$newHostName/g' /etc/hostname"
-      eval $sed1
-      eval $sed2
+      eval "sed -i 's/$oldHostName/$newHostName/g' /etc/hosts"||die
+      eval "sed -i 's/$oldHostName/$newHostName/g' /etc/hostname"||die
       hostnamectl set-hostname $newHostName
       /etc/init.d/avahi-daemon restart
       echo -e "\nYour hostname has been changed to '$newHostName'.\n"
@@ -349,8 +347,8 @@ func_clonetools() {
     fi
   fi
 
-  gitClone="sudo -u $REALUSER git clone $GITCMD $homepath/$GITPROJ"
-  eval "$gitClone"||die
+  gitClone=
+  eval "sudo -u $REALUSER git clone $GITCMD $homepath/$GITPROJ"||die
 }
 
 ############
