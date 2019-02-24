@@ -48,6 +48,7 @@ func_init() {
   GITHUB="$GITHUB/$GITPROJ.git"
   GITRAW="$GITRAW/$GITPROJ/$GITBRNCH/$THISSCRIPT"
   GITCMD="-b $GITBRNCH --single-branch $GITHUB"
+  CMDLINE="curl -L install.brewpiremix.com | sudo bash"
   # Website for network test
   GITTEST="$GITHUB"
   # Packages to be installed/checked via apt
@@ -95,7 +96,7 @@ func_checkroot() {
   if [[ $EUID -ne 0 ]]; then
     echo -e "\nThis script must be run with root priviledges."
     echo -e "Enter the following command as one line:"
-    echo -e "wget -q $GITRAW -O - /| sudo bash" 1>&2
+    echo -e "$CMDLINE" 1>&2
     exit 1
   fi
   # And get the user home directory
