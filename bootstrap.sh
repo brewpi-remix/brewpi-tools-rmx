@@ -121,7 +121,7 @@ func_checkroot() {
   # And get the user home directory
   _shadow="$( (getent passwd "$REALUSER") 2>&1)"
   if [ $? -eq 0 ]; then
-    homepath=$(echo $_shadow | cut -d':' -f6)
+    HOMEPATH=$(echo $_shadow | cut -d':' -f6)
   else
     echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install"
     echo -e "may be necessary."
@@ -380,29 +380,29 @@ func_packages() {
 
 func_clonetools() {
   echo -e "\nCloning $GITPROJ repo."
-  if [ -d "$homepath/$GITPROJ" ]; then
-    if [ "$(ls -A $homepath/$GITPROJ)" ]; then
-      echo -e "\nWarning: $homepath/$GITPROJ exists and is not empty."
+  if [ -d "$HOMEPATH/$GITPROJ" ]; then
+    if [ "$(ls -A $HOMEPATH/$GITPROJ)" ]; then
+      echo -e "\nWarning: $HOMEPATH/$GITPROJ exists and is not empty."
     else
-      echo -e "\nWarning: $homepath/$GITPROJ exists."
+      echo -e "\nWarning: $HOMEPATH/$GITPROJ exists."
     fi
     echo -e "\nIf you are sure you do not need it or you are starting over completely, we can"
     echo =e "delete the old repo by accepting the below prompt."
     echo -e "\nIf you are running multi-chamber and are trying to add a new chamber, select"
     echo -e "'N' below, and add a new chamber by executing:"
-    echo -e "'sudo $homepath/$GITPROJ/install.sh'\n"
-    read -p "Remove $homepath/$GITPROJ? [y/N] " < /dev/tty
+    echo -e "'sudo $HOMEPATH/$GITPROJ/install.sh'\n"
+    read -p "Remove $HOMEPATH/$GITPROJ? [y/N] " < /dev/tty
     if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-      rm -fr "$homepath/$GITPROJ"
+      rm -fr "$HOMEPATH/$GITPROJ"
       echo
     else
-      echo -e "\nLeaving $homepath/$GITPROJ in place and exiting."
+      echo -e "\nLeaving $HOMEPATH/$GITPROJ in place and exiting."
       exit 1
     fi
   fi
 
   gitClone=
-  eval "sudo -u $REALUSER git clone $GITCMD $homepath/$GITPROJ"||die
+  eval "sudo -u $REALUSER git clone $GITCMD $HOMEPATH/$GITPROJ"||die
 }
 
 ############
@@ -410,10 +410,10 @@ func_clonetools() {
 ############
 
 main() {
-  exec > >(tee >(timestamp >>"~/logfile.txt")) 2>&1 # Logfile
   func_init # Get constants
   func_comline # Check command line arguments
   func_checkroot # Make sure we are su into root
+  exec > >(tee >(timestamp >>"$HOMEPATH/logfile.txt")) 2>&1 # Logfile
   func_term # Add term command constants
   echo -e "\n***Script $THISSCRIPT starting.***\n"
   func_instructions # Show instructions
@@ -424,7 +424,7 @@ main() {
   func_packages # Install and update required packages
   func_clonetools # Clone tools repo
   #pkill tee # Kludge to keep from getting double-output when install.sh runs
-  eval "$homepath/$GITPROJ/install.sh" || die # Start installer
+  eval "$HOMEPATH/$GITPROJ/install.sh" || die # Start installer
 }
 
 ############
