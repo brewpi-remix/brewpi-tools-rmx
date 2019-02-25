@@ -681,7 +681,7 @@ main() {
   func_doinit # Initialize constants and variables
   func_arguments "$@" # Handle command line arguments
   func_checkroot "$@" # Make sure we are using sudo
-  exec > >(tee >(timestamp >>"$HOMEPATH/logfile.txt")) 2>&1 # Logfile
+  exec > >(tee >(timestamp >>"$HOMEPATH/$SCRIPTNAME.log")) 2>&1 # Logfile
   func_term # Provide term codes
   echo -e "\n***Script $THISSCRIPT starting.***"
   arg="${1//-}" # Strip out all dashes

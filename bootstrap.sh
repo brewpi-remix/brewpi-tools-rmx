@@ -413,7 +413,7 @@ main() {
   func_init # Get constants
   func_comline # Check command line arguments
   func_checkroot # Make sure we are su into root
-  exec > >(tee >(timestamp >>"$HOMEPATH/logfile.txt")) 2>&1 # Logfile
+  exec > >(tee >(timestamp >>"$HOMEPATH/$SCRIPTNAME.log")) 2>&1 # Logfile
   func_term # Add term command constants
   echo -e "\n***Script $THISSCRIPT starting.***\n"
   func_instructions # Show instructions
@@ -423,7 +423,6 @@ main() {
   func_checknet # Check internet connection
   func_packages # Install and update required packages
   func_clonetools # Clone tools repo
-  #pkill tee # Kludge to keep from getting double-output when install.sh runs
   eval "$HOMEPATH/$GITPROJ/install.sh" || die # Start installer
 }
 
