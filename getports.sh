@@ -23,14 +23,15 @@ declare -i devNum=0
 ############
 
 checkroot() {
-  if [ "$SUDO_USER" ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
-  if [[ $EUID -ne 0 ]]; then
+  if [ -n "$SUDO_USER" ]; then REALUSER="$SUDO_USER"; else REALUSER="$(whoami)"; fi
+  if [[ "$EUID" -ne 0 ]]; then
     sudo -n true 2> /dev/null
-    if [[ ${?} == "0" ]]; then
+    local retval="$?"
+    if [[ "$retval" == "0" ]]; then
       echo -e "\nNot runing as root, relaunching correctly.\n"
       sleep 2
       eval "$CMDLINE"
-      exit $?
+      exit "$?"
     else
       # sudo not available, give instructions
       echo -e "\nThis script must be run with root priviledges."
@@ -40,9 +41,10 @@ checkroot() {
     fi
   fi
   # And get the user home directory
-  _shadow="$( (getent passwd "$REALUSER") 2>&1)"
-  if [ $? -eq 0 ]; then
-    HOMEPATH=$(echo $_shadow | cut -d':' -f6)
+  local shadow=$( (getent passwd "$REALUSER") 2>&1)
+  retval="$?"
+  if [ "$retval" -eq 0 ]; then
+    HOMEPATH=$(echo "$shadow" | cut -d':' -f6)
   else
     echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install"
     echo -e "may be necessary."
