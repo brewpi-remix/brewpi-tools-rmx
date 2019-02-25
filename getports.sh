@@ -5,17 +5,17 @@
 ############
 
 declare DOFTP=false # FTP the results
-declare -i devNum=0
 declare FTPUSER=""
 declare FTPPSSW=""
 declare FTPHOST=""
 declare FTPPORT=""
 declare THISSCRIPT="getports.sh"
 declare CMDLINE="curl -L debug.brewpiremix.com | sudo bash"
-#declare CMDLINE="sudo /home/pi/brewpi-tools-rmx/getports.sh"
+#declare CMDLINE="sudo /home/pi/brewpi-tools-rmx/$THISSCRIPT"
 # Should not have to edit past here
 declare SCRIPTNAME="${THISSCRIPT%%.*}"
 declare HOMEPATH=""
+declare -i devNum=0
 
 ############
 ### Check privileges and permissions
@@ -76,7 +76,7 @@ doTar() {
   echo -e "\nAdding files to tarball:"
   find "$HOMEPATH" -name "*.device" -print0 | tar -cvzf "$HOMEPATH/$tarball" --null -T -
   find "$HOMEPATH" -name "*.device" -type f -exec rm '{}' \;
-  echo -e "\nOutputting: $HOMEPATH/$tarball."
+  echo -e "\nPlease email $HOMEPATH/$tarball to Lee@Bussy.org."
 }
 
 ############
@@ -88,6 +88,10 @@ doFTP() {
   echo -e "\nTransfer functionality not implemented."
 }
 
+############
+### Main
+############
+
 main() {
   checkroot
   doPort
@@ -95,5 +99,8 @@ main() {
   "$DOFTP" && doFTP
 }
 
-main && exit 0
+############
+### Start script execution
+############
 
+main && exit 0
