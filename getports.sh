@@ -5,6 +5,7 @@
 ############
 
 declare DOFTP=false # FTP the results
+declare -i devNum=0
 declare FTPUSER=""
 declare FTPPSSW=""
 declare FTPHOST=""
@@ -56,11 +57,13 @@ doPort() {
   local device=""
   local devices=$(ls /dev/ttyACM* /dev/ttyUSB* /dev/rfcomm* 2> /dev/null)
   # Get a list of USB and BT TTY devices
+  [ -n "$devices" ] && echo -e "\nWalking device trees.\n"
   for device in $devices; do
     # Walk device tree | awk out the stanza with the last device in chain
     local dev=$(echo "$device" | cut -d"/" -f3)
-    echo -e "Outputting $device to $HOMEPATH/$dev.device"
+    echo -e "Outputting $device to $HOMEPATH/$dev.device."
     udevadm info --a -n "$device" > "$HOMEPATH/$dev.device"
+    ((++devNum))
   done
 }
 
@@ -88,7 +91,7 @@ doFTP() {
 main() {
   checkroot
   doPort
-  doTar
+  [ "$devNum" -gt 0 ] && doTar
   "$DOFTP" && doFTP
 }
 
