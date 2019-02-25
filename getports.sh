@@ -60,7 +60,7 @@ doPort(){
   for device in $devices; do
     # Walk device tree | awk out the stanza with the last device in chain
     local dev=$(echo "$device" | cut -d"/" -f3)
-    echo -e "Outputting $device to $HOMEPATH/$dev.device."
+    echo -e "\nOutputting $device to $HOMEPATH/$dev.device."
     udevadm info --a -n "$device" > "$HOMEPATH/$dev.device"
   done
 }
