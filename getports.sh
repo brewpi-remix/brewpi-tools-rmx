@@ -9,7 +9,7 @@ declare FTPUSER=""
 declare FTPPSSW=""
 declare FTPHOST=""
 declare FTPPORT=""
-declare THISSCRIPT="test.sh"
+declare THISSCRIPT="getports.sh"
 declare CMDLINE="curl -L debug.brewpiremix.com | sudo bash"
 #declare CMDLINE="sudo /home/pi/brewpi-tools-rmx/getports.sh"
 # Should not have to edit past here
