@@ -14,6 +14,7 @@ declare CMDLINE="curl -L debug.brewpiremix.com | sudo bash"
 #declare CMDLINE="sudo /home/pi/brewpi-tools-rmx/$THISSCRIPT"
 # Should not have to edit past here
 declare SCRIPTNAME="${THISSCRIPT%%.*}"
+declare TARBALL="$(date +%F_%k:%M:%S)-$SCRIPTNAME.tar.gz"
 declare HOMEPATH=""
 declare -i devNum=0
 
@@ -68,19 +69,17 @@ doPort() {
 }
 
 ############
-### Create tarball for submission
+### Create TARBALL for submission
 ############
 
 doTar() {
-  local tarball="$(date +%F_%k:%M:%S)-$SCRIPTNAME.tar.gz"
   echo -e "\nAdding files to tarball:"
-  find "$HOMEPATH" -name "*.device" -print0 | tar -cvzf "$HOMEPATH/$tarball" --null -T -
+  find "$HOMEPATH" -name "*.device" -print0 | tar -cvzf "$HOMEPATH/$TARBALL" --null -T -
   find "$HOMEPATH" -name "*.device" -type f -exec rm '{}' \;
-  echo -e "\nPlease email $HOMEPATH/$tarball to Lee@Bussy.org."
 }
 
 ############
-### Transfer tarball
+### Transfer TARBALL
 ############
 
 doFTP() {
@@ -96,7 +95,7 @@ main() {
   checkroot
   doPort
   [ "$devNum" -gt 0 ] && doTar
-  "$DOFTP" && doFTP
+  "$DOFTP" && doFTP || echo -e "\nPlease email $HOMEPATH/$TARBALL to Lee@Bussy.org."
 }
 
 ############
@@ -104,3 +103,4 @@ main() {
 ############
 
 main && exit 0
+
