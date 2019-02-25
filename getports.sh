@@ -9,10 +9,9 @@ declare FTPUSER=""
 declare FTPPSSW=""
 declare FTPHOST=""
 declare FTPPORT=""
-declare THISSCRIPT="getports.sh"
-declare TARBALL="devices.tar.gz"
-declare CMDLINE="curl -L debug.brewpiremix.com | sudo bash"
-#declare CMDLINE="sudo /home/pi/brewpi-tools-rmx/getports.sh"
+declare THISSCRIPT="test.sh"
+#declare CMDLINE="curl -L debug.brewpiremix.com | sudo bash"
+declare CMDLINE="sudo /home/pi/test.sh"
 # Should not have to edit past here
 declare SCRIPTNAME="${THISSCRIPT%%.*}"
 declare HOMEPATH=""
@@ -53,14 +52,14 @@ checkroot() {
 ### Step through ports and create data dumps
 ############
 
-doPort(){
+doPort() {
   local device=""
   local devices=$(ls /dev/ttyACM* /dev/ttyUSB* /dev/rfcomm* 2> /dev/null)
   # Get a list of USB and BT TTY devices
   for device in $devices; do
     # Walk device tree | awk out the stanza with the last device in chain
     local dev=$(echo "$device" | cut -d"/" -f3)
-    echo -e "\nOutputting $device to $HOMEPATH/$dev.device."
+    echo -e "Outputting $device to $HOMEPATH/$dev.device"
     udevadm info --a -n "$device" > "$HOMEPATH/$dev.device"
   done
 }
@@ -70,10 +69,11 @@ doPort(){
 ############
 
 doTar() {
+  local tarball="$(date +%F_%k:%M:%S)-$SCRIPTNAME.tar.gz"
   echo -e "\nAdding files to tarball:"
-  find "$HOMEPATH" -name "*.device" -print0 | tar -cvzf "$HOMEPATH/$TARBALL" --null -T -
+  find "$HOMEPATH" -name "*.device" -print0 | tar -cvzf "$HOMEPATH/$tarball" --null -T -
   find "$HOMEPATH" -name "*.device" -type f -exec rm '{}' \;
-  echo -e "\nOutput is in $HOMEPATH/$TARBALL."
+  echo -e "\nOutputting: $HOMEPATH/$tarball."
 }
 
 ############
@@ -93,3 +93,4 @@ main() {
 }
 
 main && exit 0
+
