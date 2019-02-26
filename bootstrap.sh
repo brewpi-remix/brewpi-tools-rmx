@@ -420,7 +420,7 @@ clonetools() {
     fi
   fi
 
-  echo "DEBUG: eval git clone $GITCMD $HOMEPATH/$GITPROJ"||die
+  eval "sudo -u $REALUSER git clone $GITCMD $HOMEPATH/$GITPROJ"||die
   exit 0
 }
 
