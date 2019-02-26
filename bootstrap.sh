@@ -321,7 +321,7 @@ host_name() {
   local oldHostName=$(hostname)
   if [ "$oldHostName" = "raspberrypi" ]; then
     while true; do
-      echo -e "Your hostname is set to '$oldHostName'. Do you"
+      echo -e "\nYour hostname is set to '$oldHostName'. Do you"
       read -p "want to change it now, maybe to 'brewpi'? [Y/n]: " yn < /dev/tty
       case "$yn" in
           '' ) sethost=1; break ;;
@@ -407,7 +407,7 @@ clonetools() {
       echo -e "\nWarning: $HOMEPATH/$GITPROJ exists."
     fi
     echo -e "\nIf you are sure you do not need it or you are starting over completely, we can"
-    echo =e "delete the old repo by accepting the below prompt."
+    echo -e "delete the old repo by accepting the below prompt."
     echo -e "\nIf you are running multi-chamber and are trying to add a new chamber, select"
     echo -e "'N' below, and add a new chamber by executing:"
     echo -e "'sudo $HOMEPATH/$GITPROJ/install.sh'\n"
