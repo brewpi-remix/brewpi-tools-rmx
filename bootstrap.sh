@@ -421,8 +421,7 @@ clonetools() {
     fi
   fi
 
-  gitClone=
-  eval "sudo -u $REALUSER git clone $GITCMD $HOMEPATH/$GITPROJ"||die
+  eval "git clone $GITCMD $HOMEPATH/$GITPROJ"||die
 }
 
 ############
