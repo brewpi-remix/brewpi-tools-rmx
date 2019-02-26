@@ -42,7 +42,7 @@ timestamp() {
   done
 }
 
-doLog() {
+log() {
   [[ "$@" == *"-nolog"* ]] && return # Turn off logging
   # Set up our local variables
   declare local thisscript scriptname realuser homepath shadow
@@ -140,7 +140,8 @@ arguments() {
 ############
 
 checkroot() {
-  if [ "$SUDO_USER" ]; then REALUSER="SUDO_USER"; else REALUSER=$(whoami); fi
+  echo -e "\nDEBUG: Inside checkroot()."
+  if [ "$SUDO_USER" ]; then REALUSER="$SUDO_USER"; else REALUSER=$(whoami); fi
   if [[ "$EUID" -ne 0 ]]; then
     sudo -n true 2> /dev/null
     local retval="$?"
@@ -163,8 +164,7 @@ checkroot() {
   if [ "$retval" -eq 0 ]; then
     HOMEPATH=$(echo "$shadow" | cut -d':' -f6)
   else
-    echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install"
-    echo -e "may be necessary."
+    echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install may be necessary."
     exit 1
   fi
 }
