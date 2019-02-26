@@ -45,7 +45,7 @@ timestamp() {
 log() {
   [[ "$@" == *"-nolog"* ]] && return # Turn off logging
   # Set up our local variables
-  declare local thisscript scriptname realuser homepath shadow
+  local thisscript scriptname realuser homepath shadow
   # Get scriptname (creates log name) since we start before the main script
   thisscript="$(basename $(realpath $0))"
   scriptname="${thisscript%%.*}"
@@ -163,7 +163,7 @@ checkroot() {
   local shadow="$((getent passwd $REALUSER) 2>&1)"
   retval="$?"
   if [ "$retval" -eq 0 ]; then
-    HOMEPATH="$(echo $shadow | cut -d':' -f6)"
+    HOMEPATH="$(echo "$shadow" | cut -d':' -f6)"
   else
     echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install may be necessary."
     exit 1
@@ -249,7 +249,8 @@ findbrewpi() {
 checknet() {
   echo -e "\nChecking for connection to GitHub."
   wget -q --spider "$GITURL"
-  if [ $? -ne 0 ]; then
+  local retval="$?"
+  if [ "$retval" -ne 0 ]; then
     echo -e "\n-----------------------------------------------------------------------------"
     echo -e "\nCould not connect to GitHub.  Please check your network and try again. A"
     echo -e "connection to GitHub is required to download the $PACKAGE packages."

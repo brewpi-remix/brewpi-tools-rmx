@@ -71,7 +71,7 @@ timestamp() {
 log() {
   [[ "$@" == *"-nolog"* ]] && return # Turn off logging
   # Set up our local variables
-  declare local thisscript scriptname realuser homepath shadow
+  local thisscript scriptname realuser homepath shadow
   # Explicit scriptname (creates log name) since we start
   # before the main script
   thisscript="bootstrap.sh"
