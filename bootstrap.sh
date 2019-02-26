@@ -440,7 +440,6 @@ main() {
   host_name # Change hostname
   packages # Install and update required packages
   clonetools # Clone tools repo
-  echo -e "\nDEBUG: Exiting before running install."
   eval "$HOMEPATH/$GITPROJ/install.sh -nolog" || die # Start installer
 }
 
