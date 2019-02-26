@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018,2019  Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Tools Remix (BrewPi-Tools-RMX).
 #
@@ -30,20 +30,44 @@
 # license and credits.
 
 ############
-### Timestamp logs
+### Handle logging
 ############
 
 timestamp() {
+  # Add date in '2019-02-26 08:19:22' format to log
   while read -r; do
-    printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
+    if [ -n "$REPLY" ]; then # Skip blank lines
+      printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
+    fi
   done
+}
+
+log() {
+  [[ "$@" == *"-nolog"* ]] && return # Turn off logging
+  # Set up our local variables
+  declare local thisscript scriptname realuser homepath shadow
+  # Get scriptname (creates log name) since we start before the main script
+  thisscript="$(basename $(realpath $0))"
+  scriptname="${thisscript%%.*}"
+  # Get home directory for logging
+  if [ "$SUDO_USER" ]; then realuser="$SUDO_USER"; else realuser=$(whoami); fi
+  shadow="$( (getent passwd "$realuser") 2>&1)"
+  if [ -n "$shadow" ]; then
+    homepath=$(echo $shadow | cut -d':' -f6)
+  else
+    echo -e "\nERROR: Unable to retrieve $realuser's home directory. Manual install"
+    echo -e "may be necessary."
+    exit 1
+  fi
+  # Tee all output to log file in home directory
+  exec > >(tee >(timestamp >>"$homepath/$scriptname.log")) 2>&1
 }
 
 ############
 ### Init
 ############
 
-func_doinit() {
+init() {
   # Set up some project constants
   THISSCRIPT="$(basename $(realpath $0))"
   SCRIPTNAME="${THISSCRIPT%%.*}"
@@ -68,49 +92,64 @@ func_doinit() {
 }
 
 ############
-### Functions for --help and --version functionality
+### Command line arguments
 ############
 
-# func_usage outputs to stdout the --help usage message.
-func_usage () {
-  echo -e "$PACKAGE $THISSCRIPT version $VERSION
+# usage outputs to stdout the --help usage message.
+usage() {
+cat << EOF
+
+$PACKAGE $THISSCRIPT version $VERSION
+
 Usage: sudo ./$THISSCRIPT"
+EOF
 }
-# func_version outputs to stdout the --version message.
-func_version () {
-  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
-Copyright (C) 2018 Lee C. Bussy (@LBussy)
+
+# version outputs to stdout the --version message.
+version() {
+cat << EOF
+
+$THISSCRIPT ($PACKAGE) $VERSION
+
+Copyright (C) 2018,2019 Lee C. Bussy (@LBussy)
+
 This is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published
 by the Free Software Foundation, either version 3 of the License,
 or (at your option) any later version.
 <https://www.gnu.org/licenses/>
-There is NO WARRANTY, to the extent permitted by law."
+
+There is NO WARRANTY, to the extent permitted by law.
+EOF
 }
-func_arguments() {
-  if test $# = 1; then
-    case "$1" in
-      --help | --hel | --he | --h )
-        func_usage; exit 0 ;;
-      --version | --versio | --versi | --vers | --ver | --ve | --v )
-        func_version; exit 0 ;;
+
+# Parse arguments and call usage or version
+arguments() {
+  while [[ "$#" -gt 0 ]]; do
+  arg="$1"
+    case "$arg" in
+      --h* )
+        usage; exit 0 ;;
+      --v* )
+        version; exit 0 ;;
     esac
-  fi
+  done
 }
 
 ############
 ### Check privileges and permissions
 ############
 
-func_checkroot() {
+checkroot() {
   ### Check if we have root privs to run
-  if [[ $EUID -ne 0 ]]; then
+  if [[ "$EUID" -ne 0 ]]; then
     sudo -n true 2> /dev/null
-    if [[ ${?} == "0" ]]; then
+    local retval="$?"
+    if [ "$retval" -eq 0 ]; then
       echo -e "\nNot runing as root, relaunching correctly.\n"
       sleep 2
       eval "sudo bash $SCRIPTPATH/$THISSCRIPT $@"
-      exit $?
+      exit "$?"
     else
       # sudo not available, give instructions
       echo -e "\nThis script must be run as root: sudo $SCRIPTPATH/$THISSCRIPT $@" 1>&2
@@ -118,10 +157,11 @@ func_checkroot() {
     fi
   fi
   # And get the user home directory
-  if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
-  _shadow="$((getent passwd $REALUSER) 2>&1)"
-  if [ $? -eq 0 ]; then
-    HOMEPATH="$(echo $_shadow | cut -d':' -f6)"
+  if [ "$SUDO_USER" ]; then REALUSER="$SUDO_USER"; else REALUSER=$(whoami); fi
+  local shadow="$((getent passwd $REALUSER) 2>&1)"
+  retval="$?"
+  if [ "$retval" -eq 0 ]; then
+    HOMEPATH="$(echo $shadow | cut -d':' -f6)"
   else
     echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install may be necessary."
     exit 1
@@ -132,7 +172,7 @@ func_checkroot() {
 ### Provide terminal escape codes
 ############
 
-func_term() {
+term() {
   tput colors > /dev/null 2>&1
   retval=$?
   if [ "$retval" == "0" ]; then
@@ -188,7 +228,7 @@ die () {
 ### See if BrewPi is already installed
 ###########
 
-func_findbrewpi() {
+findbrewpi() {
   declare home="/home/brewpi"
   instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
   IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list
@@ -204,7 +244,7 @@ func_findbrewpi() {
 ### Check network connection
 ###########
 
-func_checknet() {
+checknet() {
   echo -e "\nChecking for connection to GitHub."
   wget -q --spider "$GITURL"
   if [ $? -ne 0 ]; then
@@ -221,7 +261,7 @@ func_checknet() {
 ### Check for free space
 ############
 
-func_checkfree() {
+checkfree() {
   local req=512
   local freek=$(df -Pk | grep -m1 '\/$' | awk '{print $4}')
   local freem="$(expr $freek / 1024)"
@@ -241,7 +281,7 @@ func_checkfree() {
 ### Ensure chosen chamber name does not conflict with others
 ############
 
-func_checkchamber() {
+checkchamber() {
     local chamber="$1"
     local retval=0
     # Check /dev/$chamber
@@ -272,7 +312,7 @@ func_checkchamber() {
 ### Choose a name for the chamber & device, set script path
 ############
 
-func_getscriptpath() {
+getscriptpath() {
   # See if we already have chambers installed
   if [ ! -z "$instances" ]; then
     # We've already got BrewPi installed in multi-chamber
@@ -288,7 +328,7 @@ func_getscriptpath() {
     read -p "Enter chamber name: " chamber < /dev/tty
     chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
     chamber="${chamber,,}"
-    while [ -z "$chamber" ] || [ "$(func_checkchamber "$chamber")" == false ]
+    while [ -z "$chamber" ] || [ "$(checkchamber "$chamber")" == false ]
     do
       echo -e "\nError: Device/directory name blank or already exists."
       read -p "Enter chamber name: " chamber < /dev/tty
@@ -316,7 +356,7 @@ func_getscriptpath() {
     echo -e "\nUsing $scriptPath for scripts directory."
   fi
 
-  if [ ! -z $chamber ]; then
+  if [ ! -z "$chamber" ]; then
     echo -e "\nNow enter a friendly name to be used for the chamber as it will be displayed."
     echo -e "Capital letters may be used, however any character entered that is not [A-Z],"
     echo -e "[a-z], [0-9], - or _ will be replaced with an underscore. Spaces are allowed.\n"
@@ -334,8 +374,8 @@ func_getscriptpath() {
 ### Install a udev rule to connect this instance to an Arduino
 ############
 
-func_doport(){
-  if [ ! -z $chamber ]; then
+doport(){
+  if [ ! -z "$chamber" ]; then
     declare -i count=-1
     declare -a port
     declare -a serial
@@ -350,7 +390,7 @@ func_doport(){
       thisSerial=$(echo "$board" | grep "serial" | cut -d'"' -f 2)
       grep -q "$thisSerial" "$rules" 2> /dev/null || ok=true # Serial not in file
       [ -z "$board" ] && ok=false # Board exists
-      if $ok; then
+      if "$ok"; then
         ((count++))
         # Get the device Product ID, Vendor ID and Serial Number
         #idProduct=$(echo "$board" | grep "idProduct" | cut -d'"' -f 2)
@@ -361,7 +401,7 @@ func_doport(){
       fi
     done
     # Display a menu of devices to associate with this chamber
-    if [ $count -gt 0 ]; then
+    if [ "$count" -gt 0 ]; then
       # There's more than one (it's 0-based)
       echo -e "\nThe following seem to be the Arduinos available on this system:\n"
       for (( c=0; c<=count; c++ ))
@@ -371,7 +411,7 @@ func_doport(){
       echo
       while :; do
         read -p "Please select an Arduino [0-$count] to associate with this chamber:  " board < /dev/tty
-        [[ $board =~ ^[0-$count]+$ ]] || { echo "Please enter a valid choice."; continue; }
+        [[ "$board" =~ ^[0-"$count"]+$ ]] || { echo "Please enter a valid choice."; continue; }
         if ((board >= 0 && board <= count)); then
           break
         fi
@@ -391,7 +431,7 @@ func_doport(){
       fi
       udevadm control --reload-rules
       udevadm trigger
-    elif [ $count -eq 0 ]; then
+    elif [ "$count" -eq 0 ]; then
       # Only one (it's 0-based), use it
       if [ -L "/dev/$chamber" ]; then
         echo -e "\nPort /dev/$chamber already exists as a link; using it but check your setup."
@@ -425,7 +465,7 @@ func_doport(){
 ### Stop all BrewPi processes
 ############
 
-func_killproc() {
+killproc() {
   if [ $(getent passwd brewpi) ]; then
    pidlist=$(pgrep -u brewpi)
   fi
@@ -437,15 +477,15 @@ func_killproc() {
       echo -e "\nAttempting graceful shutdown of process $pid."
       kill -15 "$pid"
       sleep 2
-      if ps -p $pid > /dev/null 2>&1; then
+      if ps -p "$pid" > /dev/null 2>&1; then
         echo -e "\nTrying a little harder to terminate process $pid."
         kill -2 "$pid"
         sleep 2
-        if ps -p $pid > /dev/null 2>&1; then
+        if ps -p "$pid" > /dev/null 2>&1; then
           echo -e "\nBeing more forceful with process $pid."
           kill -1 "$pid"
           sleep 2
-          while ps -p $pid > /dev/null 2>&1;
+          while ps -p "$pid" > /dev/null 2>&1;
           do
             echo -e "\nBeing really insistent about killing process $pid now."
             echo -e "(I'm going to keep doing this till the process(es) are gone.)"
@@ -462,14 +502,14 @@ func_killproc() {
 ### Backup existing scripts directory
 ############
 
-func_backupscript() {
+backupscript() {
   # Back up installpath if it has any files in it
   if [ -d "$scriptPath" ] && [ "$(ls -A ${scriptPath})" ]; then
     # Set place to put backups
     BACKUPDIR="$HOMEPATH/$GITPROJ-backup"
     # Stop (kill) brewpi
     touch /var/www/html/do_not_run_brewpi
-    func_killproc # Stop all BrewPi processes
+    killproc # Stop all BrewPi processes
     dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-Script"
     echo -e "\nScript install directory is not empty, backing up this users home directory to"
     echo -e "'$dirName' and then deleting contents."
@@ -484,20 +524,20 @@ func_backupscript() {
 ### Create/configure user account
 ############
 
-func_makeuser() {
+makeuser() {
   echo -e "\nCreating and configuring accounts."
   if ! id -u brewpi >/dev/null 2>&1; then
     useradd brewpi -m -G dialout,sudo,www-data||die
   fi
   # Add current user to www-data & brewpi group
-  usermod -a -G www-data,brewpi $SUDO_USER||die
+  usermod -a -G www-data,brewpi "$SUDO_USER"||die
 }
 
 ############
 ### Clone BrewPi scripts
 ############
 
-func_clonescripts() {
+clonescripts() {
   # Clean out install path
   rm -fr "$scriptPath" >/dev/null 2>&1
   if [ ! -d "$scriptPath" ]; then mkdir -p "$scriptPath"; fi
@@ -510,7 +550,7 @@ func_clonescripts() {
 ### Install dependencies
 ############
 
-func_dodepends() {
+dodepends() {
   chmod +x "$scriptPath/utils/doDepends.sh"
   eval "$scriptPath/utils/doDepends.sh"||die
 }
@@ -519,7 +559,7 @@ func_dodepends() {
 ### Web path setup
 ############
 
-func_getwwwpath() {
+getwwwpath() {
   # Find web path based on Apache2 config
   echo -e "\nSearching for default web location."
   webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
@@ -545,7 +585,7 @@ func_getwwwpath() {
 ### Back up WWW path
 ############
 
-func_backupwww() {
+backupwww() {
   # Back up webPath if it has any files in it
   /etc/init.d/apache2 stop||die
   rm -rf "$webPath/do_not_run_brewpi" 2> /dev/null || true
@@ -565,7 +605,7 @@ func_backupwww() {
 ### Clone the web app
 ############
 
-func_clonewww() {
+clonewww() {
   echo -e "\nCloning web site."
   eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $GITURLWWW $webPath"||die
   # Keep BrewPi from running while we do things
@@ -576,7 +616,7 @@ func_clonewww() {
 ### If non-default paths are used, create/update configuration files accordingly
 ##########
 
-func_updateconfig() {
+updateconfig() {
   if [ ! -z "$chamber" ]; then
     echo -e "\nCreating custom configurations for $chamber."
     # Create script path in custom script configuration file
@@ -597,7 +637,7 @@ func_updateconfig() {
 ### Fix permissions
 ############
 
-func_doperms() {
+doperms() {
   chmod +x "$scriptPath/utils/doPerms.sh"
   eval "$scriptPath/utils/doPerms.sh"||die
 }
@@ -606,7 +646,7 @@ func_doperms() {
 ### Install daemons
 ############
 
-func_dodaemon() {
+dodaemon() {
   touch "$webPath/do_not_run_brewpi" # make sure BrewPi does not start yet
   chmod +x "$scriptPath/utils/doDaemon.sh"
   eval "$scriptPath/utils/doDaemon.sh"||die
@@ -616,7 +656,7 @@ func_dodaemon() {
 ### Fix an issue with BrewPi and Safari-based browsers
 ############
 
-func_fixsafari() {
+fixsafari() {
   echo -e "\nFixing apache2.conf."
   sed -i -e 's/KeepAliveTimeout 5/KeepAliveTimeout 99/g' /etc/apache2/apache2.conf
   /etc/init.d/apache2 restart
@@ -626,7 +666,7 @@ func_fixsafari() {
 ### Flash controller
 ############
 
-func_flash() {
+flash() {
   echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
   read -p "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
   case "$yn" in
@@ -639,7 +679,7 @@ func_flash() {
 ### Print final banner
 ############
 
-func_complete() {
+complete() {
   localIP=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
   echo -e "\n\n"
   echo -e "       ___         _        _ _    ___                _     _       "
@@ -678,41 +718,41 @@ func_complete() {
 ############
 
 main() {
-  func_doinit # Initialize constants and variables
-  func_arguments "$@" # Handle command line arguments
-  func_checkroot "$@" # Make sure we are using sudo
-  exec > >(tee >(timestamp >>"$HOMEPATH/$SCRIPTNAME.log")) 2>&1 # Logfile
-  func_term # Provide term codes
+  log "$@" # Create instalation log
+  init "$@" # Initialize constants and variables
+  arguments "$@" # Handle command line arguments
   echo -e "\n***Script $THISSCRIPT starting.***"
+  checkroot "$@" # Make sure we are using sudo
+  term # Provide term codes
   arg="${1//-}" # Strip out all dashes
   if [[ "$arg" == "q"* ]]; then quick=true; else quick=false; fi
-  func_findbrewpi # See if BrewPi is already installed
-  func_checknet # Check for connection to GitHub
-  func_checkfree # Make sure there's enough free space for install
-  func_getscriptpath # Choose a sub directory name or take default for scripts
-  func_doport # Install a udev rule for the Arduino connected to this installation
-  func_backupscript # Backup anything in the scripts directory
-  func_makeuser # Create/configure user account
-  func_clonescripts # Clone scripts git repository
+  findbrewpi # See if BrewPi is already installed
+  checknet # Check for connection to GitHub
+  checkfree # Make sure there's enough free space for install
+  getscriptpath # Choose a sub directory name or take default for scripts
+  doport # Install a udev rule for the Arduino connected to this installation
+  backupscript # Backup anything in the scripts directory
+  makeuser # Create/configure user account
+  clonescripts # Clone scripts git repository
   if [ ! "$quick" == "true" ]; then
-    func_dodepends # Install dependencies
+    dodepends # Install dependencies
   fi
-  func_getwwwpath # Get WWW install location
-  func_backupwww # Backup anything in WWW location
-  func_clonewww # Clone WWW files
-  func_updateconfig # Update config files if non-default paths are used
-  func_doperms # Set script and www permissions
-  func_dodaemon # Set up daemons
-  func_fixsafari # Fix display bug with Safari browsers
+  getwwwpath # Get WWW install location
+  backupwww # Backup anything in WWW location
+  clonewww # Clone WWW files
+  updateconfig # Update config files if non-default paths are used
+  doperms # Set script and www permissions
+  dodaemon # Set up daemons
+  fixsafari # Fix display bug with Safari browsers
   # Add links for multi-chamber dashboard
   if [ -n "$chamber" ]; then
     webRoot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
     [ ! -L "$webRoot/index.php" ] && (eval "$scriptPath/utils/doIndex.sh"||warn)
   fi
-  func_flash # Flash controller
+  flash # Flash controller
   # Allow BrewPi to start via daemon
   rm "$webPath/do_not_run_brewpi" 2> /dev/null
-  func_complete # Cleanup and display instructions
+  complete # Cleanup and display instructions
 }
 
 ############

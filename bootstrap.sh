@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018,2019  Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Tools Remix (BrewPi-Tools-RMX).
 #
@@ -30,20 +30,45 @@
 # license and credits.
 
 ############
-### Timestamp logs
+### Handle logging
 ############
 
 timestamp() {
+  # Add date in '2019-02-26 08:19:22' format to log
   while read -r; do
-    printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
+    if [ -n "$REPLY" ]; then # Skip blank lines
+      printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
+    fi
   done
+}
+
+doLog() {
+  [[ "$@" == *"-nolog"* ]] && return # Turn off logging
+  # Set up our local variables
+  declare local thisscript scriptname realuser homepath shadow
+  # Explicit scriptname (creates log name) since we start
+  # before the main script
+  thisscript="bootstrap.sh"
+  scriptname="${thisscript%%.*}"
+  # Get home directory for logging
+  if [ "$SUDO_USER" ]; then realuser="$SUDO_USER"; else realuser=$(whoami); fi
+  shadow="$( (getent passwd "$realuser") 2>&1)"
+  if [ -n "$shadow" ]; then
+    homepath=$(echo "$shadow" | cut -d':' -f6)
+  else
+    echo -e "\nERROR: Unable to retrieve $realuser's home directory. Manual install"
+    echo -e "may be necessary."
+    exit 1
+  fi
+  # Tee all output to log file in home directory
+  exec > >(tee >(timestamp >>"$homepath/$scriptname.log")) 2>&1
 }
 
 ############
 ### Init
 ############
 
-func_init() {
+init() {
   # Set up some project variables we won't have running as a bootstrap
   PACKAGE="BrewPi-Tools-RMX"
   GITBRNCH="devel" # TODO:  Get this from URL
@@ -66,50 +91,64 @@ func_init() {
 }
 
 ############
-### Command line variables
+### Command line arguments
 ############
 
-# func_usage outputs to stdout the --help usage message.
-func_usage () {
-  echo -e "$PACKAGE $THISSCRIPT version $VERSION
+# usage outputs to stdout the --help usage message.
+usage() {
+cat << EOF
+
+$PACKAGE $THISSCRIPT version $VERSION
+
 Usage: sudo ./$THISSCRIPT"
+EOF
 }
-# func_version outputs to stdout the --version message.
-func_version () {
-  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
-Copyright (C) 2018 Lee C. Bussy (@LBussy)
+
+# version outputs to stdout the --version message.
+version() {
+cat << EOF
+
+$THISSCRIPT ($PACKAGE) $VERSION
+
+Copyright (C) 2018,2019 Lee C. Bussy (@LBussy)
+
 This is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published
 by the Free Software Foundation, either version 3 of the License,
 or (at your option) any later version.
 <https://www.gnu.org/licenses/>
-There is NO WARRANTY, to the extent permitted by law."
+
+There is NO WARRANTY, to the extent permitted by law.
+EOF
 }
-# Check command line arguments
-func_comline() {
-  if test $# = 1; then
-    case "$1" in
-      --help | --hel | --he | --h )
-        func_usage; exit 0 ;;
-      --version | --versio | --versi | --vers | --ver | --ve | --v )
-        func_version; exit 0 ;;
+
+# Parse arguments and call usage or version
+arguments() {
+  while [[ "$#" -gt 0 ]]; do
+  arg="$1"
+    case "$arg" in
+      --h* )
+        usage; exit 0 ;;
+      --v* )
+        version; exit 0 ;;
     esac
-  fi
+  done
 }
 
 ############
 ### Make sure command is running with sudo
 ############
 
-func_checkroot() {
-  if [ "$SUDO_USER" ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
-  if [[ $EUID -ne 0 ]]; then
+checkroot() {
+  if [ "$SUDO_USER" ]; then REALUSER="SUDO_USER"; else REALUSER=$(whoami); fi
+  if [[ "$EUID" -ne 0 ]]; then
     sudo -n true 2> /dev/null
-    if [[ ${?} == "0" ]]; then
+    local retval="$?"
+    if [ "$retval" -eq 0 ]; then
       echo -e "\nNot runing as root, relaunching correctly.\n"
       sleep 2
       eval "$CMDLINE"
-      exit $?
+      exit "$?"
     else
       # sudo not available, give instructions
       echo -e "\nThis script must be run with root priviledges."
@@ -119,9 +158,10 @@ func_checkroot() {
     fi
   fi
   # And get the user home directory
-  _shadow="$( (getent passwd "$REALUSER") 2>&1)"
-  if [ $? -eq 0 ]; then
-    HOMEPATH=$(echo $_shadow | cut -d':' -f6)
+  shadow="$( (getent passwd "$REALUSER") 2>&1)"
+  retval="$?"
+  if [ "$retval" -eq 0 ]; then
+    HOMEPATH=$(echo "$shadow" | cut -d':' -f6)
   else
     echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install"
     echo -e "may be necessary."
@@ -133,9 +173,9 @@ func_checkroot() {
 ### Provide terminal escape codes
 ############
 
-func_term() {
+term() {
   tput colors > /dev/null 2>&1
-  retval=$?
+  local retval="$?"
   if [ "$retval" == "0" ]; then
     BOLD=$(tput bold)   # Start bold text
     SMSO=$(tput smso)   # Start "standout" mode
@@ -189,7 +229,7 @@ die() {
 ### Instructions
 ############
 
-func_instructions() {
+instructions() {
   echo -e "         ___                ___ _   ___           _     "
   echo -e "        | _ )_ _ _____ __ _| _ (_) | _ \___ _ __ (_)_ __"
   echo -e "        | _ \ '_/ -_) V  V /  _/ | |   / -_) '  \| \ \ /"
@@ -218,11 +258,11 @@ func_instructions() {
 ### Check for default 'pi' password and gently prompt to change it now
 ############
 
-func_checkpass() {
+checkpass() {
   local user_exists=$(id -u 'pi' > /dev/null 2>&1; echo $?)
   if [ "$user_exists" -eq 0 ]; then
-    salt=$(sudo getent shadow "pi" | cut -d$ -f3)
-    extpass=$(sudo getent shadow "pi" | cut -d: -f2)
+    salt=$(getent shadow "pi" | cut -d$ -f3)
+    extpass=$(getent shadow "pi" | cut -d: -f2)
     match=$(python -c 'import crypt; print crypt.crypt("'"raspberry"'", "$6$'${salt}'")')
     [ "${match}" == "${extpass}" ] && badpwd=true || badpwd=false
     if [ "$badpwd" = true ]; then
@@ -250,14 +290,14 @@ func_checkpass() {
 ### Set timezone
 ###########
 
-func_settime() {
+settime() {
   date=$(date)
   while true; do
     echo -e "The time is currently set to $date."
     if [ "$(date | cut -d ' ' -f 5)" == "GMT" ]; then
       # Probably never been set
       read -p "Is this correct? [y/N]: " yn  < /dev/tty
-      case $yn in
+      case "$yn" in
         '' ) dpkg-reconfigure tzdata; break ;;
         [Nn]* ) dpkg-reconfigure tzdata; break ;;
         [Yy]* ) echo ; break ;;
@@ -266,7 +306,7 @@ func_settime() {
     else
       # Probably been set
       read -p "Is this correct? [Y/n]: " yn  < /dev/tty
-      case $yn in
+      case "$yn" in
         [Nn]* ) dpkg-reconfigure tzdata; break ;;
         [Yy]* ) break ;;
         * ) break ;;
@@ -279,13 +319,13 @@ func_settime() {
 ### Change hostname
 ###########
 
-func_hostname() {
+hostname() {
   oldHostName=$(hostname)
   if [ "$oldHostName" = "raspberrypi" ]; then
     while true; do
       echo -e "Your hostname is set to '$oldHostName'. Do you"
       read -p "want to change it now, maybe to 'brewpi'? [Y/n]: " yn < /dev/tty
-      case $yn in
+      case "$yn" in
           '' ) sethost=1; break ;;
           [Yy]* ) sethost=1; break ;;
           [Nn]* ) break ;;
@@ -293,7 +333,7 @@ func_hostname() {
       esac
     done
     echo
-    if [ $sethost -eq 1 ]; then
+    if [ "$sethost" -eq 1 ]; then
       echo -e "You will now be asked to enter a new hostname."
       while
         read -p "Enter new hostname: " host1  < /dev/tty
@@ -307,7 +347,7 @@ func_hostname() {
       newHostName=$(echo "$host1" | awk '{print tolower($0)}')
       eval "sed -i 's/$oldHostName/$newHostName/g' /etc/hosts"||die
       eval "sed -i 's/$oldHostName/$newHostName/g' /etc/hostname"||die
-      hostnamectl set-hostname $newHostName
+      hostnamectl set-hostname "$newHostName"
       /etc/init.d/avahi-daemon restart
       echo -e "\nYour hostname has been changed to '$newHostName'.\n"
       echo -e "(If your hostname is part of your prompt, your prompt will"
@@ -322,10 +362,11 @@ func_hostname() {
 ### Check for network connection
 ###########
 
-func_checknet() {
+checknet() {
   echo -e "\nChecking for connection to GitHub."
   wget -q --spider "$GITTEST"
-  if [ $? -ne 0 ]; then
+  local retval="$?"
+  if [ "$retval" -ne 0 ]; then
     echo -e "\n-------------------------------------------------------------\n"
     echo -e "Could not connect to GitHub.  Please check your network and "
     echo -e "try again. A connection to GitHub is required to download the"
@@ -340,11 +381,11 @@ func_checknet() {
 ### Install or update required packages
 ############
 
-func_packages() {
+packages() {
   # Run 'apt update' if last run was > 1 week ago
   lastUpdate=$(stat -c %Y /var/lib/apt/lists)
   nowTime=$(date +%s)
-  if [ $(($nowTime - $lastUpdate)) -gt 604800 ] ; then
+  if [ $(("$nowTime" - "$lastUpdate")) -gt 604800 ] ; then
     echo -e "\nLast apt update was over a week ago. Running apt update before updating"
     echo -e "dependencies."
     apt update||die
@@ -357,7 +398,7 @@ func_packages() {
       grep "install ok installed")
     if [ -z "$pkgOk" ]; then
       echo -e "\nInstalling '$pkg'."
-      apt install $pkg -y||die
+      apt install "$pkg" -y||die
     fi
   done
 
@@ -367,9 +408,9 @@ func_packages() {
     uniq -u | tac | sed '/--/I,+1 d' | tac | sed '$d' | sed -n 1~2p)
   # Loop through the required packages and see if they need an upgrade
   for pkg in $APTPACKAGES; do
-    if [[ $upgradesAvail == *"$pkg"* ]]; then
+    if [[ "$upgradesAvail" == *"$pkg"* ]]; then
       echo -e "\nUpgrading '$pkg'."
-      apt install $pkg||die
+      apt install "$pkg"||die
     fi
   done
 }
@@ -378,7 +419,7 @@ func_packages() {
 ### Clone BrewPi-Tools-RMX repo
 ############
 
-func_clonetools() {
+clonetools() {
   echo -e "\nCloning $GITPROJ repo."
   if [ -d "$HOMEPATH/$GITPROJ" ]; then
     if [ "$(ls -A $HOMEPATH/$GITPROJ)" ]; then
@@ -410,20 +451,20 @@ func_clonetools() {
 ############
 
 main() {
-  func_init # Get constants
-  func_comline # Check command line arguments
-  func_checkroot # Make sure we are su into root
-  exec > >(tee >(timestamp >>"$HOMEPATH/$SCRIPTNAME.log")) 2>&1 # Logfile
-  func_term # Add term command constants
+  log # Start logging
+  init # Get constants
+  arguments # Check command line arguments
   echo -e "\n***Script $THISSCRIPT starting.***\n"
-  func_instructions # Show instructions
-  func_checkpass # Check for default password
-  func_settime # Set timesone
-  func_hostname # Change hostname
-  func_checknet # Check internet connection
-  func_packages # Install and update required packages
-  func_clonetools # Clone tools repo
-  eval "$HOMEPATH/$GITPROJ/install.sh" || die # Start installer
+  checkroot # Make sure we are su into root
+  term # Add term command constants
+  instructions # Show instructions
+  checkpass # Check for default password
+  settime # Set timesone
+  hostname # Change hostname
+  checknet # Check internet connection
+  packages # Install and update required packages
+  clonetools # Clone tools repo
+  eval "$HOMEPATH/$GITPROJ/install.sh -nolog" || die # Start installer
 }
 
 ############
