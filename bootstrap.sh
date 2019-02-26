@@ -407,10 +407,9 @@ clonetools() {
       echo -e "\nWarning: $HOMEPATH/$GITPROJ exists."
     fi
     echo -e "\nIf you are sure you do not need it or you are starting over completely, we can"
-    echo -e "delete the old repo by accepting the below prompt."
-    echo -e "\nIf you are running multi-chamber and are trying to add a new chamber, select"
-    echo -e "'N' below, and add a new chamber by executing:"
-    echo -e "'sudo $HOMEPATH/$GITPROJ/install.sh'\n"
+    echo -e "delete the old repo by accepting the below prompt. If you are running multi-
+    echo -e "chamber and are trying to add a new chamber, select 'N' below, and add a new
+    echo -e "chamber by executing: 'sudo $HOMEPATH/$GITPROJ/install.sh'\n"
     read -p "Remove $HOMEPATH/$GITPROJ? [y/N] " < /dev/tty
     if [[ "$REPLY" =~ ^[Yy]$ ]]; then
       rm -fr "$HOMEPATH/$GITPROJ"
@@ -421,7 +420,8 @@ clonetools() {
     fi
   fi
 
-  eval "git clone $GITCMD $HOMEPATH/$GITPROJ"||die
+  echo "DEBUG: eval git clone $GITCMD $HOMEPATH/$GITPROJ"||die
+  exit 0
 }
 
 ############
