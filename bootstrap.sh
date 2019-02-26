@@ -292,7 +292,7 @@ checkpass() {
 settime() {
   date=$(date)
   while true; do
-    echo -e "The time is currently set to $date."
+    echo -e "\nThe time is currently set to $date."
     if [ "$(date | cut -d ' ' -f 5)" == "GMT" ]; then
       # Probably never been set
       read -p "Is this correct? [y/N]: " yn  < /dev/tty
