@@ -30,6 +30,32 @@
 # license and credits.
 
 ############
+### Init
+############
+
+init() {
+  # Set up some project variables we won't have running as a bootstrap
+  PACKAGE="BrewPi-Tools-RMX"
+  GITBRNCH="devel" # TODO:  Get this from URL
+  THISSCRIPT="bootstrap.sh"
+  VERSION="0.5.1.3"
+  CMDLINE="curl -L devinstall.brewpiremix.com | sudo bash"
+  # These should stay the same
+  GITRAW="https://raw.githubusercontent.com/lbussy"
+  GITHUB="https://github.com/lbussy"
+  # Cobble together some strings
+  SCRIPTNAME="${THISSCRIPT%%.*}"
+  GITPROJ="${PACKAGE,,}"
+  GITHUB="$GITHUB/$GITPROJ.git"
+  GITRAW="$GITRAW/$GITPROJ/$GITBRNCH/$THISSCRIPT"
+  GITCMD="-b $GITBRNCH --single-branch $GITHUB"
+  # Website for network test
+  GITTEST="$GITHUB"
+  # Packages to be installed/checked via apt
+  APTPACKAGES="git"
+}
+
+############
 ### Handle logging
 ############
 
@@ -62,32 +88,6 @@ log() {
   fi
   # Tee all output to log file in home directory
   exec > >(tee >(timestamp >>"$homepath/$scriptname.log")) 2>&1
-}
-
-############
-### Init
-############
-
-init() {
-  # Set up some project variables we won't have running as a bootstrap
-  PACKAGE="BrewPi-Tools-RMX"
-  GITBRNCH="devel" # TODO:  Get this from URL
-  THISSCRIPT="bootstrap.sh"
-  VERSION="0.5.1.3"
-  CMDLINE="curl -L devinstall.brewpiremix.com | sudo bash"
-  # These should stay the same
-  GITRAW="https://raw.githubusercontent.com/lbussy"
-  GITHUB="https://github.com/lbussy"
-  # Cobble together some strings
-  SCRIPTNAME="${THISSCRIPT%%.*}"
-  GITPROJ="${PACKAGE,,}"
-  GITHUB="$GITHUB/$GITPROJ.git"
-  GITRAW="$GITRAW/$GITPROJ/$GITBRNCH/$THISSCRIPT"
-  GITCMD="-b $GITBRNCH --single-branch $GITHUB"
-  # Website for network test
-  GITTEST="$GITHUB"
-  # Packages to be installed/checked via apt
-  APTPACKAGES="git"
 }
 
 ############
@@ -317,8 +317,8 @@ settime() {
 ### Change hostname
 ###########
 
-hostname() {
-  oldHostName=$(hostname)
+host_name() {
+  local oldHostName=$(hostname)
   if [ "$oldHostName" = "raspberrypi" ]; then
     while true; do
       echo -e "Your hostname is set to '$oldHostName'. Do you"
@@ -342,7 +342,7 @@ hostname() {
         sleep 1
       done
       echo
-      newHostName=$(echo "$host1" | awk '{print tolower($0)}')
+      local newHostName=$(echo "$host1" | awk '{print tolower($0)}')
       eval "sed -i 's/$oldHostName/$newHostName/g' /etc/hosts"||die
       eval "sed -i 's/$oldHostName/$newHostName/g' /etc/hostname"||die
       hostnamectl set-hostname "$newHostName"
@@ -353,25 +353,6 @@ hostname() {
       echo -e "no effect on anything but the way the prompt looks.)"
       sleep 5
     fi
-  fi
-}
-
-############
-### Check for network connection
-###########
-
-checknet() {
-  echo -e "\nChecking for connection to GitHub."
-  wget -q --spider "$GITTEST"
-  local retval="$?"
-  if [ "$retval" -ne 0 ]; then
-    echo -e "\n-------------------------------------------------------------\n"
-    echo -e "Could not connect to GitHub.  Please check your network and "
-    echo -e "try again. A connection to GitHub is required to download the"
-    echo -s "$PACKAGE package."
-    exit 1
-  else
-    echo -e "\nConnection to GitHub ok."
   fi
 }
 
@@ -458,8 +439,7 @@ main() {
   instructions # Show instructions
   checkpass # Check for default password
   settime # Set timesone
-  hostname # Change hostname
-  checknet # Check internet connection
+  host_name # Change hostname
   packages # Install and update required packages
   clonetools # Clone tools repo
   eval "$HOMEPATH/$GITPROJ/install.sh -nolog" || die # Start installer
