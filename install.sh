@@ -132,6 +132,8 @@ arguments() {
         usage; exit 0 ;;
       --v* )
         version; exit 0 ;;
+      * )
+        break;;
     esac
   done
 }
@@ -718,7 +720,7 @@ complete() {
 ############
 
 main() {
-  log "$@" # Create instalation log
+  log "$@" # Create installation log
   init "$@" # Initialize constants and variables
   arguments "$@" # Handle command line arguments
   echo -e "\n***Script $THISSCRIPT starting.***"
