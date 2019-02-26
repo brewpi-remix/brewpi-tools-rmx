@@ -148,7 +148,7 @@ checkroot() {
     sudo -n true 2> /dev/null
     local retval="$?"
     if [ "$retval" -eq 0 ]; then
-      echo -e "\nNot runing as root, relaunching correctly.\n"
+      echo -e "\nNot running as root, relaunching correctly.\n"
       sleep 2
       eval "sudo bash $SCRIPTPATH/$THISSCRIPT $@"
       exit "$?"
@@ -450,7 +450,7 @@ doport(){
       udevadm control --reload-rules
       udevadm trigger
     else
-      # We have selected multichamber but there's no devices
+      # We have selected multi-chamber but there's no devices
       echo -e "\nYou've configured the system for multi-chamber support however no Arduinos were"
       echo -e "found to configure.  The following configuration file:"
       echo -e "$scriptPath/settings/config.cnf"

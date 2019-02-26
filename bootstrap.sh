@@ -145,13 +145,13 @@ checkroot() {
     sudo -n true 2> /dev/null
     local retval="$?"
     if [ "$retval" -eq 0 ]; then
-      echo -e "\nNot runing as root, relaunching correctly.\n"
+      echo -e "\nNot running as root, relaunching correctly.\n"
       sleep 2
       eval "$CMDLINE"
       exit "$?"
     else
       # sudo not available, give instructions
-      echo -e "\nThis script must be run with root priviledges."
+      echo -e "\nThis script must be run with root privileges."
       echo -e "Enter the following command as one line:"
       echo -e "$CMDLINE" 1>&2
       exit 1
@@ -406,7 +406,7 @@ clonetools() {
     else
       echo -e "\nWarning: $HOMEPATH/$GITPROJ exists."
     fi
-    echo -e "\nIf you are sure you do not need it or you are starting over completely, we can"
+    echo -e "\nIf you are sure you do not need it, or you are starting over completely, we can"
     echo -e "delete the old repo by accepting the below prompt. If you are running multi-
     echo -e "chamber and are trying to add a new chamber, select 'N' below, and add a new
     echo -e "chamber by executing: 'sudo $HOMEPATH/$GITPROJ/install.sh'\n"
@@ -436,7 +436,7 @@ main() {
   term # Add term command constants
   instructions # Show instructions
   checkpass # Check for default password
-  settime # Set timesone
+  settime # Set timezone
   host_name # Change hostname
   packages # Install and update required packages
   clonetools # Clone tools repo
