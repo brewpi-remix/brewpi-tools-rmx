@@ -247,10 +247,9 @@ instructions() {
   echo -e "Pressing <enter> without typing anything will take the default/recommended"
   echo -e "choice. In general, unless you know what you are doing, going with a non-"
   echo -e "default path is not recommended as not all possibilities can be reasonably"
-  echo -e "tested."
+  echo -e "tested.\n"
 
-  echo -e "\nPress <enter> when you are ready to proceed."
-  read < /dev/tty
+  read -p "Press <enter> when you are ready to proceed. " enter < /dev/tty
 }
 
 ############
