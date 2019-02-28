@@ -14,7 +14,7 @@ declare CMDLINE="curl -L debug.brewpiremix.com | sudo bash"
 #declare CMDLINE="sudo /home/pi/brewpi-tools-rmx/$THISSCRIPT"
 # Should not have to edit past here
 declare SCRIPTNAME="${THISSCRIPT%%.*}"
-declare TARBALL="$(date +%F_%k:%M:%S)-$SCRIPTNAME.tar.gz"
+declare TARBALL="$(date +%F_%H:%M:%S)-$SCRIPTNAME.tar.gz"
 declare HOMEPATH=""
 declare -i devNum=0
 
