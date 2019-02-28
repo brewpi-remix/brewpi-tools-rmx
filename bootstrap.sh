@@ -264,7 +264,7 @@ checkpass() {
     match=$(python -c 'import crypt; print crypt.crypt("'"raspberry"'", "$6$'${salt}'")')
     [ "${match}" == "${extpass}" ] && badpwd=true || badpwd=false
     if [ "$badpwd" = true ]; then
-      echo -e "Default password found for the 'pi' account. This should be changed."
+      echo -e "\nDefault password found for the 'pi' account. This should be changed."
       while true; do
           read -p "Do you want to change the password now? [Y/n]: " yn  < /dev/tty
           case "$yn" in
