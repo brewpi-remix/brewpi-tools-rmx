@@ -99,7 +99,7 @@ main() {
   checkroot
   doPort
   [ "$devNum" -gt 0 ] && doTar
-  if [ -d $HOMEPATH/$TARBALL ]; then
+  if [ -d "$HOMEPATH/$TARBALL" ]; then
     "$DOFTP" && doFTP || echo -e "\nPlease email $HOMEPATH/$TARBALL to Lee@Bussy.org."
   else
     echo -e "\nNo devices found."
