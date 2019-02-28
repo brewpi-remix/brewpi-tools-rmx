@@ -75,7 +75,7 @@ doPort() {
 ############
 
 doTar() {
-  if ls "$HOMEPATH"/*.devices 1> /dev/null 2>&1; then
+  if ls "$HOMEPATH"/*.device 1> /dev/null 2>&1; then
     echo -e "\nAdding files to tarball:"
     find "$HOMEPATH" -name "*.device" -print0 | tar -cvzf "$HOMEPATH/$TARBALL" --null -T -
     find "$HOMEPATH" -name "*.device" -type f -exec rm '{}' \;
