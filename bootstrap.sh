@@ -231,28 +231,30 @@ die() {
 
 instructions() {
   local any
-  local sp14="$(printf ' %.0s' {1..14})" sp16="$(printf ' %.0s' {1..16})"
-  local sp17="$(printf ' %.0s' {1..17})" sp22="$(printf ' %.0s' {1..22})"
+  local sp14="$(printf ' %.0s' {1..14})" sp17="$(printf ' %.0s' {1..17})"
+  local sp18="$(printf ' %.0s' {1..18})" sp23="$(printf ' %.0s' {1..23})"
   clear
   # Note:  $(printf ...) hack adds spaces at beg/end to support non-black BG
   cat << EOF
 ${BGBLK}${FGYLW}
-$sp14 ___                ___ _   ___           _$sp22
-$sp14| _ )_ _ _____ __ _| _ (_) | _ \___ _ __ (_)_ __$sp17
-$sp14| _ \ '_/ -_) V  V /  _/ | |   / -_) '  \| \ \ /$sp17
-$sp14|___/_| \___|\_/\_/|_| |_| |_|_\___|_|_|_|_/_\_\ $sp16
+$sp14 ___                ___ _   ___           _$sp23
+$sp14| _ )_ _ _____ __ _| _ (_) | _ \___ _ __ (_)_ __$sp18
+$sp14| _ \ '_/ -_) V  V /  _/ | |   / -_) '  \| \ \ /$sp18
+$sp14|___/_| \___|\_/\_/|_| |_| |_|_\___|_|_|_|_/_\_\ $sp17
 ${FGGRN}${HHR}${RESET}
 You will be presented with some choices during the install. Most frequently
 you will see a 'yes or no' choice, with the default choice capitalized like
 so: [y/N]. Default means if you hit <enter> without typing anything, you will
 make the capitalized choice, i.e. hitting <enter> when you see [Y/n] will
 default to 'yes.'
+
 Yes/no choices are not case sensitive. However; passwords, system names and
 install paths are. Be aware of this. There is generally no difference between
 'y', 'yes', 'YES', 'Yes'; you get the idea. In some areas you are asked for a
 path; the default/recommended choice is in braces like: [/home/brewpi].
 Pressing <enter> without typing anything will take the default/recommended
 choice.
+
 EOF
   read -n 1 -s -r -p  "Press any key when you are ready to proceed. " any < /dev/tty
   echo -e ""
