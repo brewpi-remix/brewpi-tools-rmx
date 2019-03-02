@@ -687,16 +687,18 @@ flash() {
 
 complete() {
   clear
-  IP=$(ip -4 addr | grep 'global' | cut -f1  -d'/' | cut -d" " -f6)
-  # Note:  Blanks after logo characters are important when using a term with
-  #        non-black BG
+  local sp7="$(printf ' %.0s' {1..7})" sp11="$(printf ' %.0s' {1..11})"
+  local sp18="$(printf ' %.0s' {1..18})" sp28="$(printf ' %.0s' {1..28})"
+  local sp49="$(printf ' %.0s' {1..49})"
+  local IP=$(ip -4 addr | grep 'global' | cut -f1  -d'/' | cut -d" " -f6)
+  # Note:  $(printf ...) hack adds spaces at beg/end to support non-black BG
   cat << EOF
 ${BGBLK}${FGYLW}
-        ___         _        _ _    ___                _     _
-       |_ _|_ _  __| |_ __ _| | |  / __|___ _ __  _ __| |___| |_ ___
-        | || ' \(_-<  _/ _\` | | | | (__/ _ \ '  \| '_ \ / -_)  _/ -_)
-       |___|_||_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|
-                                                 |_|
+$sp7 ___         _        _ _    ___                _     _$sp18
+$sp7|_ _|_ _  __| |_ __ _| | |  / __|___ _ __  _ __| |___| |_ ___ $sp11
+$sp7 | || ' \(_-<  _/ _\` | | | | (__/ _ \ '  \| '_ \ / -_)  _/ -_)$sp11
+$sp7|___|_||_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|$sp11
+$sp49|_|$sp28
 ${FGGRN}${HHR}${RESET}
 BrewPi scripts will start shortly, usualy within 30 seconds.
 
