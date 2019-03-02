@@ -62,6 +62,7 @@ init() {
 timestamp() {
   # Add date in '2019-02-26 08:19:22' format to log
   while read -r; do
+    REPLY="$(echo "$REPLY" | xargs)"
     if [ -n "$REPLY" ]; then # Skip blank lines
       printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
     fi
