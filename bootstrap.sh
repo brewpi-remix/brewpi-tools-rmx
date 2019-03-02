@@ -231,15 +231,16 @@ die() {
 
 instructions() {
   local any
+  local sp14="$(printf ' %.0s' {1..14})" sp16="$(printf ' %.0s' {1..16})"
+  local sp17="$(printf ' %.0s' {1..17})" sp22="$(printf ' %.0s' {1..22})"
   clear
-  # Note:  Blanks after logo characters are important when using a term with
-  #        non-black BG
+  # Note:  $(printf ...) hack adds spaces at beg/end to support non-black BG
   cat << EOF
 ${BGBLK}${FGYLW}
-               ___                ___ _   ___           _
-              | _ )_ _ _____ __ _| _ (_) | _ \___ _ __ (_)_ __
-              | _ \ '_/ -_) V  V /  _/ | |   / -_) '  \| \ \ /
-              |___/_| \___|\_/\_/|_| |_| |_|_\___|_|_|_|_/_\_\
+$sp14 ___                ___ _   ___           _$sp22
+$sp14| _ )_ _ _____ __ _| _ (_) | _ \___ _ __ (_)_ __$sp17
+$sp14| _ \ '_/ -_) V  V /  _/ | |   / -_) '  \| \ \ /$sp17
+$sp14|___/_| \___|\_/\_/|_| |_| |_|_\___|_|_|_|_/_\_\ $sp16
 ${FGGRN}${HHR}${RESET}
 You will be presented with some choices during the install. Most frequently
 you will see a 'yes or no' choice, with the default choice capitalized like
