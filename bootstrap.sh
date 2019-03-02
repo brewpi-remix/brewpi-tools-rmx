@@ -36,7 +36,7 @@
 init() {
   # Set up some project variables we won't have running as a bootstrap
   PACKAGE="BrewPi-Tools-RMX"
-  GITBRNCH="devel" # TODO:  Get this from URL
+  GITBRNCH="devel"
   THISSCRIPT="bootstrap.sh"
   VERSION="0.5.1.3"
   CMDLINE="curl -L devinstall.brewpiremix.com | sudo bash"
@@ -173,6 +173,7 @@ checkroot() {
 ############
 
 term() {
+  # If we are colors capable, allow them
   tput colors > /dev/null 2>&1
   local retval="$?"
   if [ "$retval" == "0" ]; then
@@ -229,27 +230,33 @@ die() {
 ############
 
 instructions() {
-  echo -e "         ___                ___ _   ___           _     "
-  echo -e "        | _ )_ _ _____ __ _| _ (_) | _ \___ _ __ (_)_ __"
-  echo -e "        | _ \ '_/ -_) V  V /  _/ | |   / -_) '  \| \ \ /"
-  echo -e "        |___/_| \___|\_/\_/|_| |_| |_|_\___|_|_|_|_/_\_\ "
+  local any
+  clear
+  # Note:  Blanks after logo characters are important when using a term with
+  #        non-black BG
+  cat << EOF
+${BGBLK}${FGYLW}
+               ___                ___ _   ___           _
+              | _ )_ _ _____ __ _| _ (_) | _ \___ _ __ (_)_ __
+              | _ \ '_/ -_) V  V /  _/ | |   / -_) '  \| \ \ /
+              |___/_| \___|\_/\_/|_| |_| |_|_\___|_|_|_|_/_\_\
+${FGGRN}${HHR}${RESET}
+You will be presented with some choices during the install. Most frequently
+you will see a 'yes or no' choice, with the default choice capitalized like
+so: [y/N]. Default means if you hit <enter> without typing anything, you will
+make the capitalized choice, i.e. hitting <enter> when you see [Y/n] will
+default to 'yes.'
 
-  echo -e "\nYou will be presented with some choices during the install. Most frequently"
-  echo -e "you will see a 'yes or no' choice, with the default choice capitalized like"
-  echo -e "so: [y/N]. Default means if you hit <enter> without typing anything, you will"
-  echo -e "make the capitalized choice, i.e. hitting <enter> when you see [Y/n] will"
-  echo -e "default to 'yes.'"
+Yes/no choices are not case sensitive. However; passwords, system names and
+install paths are. Be aware of this. There is generally no difference between
+'y', 'yes', 'YES', 'Yes'; you get the idea. In some areas you are asked for a
+path; the default/recommended choice is in braces like: [/home/brewpi].
+Pressing <enter> without typing anything will take the default/recommended
+choice.
 
-  echo -e "\nYes/no choices are not case sensitive. However; passwords, system names and"
-  echo -e "install paths are. Be aware of this. There is generally no difference between"
-  echo -e "'y', 'yes', 'YES', 'Yes'; you get the idea. In some areas you are asked for a"
-  echo -e "path; the default/recommended choice is in braces like: [/home/brewpi]."
-  echo -e "Pressing <enter> without typing anything will take the default/recommended"
-  echo -e "choice. In general, unless you know what you are doing, going with a non-"
-  echo -e "default path is not recommended as not all possibilities can be reasonably"
-  echo -e "tested.\n"
-
-  read -p "Press <enter> when you are ready to proceed. " enter < /dev/tty
+EOF
+  read -n 1 -s -r -p  "Press any key when you are ready to proceed. " any < /dev/tty
+  echo -e ""
 }
 
 ############

@@ -75,11 +75,13 @@ init() {
   cd "$SCRIPTPATH"
   if [ -x "$(command -v git)" ] && [ -d .git ]; then
     VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))"
+    COMMIT="$(git -C $SCRIPTPATH log --oneline -n1)"
+    GITBRNCH="$(git branch | grep \* | cut -d ' ' -f2)"
     GITURL="$(git config --get remote.origin.url)"
     GITPROJ="$(basename $GITURL)"
     GITPROJ="${GITPROJ%.*}"
     PACKAGE="${GITPROJ^^}"
-    GITBRNCH=$(git rev-parse --abbrev-ref HEAD)
+    GITBRNCH="$(git rev-parse --abbrev-ref HEAD)"
     GITPROJWWW="brewpi-www-rmx"
     GITPROJSCRIPT="brewpi-script-rmx"
     # Concatenate URLs
@@ -175,8 +177,9 @@ checkroot() {
 ############
 
 term() {
+  # If we are colors capable, allow them
   tput colors > /dev/null 2>&1
-  retval=$?
+  local retval="$?"
   if [ "$retval" == "0" ]; then
     BOLD=$(tput bold)   # Start bold text
     SMSO=$(tput smso)   # Start "standout" mode
@@ -683,35 +686,35 @@ flash() {
 ############
 
 complete() {
-  localIP=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
-  echo -e "\n\n"
-  echo -e "       ___         _        _ _    ___                _     _       "
-  echo -e "      |_ _|_ _  __| |_ __ _| | |  / __|___ _ __  _ __| |___| |_ ___ "
-  echo -e "       | || ' \(_-<  _/ _\` | | | | (__/ _ \ '  \| '_ \ / -_)  _/ -_)"
-  echo -e "      |___|_||_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|"
-  echo -e "                                                |_|                 "
-  echo -e "\nBrewPi scripts will start shortly.  To view the BrewPi web interface, enter"
-  echo -e "the following in your favorite browser:"
-  # Use chamber name if configured
-  if [ ! -z "$chamber" ]; then
-    echo -e "http://$localIP/$chamber"
-  else
-    echo -e "http://$localIP"
-  fi
-  echo -e "\nIf you have Bonjour or another zeroconf utility installed, you may use this"
-  echo -e "easier to remember address to access BrewPi:"
-  # Use chamber name if configured
-  if [ ! -z "$chamber" ]; then
-    echo -e "http://$(hostname).local/$chamber"
-  else
-    echo -e "http://$(hostname).local"
-  fi
+  clear
+  IP=$(ip -4 addr | grep 'global' | cut -f1  -d'/' | cut -d" " -f6)
+  # Note:  Blanks after logo characters are important when using a term with
+  #        non-black BG
+  cat << EOF
+${BGBLK}${FGYLW}
+        ___         _        _ _    ___                _     _
+       |_ _|_ _  __| |_ __ _| | |  / __|___ _ __  _ __| |___| |_ ___
+        | || ' \(_-<  _/ _\` | | | | (__/ _ \ '  \| '_ \ / -_)  _/ -_)
+       |___|_||_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|
+                                                 |_|
+${FGGRN}${HHR}${RESET}
+BrewPi scripts will start shortly, usualy within 30 seconds.
+
+ - BrewPi frontend URL : http://$IP/$chamber
+                  -or- : http://$(hostname).local/$chamber
+ - Installation path   : $scriptPath
+ - Release version     : $VERSION ($GITBRNCH)
+ - Commit version      : $(git -C $scriptPath log --oneline -n1)
+ - Install tools path  : $SCRIPTPATH
+EOF
   if [ -n "$chamber" ]; then
-    echo -e "\nIf you would like to install another chamber, issue the command:"
-    echo -e "sudo ~/brewpi-tools-rmx/install.sh"
-    echo -e "\nYour multi-chamber web index is available at:"
-    echo -e "http://$localIP - or -"
-    echo -e "http://$(hostname).local"
+    cat << EOF
+ - Multi-chamber URL   : http://$IP
+                  -or- : http://$(hostname).local
+
+If you would like to install another chamber, issue the command:
+sudo $SCRIPTPATH/install.sh
+EOF
   fi
   echo -e "\nHappy Brewing!"
 }
