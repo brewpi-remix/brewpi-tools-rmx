@@ -229,40 +229,33 @@ die() {
 ### Instructions
 ############
 
-complete() {
+instructions() {
+  local any
+  local sp14="$(printf ' %.0s' {1..14})" sp16="$(printf ' %.0s' {1..16})"
+  local sp17="$(printf ' %.0s' {1..17})" sp22="$(printf ' %.0s' {1..22})"
   clear
-  local sp7="$(printf ' %.0s' {1..7})" sp11="$(printf ' %.0s' {1..11})"
-  local sp18="$(printf ' %.0s' {1..18})" sp28="$(printf ' %.0s' {1..28})"
-  local sp49="$(printf ' %.0s' {1..49})"
-  local IP=$(ip -4 addr | grep 'global' | cut -f1  -d'/' | cut -d" " -f6)
   # Note:  $(printf ...) hack adds spaces at beg/end to support non-black BG
   cat << EOF
 ${BGBLK}${FGYLW}
-$sp7 ___         _        _ _    ___                _     _$sp18
-$sp7|_ _|_ _  __| |_ __ _| | |  / __|___ _ __  _ __| |___| |_ ___ $sp11
-$sp7 | || ' \(_-<  _/ _\` | | | | (__/ _ \ '  \| '_ \ / -_)  _/ -_)$sp11
-$sp7|___|_||_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|$sp11
-$sp49|_|$sp28
+$sp14 ___                ___ _   ___           _$sp22
+$sp14| _ )_ _ _____ __ _| _ (_) | _ \___ _ __ (_)_ __$sp17
+$sp14| _ \ '_/ -_) V  V /  _/ | |   / -_) '  \| \ \ /$sp17
+$sp14|___/_| \___|\_/\_/|_| |_| |_|_\___|_|_|_|_/_\_\ $sp16
 ${FGGRN}${HHR}${RESET}
-BrewPi scripts will start shortly, usualy within 30 seconds.
-
- - BrewPi frontend URL : http://$IP/$chamber
-                  -or- : http://$(hostname).local/$chamber
- - Installation path   : $scriptPath
- - Release version     : $VERSION ($GITBRNCH)
- - Commit version      : $(git -C $scriptPath log --oneline -n1)
- - Install tools path  : $SCRIPTPATH
+You will be presented with some choices during the install. Most frequently
+you will see a 'yes or no' choice, with the default choice capitalized like
+so: [y/N]. Default means if you hit <enter> without typing anything, you will
+make the capitalized choice, i.e. hitting <enter> when you see [Y/n] will
+default to 'yes.'
+Yes/no choices are not case sensitive. However; passwords, system names and
+install paths are. Be aware of this. There is generally no difference between
+'y', 'yes', 'YES', 'Yes'; you get the idea. In some areas you are asked for a
+path; the default/recommended choice is in braces like: [/home/brewpi].
+Pressing <enter> without typing anything will take the default/recommended
+choice.
 EOF
-  if [ -n "$chamber" ]; then
-    cat << EOF
- - Multi-chamber URL   : http://$IP
-                  -or- : http://$(hostname).local
-
-If you would like to install another chamber, issue the command:
-sudo $SCRIPTPATH/install.sh
-EOF
-  fi
-  echo -e "\nHappy Brewing!"
+  read -n 1 -s -r -p  "Press any key when you are ready to proceed. " any < /dev/tty
+  echo -e ""
 }
 
 ############
