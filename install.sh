@@ -69,7 +69,7 @@ log() {
     exit 1
   fi
   # Tee all output to log file in home directory
-  exec > >(tee >(timestamp >>"$homepath/$scriptname.log")) 2>&1
+  exec > >(tee >(timestamp | col -b >>"$homepath/$scriptname.log")) 2>&1
 }
 
 ############
