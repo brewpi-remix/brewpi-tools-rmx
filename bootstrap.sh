@@ -66,9 +66,15 @@ timestamp() {
   dot="$(tput sc)$(tput setaf 0)$(tput setab 0).$(tput sgr 0)$(tput rc)"
   # Add date in '2019-02-26 08:19:22' format to log
   while read -r; do
-    [ -n "$REPLY" ] && return # Skip blank lines
-    [[ "$STRING" == "$dot"* ]] && return # Skip banners
-    printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
+    # Strip blank lines
+    if [ -n "$REPLY" ]; then
+      # Skip "dot" lines
+      if [[ ! "$REPLY" == "$dot"* ]]; then
+        REPLY="$(echo $REPLY | cut -c-60)"
+        # Add date in '2019-02-26 08:19:22' format to log
+        printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
+      fi
+    fi
   done
 }
 
