@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018,2019  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019  Lee C. Bussy (@LBussy)
 #
 # This file is part of LBussy's BrewPi Tools Remix (BrewPi-Tools-RMX).
 #
@@ -70,6 +70,7 @@ timestamp() {
     if [ -n "$REPLY" ]; then
       # Skip "dot" lines
       if [[ ! "$REPLY" == "$dot"* ]]; then
+        # Log only furst 60 chars
         REPLY="$(echo $REPLY | cut -c-60)"
         # Add date in '2019-02-26 08:19:22' format to log
         printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
