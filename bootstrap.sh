@@ -29,6 +29,8 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+############ Remember to edit strings in init() and log() ############
+
 ############
 ### Init
 ############
@@ -62,10 +64,9 @@ init() {
 timestamp() {
   # Add date in '2019-02-26 08:19:22' format to log
   while read -r; do
-    REPLY="$(echo "$REPLY" | xargs)"
-    if [ -n "$REPLY" ]; then # Skip blank lines
-      printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
-    fi
+    [ -n "$REPLY" ] && return # Skip blank lines
+    [[ "$STRING" == "$DOT"* ]] && return # Skip banners
+    printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
   done
 }
 
@@ -199,8 +200,11 @@ term() {
     BGCYN=$(tput setab 6)   # BG Cyan
     BGWHT=$(tput setab 7)   # BG White
     BGRST=$(tput setab 9)   # BG Reset to default color
-    HHR=$(eval printf %.0s═ '{1..'"${COLUMNS:-$(tput cols)}"\}; echo)
-    LHR=$(eval printf %.0s─ '{1..'"${COLUMNS:-$(tput cols)}"\}; echo)
+    # Some constructs
+    # "Invisible" period (black FG/BG and a backspace)
+    DOT="$(tput sc)$(tput setaf 0)$(tput setab 0).$(tput sgr 0)$(tput rc)"
+    HHR="$(eval printf %.0s═ '{1..'"${COLUMNS:-$(tput cols)}"\}; echo)"
+    LHR="$(eval printf %.0s─ '{1..'"${COLUMNS:-$(tput cols)}"\}; echo)"
     RESET=$(tput sgr0)  # FG/BG reset to default color
   fi
 }
@@ -233,16 +237,16 @@ die() {
 instructions() {
   local any
   local sp14="$(printf ' %.0s' {1..14})" sp17="$(printf ' %.0s' {1..17})"
-  local sp18="$(printf ' %.0s' {1..18})" sp23="$(printf ' %.0s' {1..23})"
+  local sp22="$(printf ' %.0s' {1..22})"
   clear
   # Note:  $(printf ...) hack adds spaces at beg/end to support non-black BG
   cat << EOF
-${BGBLK}${FGYLW}
-$sp14 ___                ___ _   ___           _$sp23
-$sp14| _ )_ _ _____ __ _| _ (_) | _ \___ _ __ (_)_ __$sp18
-$sp14| _ \ '_/ -_) V  V /  _/ | |   / -_) '  \| \ \ /$sp18
-$sp14|___/_| \___|\_/\_/|_| |_| |_|_\___|_|_|_|_/_\_\ $sp17
-${FGGRN}${HHR}${RESET}
+
+$DOT$BGBLK$FGYLW$sp14 ___                ___ _   ___           _ $sp22
+$DOT$BGBLK$FGYLW$sp14| _ )_ _ _____ __ _| _ (_) | _ \___ _ __ (_)_ __ $sp17
+$DOT$BGBLK$FGYLW$sp14| _ \ '_/ -_) V  V /  _/ | |   / -_) '  \| \ \ / $sp17
+$DOT$BGBLK$FGYLW$sp14|___/_| \___|\_/\_/|_| |_| |_|_\___|_|_|_|_/_\_\ $sp17
+$DOT$BGBLK$FGGRN$HHR$RESET
 You will be presented with some choices during the install. Most frequently
 you will see a 'yes or no' choice, with the default choice capitalized like
 so: [y/N]. Default means if you hit <enter> without typing anything, you will
