@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018, 2019  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 #
 # This file is part of LBussy's BrewPi Tools Remix (BrewPi-Tools-RMX).
 #
@@ -70,7 +70,7 @@ timestamp() {
     if [ -n "$REPLY" ]; then
       # Skip "dot" lines
       if [[ ! "$REPLY" == "$dot"* ]]; then
-        # Log only furst 60 chars
+        # Log only first 60 chars (20 for date/time)
         REPLY="$(echo $REPLY | cut -c-60)"
         # Add date in '2019-02-26 08:19:22' format to log
         printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
@@ -450,9 +450,9 @@ clonetools() {
 ############
 
 main() {
-  log # Start logging
-  init # Get constants
-  arguments # Check command line arguments
+  log "$@" # Start logging
+  init "$@" # Get constants
+  arguments "$@" # Check command line arguments
   echo -e "\n***Script $THISSCRIPT starting.***\n"
   checkroot # Make sure we are su into root
   term # Add term command constants
@@ -469,10 +469,4 @@ main() {
 ### Start the script
 ############
 
-main
-
-############
-### Work complete
-############
-
-exit 0
+main "$@" && exit 0
