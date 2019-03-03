@@ -68,6 +68,8 @@ timestamp() {
   while read -r; do
     # Strip blank lines
     if [ -n "$REPLY" ]; then
+      # Log only first 60 chars
+      REPLY="$(echo $REPLY | cut -c-60)"
       # Skip "dot" lines
       if [[ ! "$REPLY" == "$dot"* ]]; then
         # Add date in '2019-02-26 08:19:22' format to log
