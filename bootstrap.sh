@@ -70,8 +70,6 @@ timestamp() {
     if [ -n "$REPLY" ]; then
       # Skip "dot" lines
       if [[ ! "$REPLY" == "$dot"* ]]; then
-        # Log only first 60 chars (20 for date/time)
-        REPLY="$(echo $REPLY | cut -c-60)"
         # Add date in '2019-02-26 08:19:22' format to log
         printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
       fi
@@ -98,7 +96,7 @@ log() {
     exit 1
   fi
   # Tee all output to log file in home directory
-  exec > >(tee >(timestamp >>"$homepath/$scriptname.log")) 2>&1
+  exec > >(tee >(timestamp | col -b >>"$homepath/$scriptname.log")) 2>&1
 }
 
 ############
