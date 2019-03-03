@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018,2019  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 #
 # This file is part of LBussy's BrewPi Tools Remix (BrewPi-Tools-RMX).
 #
@@ -34,11 +34,19 @@
 ############
 
 timestamp() {
+  local dot #Even though this is defined in term() we need it earlier
+  dot="$(tput sc)$(tput setaf 0)$(tput setab 0).$(tput sgr 0)$(tput rc)"
   # Add date in '2019-02-26 08:19:22' format to log
   while read -r; do
-    REPLY="$(echo "$REPLY" | xargs)" # Strip whitespace
-    if [ -n "$REPLY" ]; then # Skip blank lines
-      printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
+    # Strip blank lines
+    if [ -n "$REPLY" ]; then
+      # Skip "dot" lines
+      if [[ ! "$REPLY" == "$dot"* ]]; then
+        # Log only first 60 chars
+        REPLY="$(echo $REPLY | cut -c-60)"
+        # Add date in '2019-02-26 08:19:22' format to log
+        printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
+      fi
     fi
   done
 }
@@ -203,8 +211,11 @@ term() {
     BGCYN=$(tput setab 6)   # BG Cyan
     BGWHT=$(tput setab 7)   # BG White
     BGRST=$(tput setab 9)   # BG Reset to default color
-    HHR=$(eval printf %.0s═ '{1..'"${COLUMNS:-$(tput cols)}"\}; echo)
-    LHR=$(eval printf %.0s─ '{1..'"${COLUMNS:-$(tput cols)}"\}; echo)
+    # Some constructs
+    # "Invisible" period (black FG/BG and a backspace)
+    DOT="$(tput sc)$(tput setaf 0)$(tput setab 0).$(tput sgr 0)$(tput rc)"
+    HHR="$(eval printf %.0s═ '{1..'"${COLUMNS:-$(tput cols)}"\}; echo)"
+    LHR="$(eval printf %.0s─ '{1..'"${COLUMNS:-$(tput cols)}"\}; echo)"
     RESET=$(tput sgr0)  # FG/BG reset to default color
   fi
 }
@@ -694,14 +705,14 @@ complete() {
   local IP=$(ip -4 addr | grep 'global' | cut -f1  -d'/' | cut -d" " -f6)
   # Note:  $(printf ...) hack adds spaces at beg/end to support non-black BG
   cat << EOF
-${BGBLK}${FGYLW}
-$sp7 ___         _        _ _    ___                _     _$sp18
-$sp7|_ _|_ _  __| |_ __ _| | |  / __|___ _ __  _ __| |___| |_ ___ $sp11
-$sp7 | || ' \(_-<  _/ _\` | | | | (__/ _ \ '  \| '_ \ / -_)  _/ -_)$sp11
-$sp7|___|_||_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|$sp11
-$sp49|_|$sp28
-${FGGRN}${HHR}${RESET}
-BrewPi scripts will start shortly, usualy within 30 seconds.
+
+$DOT$BGBLK$FGYLW$sp7 ___         _        _ _    ___                _     _$sp18
+$DOT$BGBLK$FGYLW$sp7|_ _|_ _  __| |_ __ _| | |  / __|___ _ __  _ __| |___| |_ ___ $sp11
+$DOT$BGBLK$FGYLW$sp7 | || ' \(_-<  _/ _\` | | | | (__/ _ \ '  \| '_ \ / -_)  _/ -_)$sp11
+$DOT$BGBLK$FGYLW$sp7|___|_||_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|$sp11
+$DOT$BGBLK$FGYLW$sp49|_|$sp28
+$DOT$BGBLK$FGGRN$HHR$RESET
+BrewPi scripts will start shortly, usually within 30 seconds.
 
  - BrewPi frontend URL : http://$IP/$chamber
                   -or- : http://$(hostname).local/$chamber
@@ -768,10 +779,4 @@ main() {
 ### Start the script
 ############
 
-main "$@"
-
-############
-### Exit
-############
-
-exit 0
+main "$@" && exit 0
