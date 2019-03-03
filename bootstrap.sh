@@ -62,10 +62,12 @@ init() {
 ############
 
 timestamp() {
+  local dot #Even though this is defined in term() we need it earlier
+  dot="$(tput sc)$(tput setaf 0)$(tput setab 0).$(tput sgr 0)$(tput rc)"
   # Add date in '2019-02-26 08:19:22' format to log
   while read -r; do
     [ -n "$REPLY" ] && return # Skip blank lines
-    [[ "$STRING" == "$DOT"* ]] && return # Skip banners
+    [[ "$STRING" == "$dot"* ]] && return # Skip banners
     printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
   done
 }
