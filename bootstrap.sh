@@ -29,8 +29,6 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-############ Remember to edit strings in init() and log() ############
-
 ############
 ### Init
 ############
@@ -62,21 +60,38 @@ init() {
 ############
 
 timestamp() {
-  local dot #Even though this is defined in term() we need it earlier
-  dot="$(tput sc)$(tput setaf 0)$(tput setab 0).$(tput sgr 0)$(tput rc)"
   # Add date in '2019-02-26 08:19:22' format to log
   while read -r; do
+    # Clean and trim line to 60 characters to allow for timestamp on one line
+    REPLY="$(clean "$REPLY" 60)"
     # Strip blank lines
     if [ -n "$REPLY" ]; then
-      # Log only first 60 chars
-      REPLY="$(echo $REPLY | cut -c-60)"
-      # Skip "dot" lines
-      if [[ ! "$REPLY" == "$dot"* ]]; then
-        # Add date in '2019-02-26 08:19:22' format to log
-        printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
-      fi
+      # Add date in '2019-02-26 08:19:22' format to log
+      printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
     fi
   done
+}
+
+clean() {
+  # Cleanup log line
+  local input length dot
+  input="$1"
+  length="$2"
+  # Even though this is defined in term() we need it earlier
+  dot="$(tput sc)$(tput setaf 0)$(tput setab 0).$(tput sgr 0)$(tput rc)"
+  # If we lead the line with our semaphore, return a blank line
+  if [[ "$input" == "$dot"* ]]; then echo ""; return; fi
+  # Strip color codes
+  input="$(echo "$input" | sed 's,\x1B[[(][0-9;]*[a-zA-Z],,g')"
+  # Strip beginning spaces
+  input="$(printf "%s" "${input#"${input%%[![:space:]]*}"}")"
+  # Strip ending spaces
+  input="$(printf "%s" "${input%"${input##*[![:space:]]}"}")"
+  # Squash any repeated whitespace within string
+  input="$(echo "$input" | awk '{$1=$1};1')"
+  # Log only first $length chars to allow for date/time stamp
+  input="$(echo "$input" | cut -c-$length)"
+  echo "$input"
 }
 
 log() {
@@ -98,7 +113,7 @@ log() {
     exit 1
   fi
   # Tee all output to log file in home directory
-  exec > >(tee >(timestamp | col -b >>"$homepath/$scriptname.log")) 2>&1
+  exec > >(tee >(timestamp >> "$homepath/$scriptname.log")) 2>&1
 }
 
 ############
