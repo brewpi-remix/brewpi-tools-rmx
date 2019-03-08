@@ -356,6 +356,17 @@ getscriptpath() {
     do
       echo -e "\t$(dirname "${instance}")"
     done
+    # Get $source, $scriptSource and $webSource for git clone
+    set -- $instances
+    scriptSource=$(dirname "${1}")
+    source=$(basename $scriptSource)
+    webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
+    if [ -z "$webPath" ]; then
+      echo "Something went wrong searching for /etc/apache2/sites-enabled/000-default*."
+      echo "Fix that and come back to try again."
+      exit 1
+    fi
+    webSource="$webPath/$source"
     echo -e "\nWhat device/directory name would you like to use for this installation?  Any"
     echo -e "character entered that is not [a-z], [0-9], - or _ will be converted to an"
     echo -e "underscore.  Alpha characters will be converted to lowercase.  Do not enter a"
@@ -371,7 +382,7 @@ getscriptpath() {
       chamber="${chamber,,}"
     done
     scriptPath="/home/brewpi/$chamber"
-    echo -e "\nUsing $scriptPath for scripts directory."
+    echo -e "\nUsing '$scriptPath' for scripts directory."
   else
     # First install; give option to do multi-chamber
     echo -e "\nIf you would like to use BrewPi in multi-chamber mode, or simply not use the"
@@ -388,7 +399,7 @@ getscriptpath() {
       chamber="${chamber,,}"
       scriptPath="/home/brewpi/$chamber"
     fi
-    echo -e "\nUsing $scriptPath for scripts directory."
+    echo -e "\nUsing '$scriptPath' for scripts directory."
   fi
 
   if [ ! -z "$chamber" ]; then
@@ -401,7 +412,7 @@ getscriptpath() {
     else
       chamberName="$(echo "$chamberName" | sed -e 's/[^A-Za-z0-9._-\ ]/_/g')"
     fi
-    echo -e "\nUsing $chamberName for chamber name."
+    echo -e "\nUsing '$chamberName' for chamber name."
   fi
 }
 
@@ -485,11 +496,11 @@ doport(){
     else
       # We have selected multi-chamber but there's no devices
       echo -e "\nYou've configured the system for multi-chamber support however no Arduinos were"
-      echo -e "found to configure.  The following configuration file:"
-      echo -e "$scriptPath/settings/config.cnf"
-      echo -e "... will be set to use /dev/$chamber however you must configure your device"
-      echo -e "manually in the $rules file."
-      sleep 5
+      echo -e "found to configure. The following configuration will be created, however you"
+      echo -e "must manually create a rule for your device to match the configuration file."
+      echo -e "\n\tConfiguration File: $scriptPath/settings/config.cnf"
+      echo -e "\tDevice:             /dev/$chamber\n"
+      read -n 1 -s -r -p "Press any key to continue. "  < /dev/tty
     fi
   else
     echo -e "\nScripts will use default 'port = auto' setting."
@@ -502,7 +513,7 @@ doport(){
 
 killproc() {
   if [ $(getent passwd brewpi) ]; then
-   pidlist=$(pgrep -u brewpi)
+    pidlist=$(pgrep -u brewpi)
   fi
   for pid in "$pidlist"
   do
@@ -573,12 +584,16 @@ makeuser() {
 ############
 
 clonescripts() {
+  echo -e "\nCloning BrewPi scripts to $scriptPath."
   # Clean out install path
   rm -fr "$scriptPath" >/dev/null 2>&1
   if [ ! -d "$scriptPath" ]; then mkdir -p "$scriptPath"; fi
   chown -R brewpi:brewpi "$scriptPath"||die
-  echo -e "\nDownloading most recent BrewPi codebase."
-  eval "sudo -u brewpi git clone -b $GITBRNCH --single-branch $GITURLSCRIPT $scriptPath"||die
+  if [ -n "$source" ]; then
+    eval "sudo -u brewpi git clone -b $GITBRNCH --single-branch $scriptSource $scriptPath"||die
+  else
+    eval "sudo -u brewpi git clone -b $GITBRNCH --single-branch $GITURLSCRIPT $scriptPath"||die
+  fi
 }
 
 ############
@@ -612,8 +627,7 @@ getwwwpath() {
   # Create web path if it does not exist
   if [ ! -d "$webPath" ]; then mkdir -p "$webPath"; fi
   chown -R www-data:www-data "$webPath"||die
-
-  echo -e "\nUsing $webPath for web directory."
+  echo -e "\nUsing '$webPath' for web directory."
 }
 
 ############
@@ -641,8 +655,12 @@ backupwww() {
 ############
 
 clonewww() {
-  echo -e "\nCloning web site."
-  eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $GITURLWWW $webPath"||die
+  echo -e "\nCloning web site to $webPath."
+  if [ -n "$source" ]; then
+    eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $webSource $webPath"||die
+  else
+    eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $GITURLWWW $webPath"||die
+  fi
   # Keep BrewPi from running while we do things
   touch "$webPath/do_not_run_brewpi"
 }
@@ -754,6 +772,8 @@ EOF
 ### Main
 ############
 
+# TODO:  Make decisions to do things based on [ ! -z "$instances" ] (true if multichamber)
+
 main() {
   log "$@" # Create installation log
   init "$@" # Initialize constants and variables
@@ -764,7 +784,7 @@ main() {
   arg="${1//-}" # Strip out all dashes
   if [[ "$arg" == "q"* ]]; then quick=true; else quick=false; fi
   findbrewpi # See if BrewPi is already installed
-  checknet # Check for connection to GitHub
+  [ -z "$source" ] && checknet # Check for connection to GitHub
   checkfree # Make sure there's enough free space for install
   getscriptpath # Choose a sub directory name or take default for scripts
   doport # Install a udev rule for the Arduino connected to this installation
@@ -772,7 +792,7 @@ main() {
   makeuser # Create/configure user account
   clonescripts # Clone scripts git repository
   if [ ! "$quick" == "true" ]; then
-    dodepends # Install dependencies
+    [ -z "$source" ] && dodepends # Install dependencies
   fi
   getwwwpath # Get WWW install location
   backupwww # Backup anything in WWW location
