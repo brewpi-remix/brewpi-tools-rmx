@@ -453,9 +453,9 @@ delnginx() {
 cleanapt() {
   # Cleanup
   echo -e "\nCleaning up local apt packages." > /dev/tty
-  apt clean -y
-  apt autoclean -y
-  apt autoremove --purge -y
+  apt-get clean -y
+  apt-get autoclean -y
+  apt-get autoremove --purge -y
 }
 
 ############
