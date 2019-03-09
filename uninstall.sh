@@ -543,7 +543,7 @@ delchamber() {
     echo -e "\nReplacing multi-chamber symlink:"
     echo -e "Target: $newlink"
     echo -e "Link:   $webPath/index.php"
-    ln -sfn "$newlink" "$link"
+    ln -sfn "$newlink" "$webPath/index.php"
   fi
   
   # Delete daemon for chamber
