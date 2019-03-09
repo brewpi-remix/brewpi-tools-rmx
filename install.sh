@@ -360,7 +360,7 @@ getscriptpath() {
     set -- $instances
     scriptSource=$(dirname "${1}")
     source=$(basename $scriptSource)
-    webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
+    webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* | xargs | cut -d " " -f2)"
     if [ -z "$webPath" ]; then
       echo "Something went wrong searching for /etc/apache2/sites-enabled/000-default*."
       echo "Fix that and come back to try again."
@@ -462,7 +462,7 @@ doport(){
           break
         fi
       done
-
+      # Device already exists - well-meaning user may have set it up
       if [ -L "/dev/$chamber" ]; then
         echo -e "\nPort /dev/$chamber already exists as a link; using it but check your setup."
       else
@@ -584,6 +584,7 @@ makeuser() {
 ############
 
 clonescripts() {
+  local sourceURL
   echo -e "\nCloning BrewPi scripts to $scriptPath."
   # Clean out install path
   rm -fr "$scriptPath" >/dev/null 2>&1
@@ -591,6 +592,9 @@ clonescripts() {
   chown -R brewpi:brewpi "$scriptPath"||die
   if [ -n "$source" ]; then
     eval "sudo -u brewpi git clone -b $GITBRNCH --single-branch $scriptSource $scriptPath"||die
+    # Update $scriptPath with git origin from $scriptSource
+    sourceURL="$(cd "$scriptSource" && git config --get remote.origin.url)"
+    (cd "$scriptPath" && git remote set-url origin "$sourceURL")
   else
     eval "sudo -u brewpi git clone -b $GITBRNCH --single-branch $GITURLSCRIPT $scriptPath"||die
   fi
@@ -655,9 +659,13 @@ backupwww() {
 ############
 
 clonewww() {
+  local sourceURL
   echo -e "\nCloning web site to $webPath."
   if [ -n "$source" ]; then
     eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $webSource $webPath"||die
+    # Update $webPath with git origin from $webSource
+    sourceURL="$(cd "$webSource" && git config --get remote.origin.url)"
+    (cd "$webPath" && git remote set-url origin "$sourceURL")
   else
     eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $GITURLWWW $webPath"||die
   fi
