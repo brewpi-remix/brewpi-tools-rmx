@@ -511,7 +511,7 @@ resetpwd() {
 ############
 
 delchamber() {
-  local chamber link home instances newlink
+  local chamber newchamber link home instances newlink
   chamber="$1"
   home="/home/brewpi"
   rules="/etc/udev/rules.d/99-arduino.rules"
@@ -535,13 +535,15 @@ delchamber() {
     instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
     for instance in $instances; do
       if [ ! "$(dirname $instance)" == "$scriptDir" ]; then
-        newlink="$webPath/$chamber/multi-index.php"
+        newchamber="$(basename $(dirname $instance))"
+        newlink="$webPath/$newchamber/multi-index.php"
         break
       fi
     done
     echo -e "\nReplacing multi-chamber symlink:"
-    echo -e "Source: $newlink"
-    echo -e "Target: $webPath/index.php"
+    echo -e "Target: $newlink"
+    echo -e "Link:   $webPath/index.php"
+    ln -sfn "$newlink" "$link"
   fi
   
   # Delete daemon for chamber
