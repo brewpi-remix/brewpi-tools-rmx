@@ -511,12 +511,13 @@ resetpwd() {
 ############
 
 delchamber() {
-  local chamber
+  local chamber link home instances newlink
   chamber="$1"
+  home="/home/brewpi"
   rules="/etc/udev/rules.d/99-arduino.rules"
   # Get $chamber, $scriptDir and $webDir for uninstall
-  scriptDir="/home/brewpi/$chamber"
-  webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
+  scriptDir="$home/$chamber"
+  webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* | xargs | cut -d " " -f2)"
   if [ -z "$webPath" ]; then
     echo -e "\nSomething went wrong searching for /etc/apache2/sites-enabled/000-default*."
     echo -e "Fix that and come back to try again."
@@ -525,8 +526,25 @@ delchamber() {
   webDir="$webPath/$chamber"
   unitFile="/etc/systemd/system/$chamber.service"
   daemonName="$chamber.service"
+  
+  # Check and fix symlink if needed
   echo
-  # Check $service
+  link=$(dirname $(readlink $webPath/index.php))
+  if [ "$link" == "$webDir" ]; then
+    echo -e "\nThis operation will delete the target of the multi-chamber index link."
+    instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
+    for instance in $instances; do
+      if [ ! "$(dirname $instance)" == "$scriptDir" ]; then
+        newlink="$webPath/$chamber/multi-index.php"
+        break
+      fi
+    done
+    echo -e "\nReplacing multi-chamber symlink:"
+    echo -e "Source: $newlink"
+    echo -e "Target: $webPath/index.php"
+  fi
+  
+  # Delete daemon for chamber
   if [ -f "$unitFile" ]; then
     # TODO:  Delete unit file for that chamber
     echo -e "\nStopping $chamber daemon."
@@ -537,7 +555,7 @@ delchamber() {
     rm "$unitFile" > /dev/null 2>&1
     systemctl daemon-reload
   fi
-  # Check $scriptDir
+  # Delete BrewPi scripts for chamber
   if [ -d "$scriptDir" ]; then
     # Stop running instance
     "$scriptDir/brewpi.py --quit" > /dev/null 2>&1
@@ -546,14 +564,14 @@ delchamber() {
     echo -e "\nRemoving $scriptDir."
     rm -fr "$scriptDir" > /dev/null 2>&1
   fi
-  # Check $webDir
+  # Delete BrewPi web for chamber
   if [ -d "$webDir" ]; then
     # TODO:  See if we have links pointed here
     # Remove BrewPi web instance
     echo -e "\nRemoving $webDir."
     rm -fr "$webDir" > /dev/null 2>&1
   fi
-  # Check /dev/$chamber
+  # Delete device for chamber
   if [ -L "/dev/$chamber" ]; then
     # TODO:  Delete rule for that chamber
     echo -e "\nRemoving rule for /dev/$chamber."
@@ -564,7 +582,22 @@ delchamber() {
 }
 
 ############
-### See if we have multiple chambers
+### Select a chamber
+###########
+
+numchamber() {
+  local home instances
+  home="/home/brewpi"
+  instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
+  if [ ${#instances} -gt 22 ]; then
+    arr=($instances)
+    return $((${#arr[@]}))
+  fi
+  return 0
+}
+
+############
+### Select a chamber
 ###########
 
 getchamber() {
@@ -597,7 +630,7 @@ getchamber() {
 ###########
 
 wipelevel () {
-  local level=""
+  local level retval
   echo -e "\nSelect the level of uninstall you wish to execute.  The least is level [1]" > /dev/tty
   echo -e "which is probably appropriate if you have an issue and are looking to cleanup" > /dev/tty
   echo -e "and reinstall.  Level [2] will reset the hostname and the password for 'pi'" > /dev/tty
@@ -608,33 +641,61 @@ wipelevel () {
   echo -e "   [1] - Normal uninstall of BrewPi repositories, services and devices" > /dev/tty
   echo -e "   [2] - Everything in [1] plus reset hostname and pi password" > /dev/tty
   echo -e "   [3] - Everything in [1] and [2] plus wipe pip and apt packages" > /dev/tty
-  echo -e "   [4] - Select a single chamber to uninstall\n" > /dev/tty
-  while :
-  do
-    read -r -s -n1 -p "Enter level of uninstall to execute [1-4] or any other key to quit: " level < /dev/tty
-    case "$level" in
-      1 )
-        echo -e "\n\nExecuting a level one (mild) uninstall." > /dev/tty
-        echo 1
-        break ;;
-      2 )
-        echo -e "\n\nExecuting a level two (medium) uninstall." > /dev/tty
-        echo 2
-        break ;;
-      3 )
-        echo -e "\n\nExecuting a level three (hard) uninstall." > /dev/tty
-        echo 3
-        break ;;
-      4 )
-        echo -e "\n\nExecuting a selective uninstall." > /dev/tty
-        echo 4
-        break ;;
-      * )
-        echo -e "\n\nUninstall canceled." > /dev/tty
-        echo "Q"
-        break ;;
-    esac
-  done
+  numchamber
+  retval=$?
+  if [[ $retval -gt 1 ]]; then
+    echo -e "   [4] - Select a single chamber to uninstall\n" > /dev/tty
+    while :
+    do
+      read -r -s -n1 -p "Enter level of uninstall to execute [1-4] or any other key to quit: " level < /dev/tty
+      case "$level" in
+        1 )
+          echo -e "\n\nExecuting a level one (mild) uninstall." > /dev/tty
+          echo 1
+          break ;;
+        2 )
+          echo -e "\n\nExecuting a level two (medium) uninstall." > /dev/tty
+          echo 2
+          break ;;
+        3 )
+          echo -e "\n\nExecuting a level three (hard) uninstall." > /dev/tty
+          echo 3
+          break ;;
+        4 )
+          echo -e "\n\nExecuting a selective uninstall." > /dev/tty
+          echo 4
+          break ;;
+        * )
+          echo -e "\n\nUninstall canceled." > /dev/tty
+          echo "Q"
+          break ;;
+      esac
+    done
+  else
+    echo > /dev/tty
+    while :
+    do
+      read -r -s -n1 -p "Enter level of uninstall to execute [1-3] or any other key to quit: " level < /dev/tty
+      case "$level" in
+        1 )
+          echo -e "\n\nExecuting a level one (mild) uninstall." > /dev/tty
+          echo 1
+          break ;;
+        2 )
+          echo -e "\n\nExecuting a level two (medium) uninstall." > /dev/tty
+          echo 2
+          break ;;
+        3 )
+          echo -e "\n\nExecuting a level three (hard) uninstall." > /dev/tty
+          echo 3
+          break ;;
+        * )
+          echo -e "\n\nUninstall canceled." > /dev/tty
+          echo "Q"
+          break ;;
+      esac
+    done
+  fi
 }
 
 ############
