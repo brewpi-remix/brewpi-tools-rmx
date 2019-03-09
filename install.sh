@@ -702,7 +702,11 @@ doperms() {
 dodaemon() {
   touch "$webPath/do_not_run_brewpi" # make sure BrewPi does not start yet
   chmod +x "$scriptPath/utils/doDaemon.sh"
-  eval "$scriptPath/utils/doDaemon.sh"||die
+  if [ -n "$source" ]; then
+    eval "$scriptPath/utils/doDaemon.sh -nowifi"||die
+  else
+    eval "$scriptPath/utils/doDaemon.sh"||die
+  fi
 }
 
 ############
