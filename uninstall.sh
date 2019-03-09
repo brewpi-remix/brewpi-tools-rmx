@@ -35,12 +35,12 @@
 
 init() {
   # Commandline to run this script
-  CMDLINE="curl -L devuninstall.brewpiremix.com | sudo bash"
+  CMDLINE="curl -L uninstall.brewpiremix.com | sudo bash"
   # Set up some project variables we won't have
   PACKAGE="BrewPi-Tools-RMX"
-  GITBRNCH="devel"
+  GITBRNCH="master"
   THISSCRIPT="uninstall.sh"
-  VERSION="0.5.1.3"
+  VERSION="0.5.2.0"
   # Packages to be uninstalled via apt
   APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php"
   # nginx packages to be uninstalled via apt if present
