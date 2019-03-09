@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Tools Remix (BrewPi-Tools-RMX).
 #
@@ -33,22 +33,160 @@
 ### Init
 ############
 
-# Packages to be uninstalled via apt
-APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php"
-# nginx packages to be uninstalled via apt if present
-NGINXPACKAGES="libgd-tools, fcgiwrap, nginx-doc, ssl-cert, fontconfig-config, fonts-dejavu-core, libfontconfig1, libgd3, libjbig0, libnginx-mod-http-auth-pam, libnginx-mod-http-dav-ext, libnginx-mod-http-echo, libnginx-mod-http-geoip, libnginx-mod-http-image-filter, libnginx-mod-http-subs-filter, libnginx-mod-http-upstream-fair, libnginx-mod-http-xslt-filter, libnginx-mod-mail, libnginx-mod-stream, libtiff5, libwebp6, libxpm4, libxslt1.1, nginx, nginx-common, nginx-full"
-# Packages to be uninstalled via pip
-PIPPACKAGES="pyserial psutil simplejson gitpython configobj"
+init() {
+  # Commandline to run this script
+  CMDLINE="curl -L devuninstall.brewpiremix.com | sudo bash"
+  # Set up some project variables we won't have
+  PACKAGE="BrewPi-Tools-RMX"
+  GITBRNCH="devel"
+  THISSCRIPT="uninstall.sh"
+  VERSION="0.5.1.3"
+  # Packages to be uninstalled via apt
+  APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php"
+  # nginx packages to be uninstalled via apt if present
+  NGINXPACKAGES="libgd-tools fcgiwrap nginx-doc ssl-cert fontconfig-config fonts-dejavu-core libfontconfig1 libgd3 libjbig0 libnginx-mod-http-auth-pam libnginx-mod-http-dav-ext libnginx-mod-http-echo libnginx-mod-http-geoip libnginx-mod-http-image-filter libnginx-mod-http-subs-filter libnginx-mod-http-upstream-fair libnginx-mod-http-xslt-filter libnginx-mod-mail libnginx-mod-stream libtiff5 libwebp6 libxpm4 libxslt1.1 nginx nginx-common nginx-full"
+  # Packages to be uninstalled via pip
+  PIPPACKAGES="pyserial psutil simplejson gitpython configobj"
+}
 
 ############
-### Check privilges and permissions
+### Handle logging
 ############
 
-func_getroot() {
-  ### Check if we have root privs to run
-  if [[ $EUID -ne 0 ]]; then
-     echo -e "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
-     exit 1
+timestamp() {
+  # Add date in '2019-02-26 08:19:22' format to log
+  while read -r; do
+    # Clean and trim line to 60 characters to allow for timestamp on one line
+    REPLY="$(clean "$REPLY" 60)"
+    # Strip blank lines
+    if [ -n "$REPLY" ]; then
+      # Add date in '2019-02-26 08:19:22' format to log
+      printf '%(%Y-%m-%d %H:%M:%S)T %s\n' -1 "$REPLY"
+    fi
+  done
+}
+
+clean() {
+  # Cleanup log line
+  local input length dot
+  input="$1"
+  length="$2"
+  # Even though this is defined in term() we need it earlier
+  dot="$(tput sc)$(tput setaf 0)$(tput setab 0).$(tput sgr 0)$(tput rc)"
+  # If we lead the line with our semaphore, return a blank line
+  if [[ "$input" == "$dot"* ]]; then echo ""; return; fi
+  # Strip color codes
+  input="$(echo "$input" | sed 's,\x1B[[(][0-9;]*[a-zA-Z],,g')"
+  # Strip beginning spaces
+  input="$(printf "%s" "${input#"${input%%[![:space:]]*}"}")"
+  # Strip ending spaces
+  input="$(printf "%s" "${input%"${input##*[![:space:]]}"}")"
+  # Squash any repeated whitespace within string
+  input="$(echo "$input" | awk '{$1=$1};1')"
+  # Log only first $length chars to allow for date/time stamp
+  input="$(echo "$input" | cut -c-$length)"
+  echo "$input"
+}
+
+log() {
+  [[ "$@" == *"-nolog"* ]] && return # Turn off logging
+  # Set up our local variables
+  local thisscript scriptname realuser homepath shadow
+  # Explicit scriptname (creates log name) since we start
+  # before the main script
+  thisscript="uninstall.sh"
+  scriptname="${thisscript%%.*}"
+  # Get home directory for logging
+  if [ "$SUDO_USER" ]; then realuser="$SUDO_USER"; else realuser=$(whoami); fi
+  shadow="$( (getent passwd "$realuser") 2>&1)"
+  if [ -n "$shadow" ]; then
+    homepath=$(echo "$shadow" | cut -d':' -f6)
+  else
+    echo -e "\nERROR: Unable to retrieve $realuser's home directory. Manual install"
+    echo -e "may be necessary."
+    exit 1
+  fi
+  # Tee all output to log file in home directory
+  exec > >(tee >(timestamp >> "$homepath/$scriptname.log")) 2>&1
+}
+
+############
+### Command line arguments
+############
+
+# usage outputs to stdout the --help usage message.
+usage() {
+cat << EOF
+
+$PACKAGE $THISSCRIPT version $VERSION
+
+Usage: sudo ./$THISSCRIPT"
+EOF
+}
+
+# version outputs to stdout the --version message.
+version() {
+cat << EOF
+
+$THISSCRIPT ($PACKAGE) $VERSION
+
+Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
+
+This is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published
+by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
+<https://www.gnu.org/licenses/>
+
+There is NO WARRANTY, to the extent permitted by law.
+EOF
+}
+
+# Parse arguments and call usage or version
+arguments() {
+  while [[ "$#" -gt 0 ]]; do
+  arg="$1"
+    case "$arg" in
+      --h* )
+        usage; exit 0 ;;
+      --v* )
+        version; exit 0 ;;
+      * )
+        break;;
+    esac
+  done
+}
+
+############
+### Check privileges and permissions
+############
+
+checkroot() {
+  if [ "$SUDO_USER" ]; then REALUSER="$SUDO_USER"; else REALUSER=$(whoami); fi
+  if [[ "$EUID" -ne 0 ]]; then
+    sudo -n true 2> /dev/null
+    local retval="$?"
+    if [ "$retval" -eq 0 ]; then
+      echo -e "\nNot running as root, relaunching correctly.\n"
+      sleep 2
+      eval "$CMDLINE"
+      exit "$?"
+    else
+      # sudo not available, give instructions
+      echo -e "\nThis script must be run with root privileges."
+      echo -e "Enter the following command as one line:"
+      echo -e "$CMDLINE" 1>&2
+      exit 1
+    fi
+  fi
+  # And get the user home directory
+  shadow="$( (getent passwd "$REALUSER") 2>&1)"
+  retval="$?"
+  if [ "$retval" -eq 0 ]; then
+    HOMEPATH=$(echo "$shadow" | cut -d':' -f6)
+  else
+    echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install may be necessary."
+    exit 1
   fi
 }
 
@@ -56,7 +194,7 @@ func_getroot() {
 ### Remove cron for brewpi
 ############
 
-func_cron() {
+cron() {
   # Clear out the old brewpi cron if it exists
   if [ -f /etc/cron.d/brewpi ]; then
     echo -e "\nResetting cron." > /dev/tty
@@ -69,7 +207,7 @@ func_cron() {
 ### Remove syslogd unit files for brewpi and wificheck
 ############
 
-func_syslogd() {
+syslogd() {
   ddir="/etc/systemd/system"
   targets="$(grep -rl "# Created for BrewPi version" $ddir)"
 
@@ -96,7 +234,7 @@ func_syslogd() {
 ### Stop all BrewPi processes
 ############
 
-func_killproc() {
+killproc() {
   if [ $(getent passwd brewpi) ]; then
    pidlist=$(pgrep -u brewpi)
   fi
@@ -133,7 +271,7 @@ func_killproc() {
 ### Remove all BrewPi repositories
 ############
 
-func_delrepo() {
+delrepo() {
   # Wipe out tools
   if [ -d "/home/$SUDO_USER/brewpi-tools-rmx" ]; then
     echo -e "\nClearing /home/$SUDO_USER/brewpi-tools-rmx." > /dev/tty
@@ -165,7 +303,7 @@ func_delrepo() {
 ### Remove brewpi user/group
 ############
 
-func_cleanusers() {
+cleanusers() {
   username="$SUDO_USER"
   if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
     echo > /dev/tty
@@ -199,7 +337,7 @@ func_cleanusers() {
 ### Reset Apache
 ############
 
-func_resetapache() {
+resetapache() {
   # Reset Apache config to stock
   if [ -f /etc/apache2/apache2.conf ]; then
     if grep -qF "KeepAliveTimeout 99" /etc/apache2/apache2.conf; then
@@ -214,7 +352,7 @@ func_resetapache() {
 ### Remove pip packages
 ############
 
-func_delpip() {
+delpip() {
   echo -e "\nChecking for pip packages installed with BrewPi." > /dev/tty
   if pip &>/dev/null; then
     pipInstalled=$(pip list --format=legacy)
@@ -234,7 +372,7 @@ func_delpip() {
 ### Remove apt packages
 ############
 
-func_delapt() {
+delapt() {
   echo -e "\nChecking for apt packages installed with BrewPi." > /dev/tty
   # Get list of installed packages
   packagesInstalled=$(dpkg --get-selections | awk '{ print $1 }')
@@ -251,7 +389,7 @@ func_delapt() {
 ### Remove php5 packages if installed
 ############
 
-func_delphp5() {
+delphp5() {
   echo -e "\nChecking for previously installed php5 packages." > /dev/tty
   # Get list of installed packages
   php5packages="$(dpkg --get-selections | awk '{ print $1 }' | grep 'php5')"
@@ -282,7 +420,7 @@ func_delphp5() {
 ### Remove nginx packages if installed
 ############
 
-func_delnginx() {
+delnginx() {
   echo -e "\nChecking for previously installed nginx packages." > /dev/tty
   # Get list of installed packages
   nginxPackage="$(dpkg --get-selections | awk '{ print $1 }' | grep 'nginx')"
@@ -312,7 +450,7 @@ func_delnginx() {
 ### Cleanup local packages
 ############
 
-func_cleanapt() {
+cleanapt() {
   # Cleanup
   echo -e "\nCleaning up local apt packages." > /dev/tty
   apt clean -y
@@ -324,7 +462,7 @@ func_cleanapt() {
 ### Reset hostname
 ###########
 
-func_resethost() {
+resethost() {
   oldHostName=$(hostname)
   newHostName="raspberrypi"
   if [ "$oldHostName" != "$newHostName" ]; then
@@ -347,7 +485,7 @@ func_resethost() {
 ### Remove device rules
 ###########
 
-func_resetudev() {
+resetudev() {
   rules="/etc/udev/rules.d/99-arduino.rules"
   if [ -f "$rules" ]; then
     echo -e "\nRemoving udev rules." > /dev/tty
@@ -361,7 +499,7 @@ func_resetudev() {
 ### Reset pi password
 ###########
 
-func_resetpwd() {
+resetpwd() {
   if getent passwd "pi" > /dev/null; then
     echo -e "\nResetting password for 'pi' back to 'raspberry'." > /dev/tty
     echo "pi:raspberry" | chpasswd
@@ -369,40 +507,130 @@ func_resetpwd() {
 }
 
 ############
+### Process single chamber
+############
+
+delchamber() {
+  local chamber
+  chamber="$1"
+  rules="/etc/udev/rules.d/99-arduino.rules"
+  # Get $chamber, $scriptDir and $webDir for uninstall
+  scriptDir="/home/brewpi/$chamber"
+  webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
+  if [ -z "$webPath" ]; then
+    echo -e "\nSomething went wrong searching for /etc/apache2/sites-enabled/000-default*."
+    echo -e "Fix that and come back to try again."
+    exit 1
+  fi
+  webDir="$webPath/$chamber"
+  unitFile="/etc/systemd/system/$chamber.service"
+  daemonName="$chamber.service"
+  echo
+  # Check $service
+  if [ -f "$unitFile" ]; then
+    # TODO:  Delete unit file for that chamber
+    echo -e "\nStopping $chamber daemon."
+    systemctl stop "$daemonName"
+    echo -e "Disabling $chamber daemon."
+    systemctl disable "$daemonName"
+    echo -e "Removing unit file for $chamber."
+    rm "$unitFile" > /dev/null 2>&1
+    systemctl daemon-reload
+  fi
+  # Check $scriptDir
+  if [ -d "$scriptDir" ]; then
+    # Stop running instance
+    "$scriptDir/brewpi.py --quit" > /dev/null 2>&1
+    "$scriptDir/brewpi.py --kill" > /dev/null 2>&1
+    # Remove BrewPi script instance
+    echo -e "\nRemoving $scriptDir."
+    rm -fr "$scriptDir" > /dev/null 2>&1
+  fi
+  # Check $webDir
+  if [ -d "$webDir" ]; then
+    # TODO:  See if we have links pointed here
+    # Remove BrewPi web instance
+    echo -e "\nRemoving $webDir."
+    rm -fr "$webDir" > /dev/null 2>&1
+  fi
+  # Check /dev/$chamber
+  if [ -L "/dev/$chamber" ]; then
+    # TODO:  Delete rule for that chamber
+    echo -e "\nRemoving rule for /dev/$chamber."
+    sed -i "/$chamber/d" "$rules" > /dev/null 2>&1
+    udevadm control --reload-rules
+    udevadm trigger
+  fi
+}
+
+############
+### See if we have multiple chambers
+###########
+
+getchamber() {
+  local home idx arr re sel
+  home="/home/brewpi"
+  idx=0
+  instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
+  IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list
+  arr=($instances)
+  if [ ${#instances} -gt 22 ]; then
+    # Found multiple chambers
+    echo -e "\nThe following chambers are configured on this device:\n" > /dev/tty
+    for instance in $instances
+    do
+      echo -e "\t[$idx] $(dirname "${instance}")" > /dev/tty
+      arr[$idx]=$(basename $(dirname ${arr[$idx]}))
+      ((idx++))
+    done
+    echo > /dev/tty
+    read -r -s -n1 -p "Enter chamber to uninstall [0-$((${#arr[@]}-1))] or any other key to quit: " sel < /dev/tty
+    re='^[0-9]+$'
+    if [[ "$sel" =~ $re ]] ; then echo ${arr[$sel]}; fi
+  else
+    echo -e "\nNot configured for multi-chamber mode." > /dev/tty
+  fi
+}
+
+############
 ### Choose uninstall level
 ###########
 
-func_wipelevel () {
+wipelevel () {
   local level=""
-  echo -e "\nSelect the level of uninstall you wish to execute.  The least is level [2]" > /dev/tty
+  echo -e "\nSelect the level of uninstall you wish to execute.  The least is level [1]" > /dev/tty
   echo -e "which is probably appropriate if you have an issue and are looking to cleanup" > /dev/tty
-  echo -e "and reinstall.  Level [1] will reset the hostname and the password for 'pi'" > /dev/tty
-  echo -e "back to 'raspberry.'  Level [0] is the most intense, adding the execution of" > /dev/tty
-  echo -e "apt and pip package removals.  [0] is likely only appropriate for testers and" > /dev/tty
+  echo -e "and reinstall.  Level [2] will reset the hostname and the password for 'pi'" > /dev/tty
+  echo -e "back to 'raspberry.'  Level [3] is the most intense, adding the execution of" > /dev/tty
+  echo -e "apt and pip package removals.  [3] is likely only appropriate for testers and" > /dev/tty
   echo -e "you should not run it unless you know what you are doing or someone tells you" > /dev/tty
   echo -e "that you need to.\n" > /dev/tty
   echo -e "   [1] - Normal uninstall of BrewPi repositories, services and devices" > /dev/tty
   echo -e "   [2] - Everything in [1] plus reset hostname and pi password" > /dev/tty
-  echo -e "   [3] - Everything in [1] and [2] plus wipe pip and apt packages\n" > /dev/tty
-  
+  echo -e "   [3] - Everything in [1] and [2] plus wipe pip and apt packages" > /dev/tty
+  echo -e "   [4] - Select a single chamber to uninstall\n" > /dev/tty
   while :
   do
-    read -p "Enter level of uninstall to execute 1, 2, 3 or Q to quit [Q]: " level < /dev/tty
+    read -r -s -n1 -p "Enter level of uninstall to execute [1-4] or any other key to quit: " level < /dev/tty
     case "$level" in
       1 )
-        echo -e "\nExecuting a level one (mild) uninstall." > /dev/tty
+        echo -e "\n\nExecuting a level one (mild) uninstall." > /dev/tty
         echo 1
         break ;;
       2 )
-        echo -e "\nExecuting a level two (medium) uninstall." > /dev/tty
+        echo -e "\n\nExecuting a level two (medium) uninstall." > /dev/tty
         echo 2
         break ;;
       3 )
-        echo -e "\nExecuting a level three (hard) uninstall." > /dev/tty
+        echo -e "\n\nExecuting a level three (hard) uninstall." > /dev/tty
         echo 3
         break ;;
+      4 )
+        echo -e "\n\nExecuting a selective uninstall." > /dev/tty
+        echo 4
+        break ;;
       * )
-        echo -e "\nUninstall canceled." > /dev/tty
+        echo -e "\n\nUninstall canceled." > /dev/tty
         echo "Q"
         break ;;
     esac
@@ -414,25 +642,37 @@ func_wipelevel () {
 ###########
 
 main() {
-  func_getroot # Check for root privs
-  echo -e "\n***Script BrewPi Uninstaller starting.***" > /dev/tty
+  log "$@" # Start logging
+  init "$@" # Get constants
+  arguments "$@" # Check command line arguments
+  echo -e "\n***Script $THISSCRIPT starting.***" > /dev/tty
+  checkroot # Check for root privs
   cd ~ # Start from home
-  level="$(func_wipelevel)"
+  level="$(wipelevel)"
   if [ ! "$level" == "Q" ]; then
-    [ "$level" -ge 1 ] && func_cron # Clean up crontab
-    [ "$level" -ge 1 ] && func_syslogd # Cleanup syslogd
-    [ "$level" -ge 1 ] && func_killproc # Kill all brewpi procs
-    [ "$level" -ge 1 ] && func_delrepo # Remove all the repos
-    [ "$level" -ge 1 ] && func_cleanusers # Clean up users and groups
-    [ "$level" -ge 1 ] && func_resetapache # Reset Apache config to stock
-    [ "$level" -ge 3 ] && func_delpip # Remove pip packages
-    [ "$level" -ge 3 ] && func_delapt # Remove apt dependencies
-    [ "$level" -ge 1 ] && func_delphp5 # Remove php5 packages
-    [ "$level" -ge 1 ] && func_delnginx # Remove nginx
-    [ "$level" -ge 1 ] && func_cleanapt # Clean up apt packages locally
-    [ "$level" -ge 2 ] && func_resethost # Reset hostname
-    [ "$level" -ge 1 ] && func_resetudev # Remove udev rules
-    [ "$level" -ge 2 ] && func_resetpwd # Reset pi password
+    if [ "$level" -eq 4 ]; then
+      chamber=$(getchamber)
+      if [ -n "$chamber" ]; then
+        delchamber "$chamber"
+      else
+        echo -e "\nNo chambers installed or no chamber selected, exiting."
+      fi
+    else
+      [ "$level" -ge 1 ] && cron # Clean up crontab
+      [ "$level" -ge 1 ] && syslogd # Cleanup syslogd
+      [ "$level" -ge 1 ] && killproc # Kill all brewpi procs
+      [ "$level" -ge 1 ] && delrepo # Remove all the repos
+      [ "$level" -ge 1 ] && cleanusers # Clean up users and groups
+      [ "$level" -ge 1 ] && resetapache # Reset Apache config to stock
+      [ "$level" -ge 3 ] && delpip # Remove pip packages
+      [ "$level" -ge 3 ] && delapt # Remove apt dependencies
+      [ "$level" -ge 1 ] && delphp5 # Remove php5 packages
+      [ "$level" -ge 1 ] && delnginx # Remove nginx
+      [ "$level" -ge 1 ] && cleanapt # Clean up apt packages locally
+      [ "$level" -ge 2 ] && resethost # Reset hostname
+      [ "$level" -ge 1 ] && resetudev # Remove udev rules
+      [ "$level" -ge 2 ] && resetpwd # Reset pi password
+    fi
     echo -e "\n***Script BrewPi Uninstaller complete.***" > /dev/tty
   fi
 }
@@ -441,11 +681,5 @@ main() {
 ### Start the script
 ############
 
-sleep 2
-main # Moved to functions to prevent broken execution with wget
+main "$@" && exit 0
 
-############
-### Work Complete
-###########
-
-exit 0

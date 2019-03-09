@@ -136,7 +136,7 @@ cat << EOF
 
 $THISSCRIPT ($PACKAGE) $VERSION
 
-Copyright (C) 2018,2019 Lee C. Bussy (@LBussy)
+Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 This is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published
