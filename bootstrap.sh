@@ -61,9 +61,10 @@ init() {
 
 timestamp() {
   # Add date in '2019-02-26 08:19:22' format to log
+  [[ "$verbose" == "true" ]] && length=999 || length=60 # Allow full logging
   while read -r; do
     # Clean and trim line to 60 characters to allow for timestamp on one line
-    REPLY="$(clean "$REPLY" 60)"
+    REPLY="$(clean "$REPLY" $length)"
     # Strip blank lines
     if [ -n "$REPLY" ]; then
       # Add date in '2019-02-26 08:19:22' format to log
@@ -465,6 +466,7 @@ clonetools() {
 ############
 
 main() {
+  [[ "$@" == *"-verbose"* ]] && verbose=true # Do not trim logs
   log "$@" # Start logging
   init "$@" # Get constants
   arguments "$@" # Check command line arguments

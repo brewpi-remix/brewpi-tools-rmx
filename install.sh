@@ -35,6 +35,7 @@
 
 timestamp() {
   # Add date in '2019-02-26 08:19:22' format to log
+  [[ "$verbose" == "true" ]] && length=999 || length=60 # Allow full logging
   while read -r; do
     # Clean and trim line to 60 characters to allow for timestamp on one line
     REPLY="$(clean "$REPLY" 60)"
@@ -787,6 +788,7 @@ EOF
 # TODO:  Make decisions to do things based on [ ! -z "$instances" ] (true if multichamber)
 
 main() {
+  [[ "$@" == *"-verbose"* ]] && verbose=true # Do not trim logs
   log "$@" # Create installation log
   init "$@" # Initialize constants and variables
   arguments "$@" # Handle command line arguments
@@ -794,7 +796,6 @@ main() {
   checkroot "$@" # Make sure we are using sudo
   term # Provide term codes
   arg="${1//-}" # Strip out all dashes
-  if [[ "$arg" == "q"* ]]; then quick=true; else quick=false; fi
   findbrewpi # See if BrewPi is already installed
   [ -z "$source" ] && checknet # Check for connection to GitHub
   checkfree # Make sure there's enough free space for install
@@ -803,9 +804,7 @@ main() {
   backupscript # Backup anything in the scripts directory
   makeuser # Create/configure user account
   clonescripts # Clone scripts git repository
-  if [ ! "$quick" == "true" ]; then
-    [ -z "$source" ] && dodepends # Install dependencies
-  fi
+  [ -z "$source" ] && dodepends # Install dependencies
   getwwwpath # Get WWW install location
   backupwww # Backup anything in WWW location
   clonewww # Clone WWW files
