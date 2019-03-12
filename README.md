@@ -77,11 +77,11 @@ In order to make this work well, I have to make some assumptions about the envir
 I am certain that someone will find an important assumption I did not list here.  We'll see how long that takes.  [Let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) what you find.
 
 # Credits
-These scripts were originally a part of [brewpi-tools](https://github.com/BrewPi/brewpi-tools), an installer for the [BrewPi project](https://github.com/BrewPi).  My original intent was to simply make the Legacy branch of BrewPi work again since the original install scripts called for PHP5 explicitly and that's no longer available from the regular repositories.  The project grew from there to address some other shortcomings in the original, as well as to make it easier for beginners to get started.
+These scripts were originally a part of [brewpi-tools](https://github.com/BrewPi/brewpi-tools), an installer for the [BrewPi project](https://github.com/BrewPi).  My original intent was to simply make the Legacy branch of BrewPi work again since the original install scripts called for PHP5 explicitly and that's no longer available from the regular repositories.  The project grew from there to address some other opportunities to improve the original, as well as to make it easier for beginners to get started.
 
 All credit for the original [brewpi-tools](https://github.com/BrewPi/brewpi-tools) goes to [@elcojacobs](https://github.com/elcojacobs), [@vanosg](https://github.com/vanosg), [@routhcr](https://github.com/routhcr), [@ajt2](https://github.com/ajt2) and I'm sure many more contributors around the world.  My apologies if I have missed anyone; those were the names listed as contributors on the Legacy branch.
 
-All the [BrewPi](https://github.com/BrewPi) projects' Legacy branches have been forked to these repositories:
+All the original [BrewPi](https://github.com/BrewPi) projects' Legacy branches have been forked to these repositories, you need not (and should not) mix repositories for this project:
 
 Original Repository | Description | Remix Repository
 ------------ | ------------- | ------------- 
@@ -133,5 +133,5 @@ You can view or log new issues via the links below:
 
 Back up to [Getting Started](#getting-started).
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTc3OTYyMTM1Nl19
+eyJoaXN0b3J5IjpbLTU2OTM3ODc0MF19
 -->
