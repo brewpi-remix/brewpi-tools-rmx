@@ -66,9 +66,9 @@ In order to make this work well, I have to make some assumptions about the envir
    1. Check to make sure the script has executed with `sudo` to `root` (this is how the [instructions above](#getting-started) will work if you follow them)
    3. Provide some rudimentary instructions
    4. Check for the incredibly insecure default pi password of 'raspberry', and prompt to change it if so
-   5. Set the proper timezone
+   5. Prompt you to set the proper timezone
    6. Prompt to optionally change the host name if it is currently the default 'raspberrypi'
-   7.  Check network connectivity to GitHub (this part should be a given since it's intended to be run via `wget` but I'm not going to assume someone can't break my plans)
+   7.  Check network connectivity to GitHub (this part should be a given since it's intended to be run via `curl` but I'm not going to assume someone can't break my plans)
    8. Run an `apt update` if it's not been run within the last week
    9. Install `git` packages via `apt get` to allow the rest of the install to work
    10. Clone the BrewPi Tools RMX into the `~/brewpi-tools-rmx` folder
@@ -133,5 +133,5 @@ You can view or log new issues via the links below:
 
 Back up to [Getting Started](#getting-started).
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbNjU3NTcyMTAzXX0=
+eyJoaXN0b3J5IjpbMTc3OTYyMTM1Nl19
 -->
