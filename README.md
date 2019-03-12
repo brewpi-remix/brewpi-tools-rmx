@@ -19,6 +19,7 @@ To begin installing BrewPi, you need only issue the following command in a [term
 
 `curl -L install.brewpiremix.com | sudo bash`
 
+These are the same links, I merely have created a redirect on the [BrewPi Remix domain](https://www. for your convenience to make it shorter and easier to remember.
 If you have a broken installation and/or need to run the uninstaller without BrewPi being installed correctly for some reason, you may use (all one line):
 
 `curl -L uninstall.brewpiremix.com | sudo bash`
@@ -126,3 +127,6 @@ You can view or log new issues via the links below:
 | BrewPi-Firmware-RMX | Arduino firmware | [Issues List](https://github.com/lbussy/brewpi-firmware-rmx/issues) |
 
 Back up to [Getting Started](#getting-started).
+<!--stackedit_data:
+eyJoaXN0b3J5IjpbLTUyODI5NzU1N119
+-->
