@@ -15,12 +15,17 @@ To begin installing BrewPi, you need only issue the following command in a [term
 
 `curl -L raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/bootstrap.sh | sudo bash`
 
-*or*
+*or the much shorter:*
 
 `curl -L install.brewpiremix.com | sudo bash`
 
-These are the same links, I merely have created a redirect on the [BrewPi Remix domain](https://www. for your convenience to make it shorter and easier to remember.
+These are the same links, I merely have created a redirect on the [BrewPi Remix domain](https://www.brewpiremix.com) for your convenience to make it shorter and easier to remember.
+
 If you have a broken installation and/or need to run the uninstaller without BrewPi being installed correctly for some reason, you may use (all one line):
+
+`curl -L https://raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/uninstall.sh | sudo bash`
+
+*or*
 
 `curl -L uninstall.brewpiremix.com | sudo bash`
 
@@ -128,5 +133,5 @@ You can view or log new issues via the links below:
 
 Back up to [Getting Started](#getting-started).
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTUyODI5NzU1N119
+eyJoaXN0b3J5IjpbNDQ2NTQyMDk2XX0=
 -->
