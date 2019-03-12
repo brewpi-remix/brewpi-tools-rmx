@@ -33,7 +33,7 @@ Please read the notes in the table below before running the uninstaller.
 
 Security-conscious or just plain curious folks will want to read this [security note](#security-note) before proceeding.
  
-When it is complete, you will have a working BrewPi Legacy setup.  I'm a little amazed that the work I've done is summed up in one "run this", but if I've done my work right that should be it. Do [let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) if you find differently.
+When the installation script completes, you will have a working BrewPi Legacy setup.  I'm a little amazed that the work I've done is summed up in one "run this", but if I've done my work right that should be it. Do [let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) if you find differently.  As my online friend Thorrak tells me, anything different in the user experience is a bug.
 
 # Scripts in this Repo
 
@@ -133,5 +133,5 @@ You can view or log new issues via the links below:
 
 Back up to [Getting Started](#getting-started).
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbNDQ2NTQyMDk2XX0=
+eyJoaXN0b3J5IjpbMTg2MTI2MzI0M119
 -->
