@@ -60,12 +60,12 @@ In order to make this work well, I have to make some assumptions about the envir
  - This has been developed and tested on the Raspbian Stretch distribution.  If a new distribution for the Raspberry Pi is released it *may* no longer work.  I hope I've future-proofed it, however the original/core code may have some non future-proofed areas waiting to rear their ugly head (or I may not be as good at future-proofing as I believe.)
  - I've assumed throughout that this is the only function the Pi will handle.  This is not unique to this remix project.  Some other projects use things (like nginx for example) which have known incompatibilities with packages used by BrewPi. It makes sense when you think about it (having two packages both trying to be the web server on the system) but it gets confusing the first time you hit the errors.
  - While I'm semi-paranoid and I have worked on some security related improvements, this will **not** create a BrewPi which is secure enough to connect to *from* the Internet.  There's a whole host of reasons for this, but please, do not do it unless you know what you are doing.  I suggest you consider [Dataplicity](https://www.dataplicity.com) if you really need/want to do this.  If I get bored I might add some thought to this but in general I don't think a poor Raspberry Pi needs to be connected to all those bad actors out there.
- - This has been developed and tested using the default user 'pi' which by default has password-less `sudo` rights.  This is how Raspbian is shipped, and this is how I'll continue to test it.  If you know enough to change any of those assumptions, you know enough to figure out why this process will not work for you.  If you simply MUST change that, I suggest you do it after you get BrewPi Remix running. As I go along I have tried to remove hard dependencies, but not all paths have been tested.
+ - This has been developed and tested using the default user 'pi' which by default has password-less `sudo` rights.  This is how Raspbian is shipped, and this is how I'll continue to test it.  If you know enough to change or disagree with any of this, you know enough to figure out why this process may not work for you.  If you simply MUST change things, I suggest you do it after you get BrewPi Remix running. As I go along I have tried to remove hard dependencies on the pi account for instance, but not all paths have been tested.
  - You need for your Pi to have access *to* the Internet.  I think this is obvious, but the Pi needs to access GitHub and standard Raspbian repositories to download code.  Generally speaking, plugging your Pi into your home network with an Ethernet cable will do this without any configuration necessary.  Attaching to wireless will take a little more work that's not in scope of this project (but I do have [another project](https://github.com/lbussy/headless-pi) that will help.)
  - This has been developed and tested on a bone-stock Raspbian setup, with no user or local customization implemented.  The only things that has been tested which do not inherently work on a fresh setup is wireless connectivity and ssh over wireless.  The bootstrap script will:
    1. Check to make sure the script has executed with `sudo` to `root` (this is how the [instructions above](#getting-started) will work if you follow them)
    3. Provide some rudimentary instructions
-   4. Check for the incredibly insecure default pi password of 'raspberrypi', and prompt to change it if so
+   4. Check for the incredibly insecure default pi password of 'raspberry', and prompt to change it if so
    5. Set the proper timezone
    6. Prompt to optionally change the host name if it is currently the default 'raspberrypi'
    7.  Check network connectivity to GitHub (this part should be a given since it's intended to be run via `wget` but I'm not going to assume someone can't break my plans)
@@ -133,5 +133,5 @@ You can view or log new issues via the links below:
 
 Back up to [Getting Started](#getting-started).
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTExNjEwOTEwODddfQ==
+eyJoaXN0b3J5IjpbNjU3NTcyMTAzXX0=
 -->
