@@ -44,7 +44,7 @@ install.sh | This script will install BrewPi on a Raspbian distro, or add a cham
 uninstall.sh | This is an uninstaller I created for my own testing.  It may be of use to someone wanting to clean up their Raspberry Pi as they install/uninstall for their own testing.  It has four 'levels' of uninstall, the lowest-level being rather brutal in that it does not care if you previously installed any of the dependencies for some other purpose.  This behavior is *likely* safe (but not tested) if you intend to reinstall BrewPi right away.  It will at minimum remove the original as well as Remix Legacy BrewPi Tools, Script and WWW folders. I've also added the ability to uninstall a single chamber if you have a multi-chamber setup.  Uninstallation is tricky in these systems because dependencies overlap.  If you have a particularly "lived in" system, perhaps it's time to get a new SD card?  They are like $6 on Amazon ...
 
 # <a name="assumptions-proceedings"></a>Assumptions and Proceedings
-This tool set adds a [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping) to install the BrewPi Legacy Remix packages on a completely fresh install of [Raspbian](https://www.raspberrypi.org/documentation/raspbian/) (codename "[Stretch](https://www.raspberrypi.org/blog/raspbian-stretch/)" at the time of this writing).  I do this because some steps required in previous iterations were a little alien to people new to Raspbian/Linux.  Additionally, some supporting software has been deprecated/upgraded which before now made the older BrewPi packages incompatible.
+This tool set adds a [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping) to install the BrewPi Legacy Remix packages on a completely fresh install of [Raspbian](https://www.raspberrypi.org/documentation/raspbian/) (codename "[Stretch](https://www.raspberrypi.org/blog/raspbian-stretch/)" at the time of this writing).  I have created the bootstrap because some steps required in previous iterations were a little alien to people new to Raspbian/Linux.  I don't think you should have to be a CS major to enjoy better beer.  Additionally, some supporting software (most significantly, PHP) has been deprecated/upgraded which before now made the older BrewPi packages incompatible with contemporart.
 
 This bootstrap will:
  * Check a few things
@@ -133,5 +133,5 @@ You can view or log new issues via the links below:
 
 Back up to [Getting Started](#getting-started).
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTg3OTYzOTMwOV19
+eyJoaXN0b3J5IjpbLTM4MTQwMDA1NF19
 -->
