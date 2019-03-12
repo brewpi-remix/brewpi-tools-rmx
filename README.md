@@ -33,14 +33,14 @@ Please read the notes in the table below before running the uninstaller.
 
 Security-conscious or just plain curious folks will want to read this [security note](#security-note) before proceeding.
  
-When the installation script completes, you will have a working BrewPi Legacy setup.  I'm a little amazed that the work I've done is summed up in one "run this", but if I've done my work right that should be it. Do [let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) if you find differently.  As my online friend Thorrak tells me, anything different in the user experience is a bug.
+When the installation script completes, you will have a working BrewPi Legacy setup.  I'm a little amazed that the work I've done is summed up in one "run this", but if I've done my work right that should be it. Do [let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) if you find differently.  As my online friend [Thorrak](https://github.com/thorrak) tells me, anything different in the user experience is a bug.
 
 # Scripts in this Repo
 
 Filename | Description
 ------------ | -------------
-bootstrap.sh | This script will handle all setup and prep of a new Raspberry Pi.  It will clone this repository and kick off the installer proper.  This should be the only touch-point you need to get going.
-install.sh | This script will install BrewPi on a Raspbian distro, or add a chamber to a multi-chamber setup.  It is called by the bootstrap script during initial install.  This is not the right way forward to move an existing BrewPi Legacy system to this new fork.  At the moment the only tested way is to start fresh.  See uninstall.sh below.
+bootstrap.sh | This script will handle all *initial* setup and prep of a new Raspberry Pi.  It will clone this repository and kick off the installer proper.  This should be the only touch-point you need to get going.
+install.sh | This script will install BrewPi on a Raspbian distro, or add a chamber to a multi-chamber setup.  It is called by the bootstrap script during initial install.  To move an existing BrewPi Legacy system to this new fork, you should execute an uninstall (or just make a new system on a fresh SD card.) See uninstall.sh below.
 uninstall.sh | This is an uninstaller I created for my own testing.  It may be of use to someone wanting to clean up their Raspberry Pi as they install/uninstall for their own testing.  It has four 'levels' of uninstall, the lowest-level being rather brutal in that it does not care if you previously installed any of the dependencies for some other purpose.  This behavior is *likely* safe (but not tested) if you intend to reinstall BrewPi right away.  It will at minimum remove the original as well as Remix Legacy BrewPi Tools, Script and WWW folders. I've also added the ability to uninstall a single chamber if you have a multi-chamber setup.
 
 # <a name="assumptions-proceedings"></a>Assumptions and Proceedings
@@ -133,5 +133,5 @@ You can view or log new issues via the links below:
 
 Back up to [Getting Started](#getting-started).
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTg2MTI2MzI0M119
+eyJoaXN0b3J5IjpbLTU1MTE4MTA3Nl19
 -->
