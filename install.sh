@@ -154,6 +154,7 @@ EOF
 
 # Parse arguments and call usage or version
 arguments() {
+    local arg
     while [[ "$#" -gt 0 ]]; do
         arg="$1"
         case "$arg" in
@@ -821,14 +822,13 @@ EOF
 # TODO:  Make decisions to do things based on [ ! -z "$instances" ] (true if multichamber)
 
 main() {
+    init "$@" # Initialize constants and variables
+    checkroot "$@" # Make sure we are using sudo
     [[ "$*" == *"-verbose"* ]] && verbose=true # Do not trim logs
     log "$@" # Create installation log
-    init "$@" # Initialize constants and variables
     arguments "$@" # Handle command line arguments
     echo -e "\n***Script $THISSCRIPT starting.***"
-    checkroot "$@" # Make sure we are using sudo
     term # Provide term codes
-    arg="${1//-}" # Strip out all dashes
     findbrewpi # See if BrewPi is already installed
     [ -z "$source" ] && checknet # Check for connection to GitHub
     checkfree # Make sure there's enough free space for install
