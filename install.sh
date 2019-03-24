@@ -540,7 +540,7 @@ create_donotrun() {
 delete_donotrun() {
     local webRoot
     webRoot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* 2>/dev/null |xargs |cut -d " " -f2)"
-    find "$webRoot"/ -name 'do_not_run_brewpi' -print0 | xargs -0 rm -rf||warn
+    find "$webRoot"/ -name 'do_not_run_brewpi' -print0 | xargs -0 rm -f||warn
 }
 
 ############
@@ -552,7 +552,6 @@ killproc() {
   if [ -n "$(getent passwd brewpi)" ]; then
     pidlist=$(pgrep -u brewpi)
   fi
-  create_donotrun # Touch the do_not_run_brewpi files
   for pid in $pidlist
   do
     # Stop (kill) brewpi
@@ -590,9 +589,6 @@ backupscript() {
   if [ -d "$scriptPath" ] && [ -n "$(ls -A "${scriptPath}")" ]; then
     # Set place to put backups
     BACKUPDIR="$HOMEPATH/$GITPROJ-backup"
-    # Stop (kill) brewpi
-    touch /var/www/html/do_not_run_brewpi
-    killproc # Stop all BrewPi processes
     dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-Script"
     echo -e "\nScript install directory is not empty, backing up this users home directory to"
     echo -e "'$dirName' and then deleting contents."
@@ -678,8 +674,8 @@ getwwwpath() {
 backupwww() {
   # Back up webPath if it has any files in it
   /etc/init.d/apache2 stop||die
-  rm -rf "$webPath/do_not_run_brewpi" 2> /dev/null || true
-  rm -rf "$webPath/index.html" 2> /dev/null || true
+  rm -f "$webPath/do_not_run_brewpi" 2> /dev/null || true
+  rm -f "$webPath/index.html" 2> /dev/null || true
   if [ -d "$webPath" ] && [ -n "$(ls -A "${webPath}")" ]; then
     dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-WWW"
     echo -e "\nWeb directory is not empty, backing up the web directory to:"
@@ -838,6 +834,8 @@ main() {
   checkfree # Make sure there's enough free space for install
   getscriptpath # Choose a sub directory name or take default for scripts
   doport # Install a udev rule for the Arduino connected to this installation
+  create_donotrun # Touch the do_not_run_brewpi files
+  killproc # Stop all BrewPi processes
   backupscript # Backup anything in the scripts directory
   makeuser # Create/configure user account
   clonescripts # Clone scripts git repository
