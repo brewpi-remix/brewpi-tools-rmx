@@ -437,11 +437,10 @@ packages() {
 }
 
 ############
-### Clone BrewPi-Tools-RMX repo
+### Check for an existing BrewPi installation
 ############
 
-clonetools() {
-    echo -e "\nCloning $GITPROJ repo."
+check_brewpi() {
     if [ -d "$HOMEPATH/$GITPROJ" ]; then
         if [ -n "$(ls -A $HOMEPATH/$GITPROJ)" ]; then
             echo -e "\nWarning: $HOMEPATH/$GITPROJ exists and is not empty."
@@ -461,7 +460,14 @@ clonetools() {
             exit 1
         fi
     fi
-    
+}
+
+############
+### Clone BrewPi-Tools-RMX repo
+############
+
+clonetools() {
+    echo -e "\nCloning $GITPROJ repo."
     eval "sudo -u $REALUSER git clone $GITCMD $HOMEPATH/$GITPROJ"||die
 }
 
@@ -478,6 +484,7 @@ main() {
     checkroot # Make sure we are su into root
     term # Add term command constants
     instructions # Show instructions
+    check_brewpi # See if BrewPi is installed
     checkpass # Check for default password
     settime # Set timezone
     host_name # Change hostname
