@@ -36,10 +36,10 @@
 init() {
   # Set up some project variables we won't have running as a bootstrap
   PACKAGE="BrewPi-Tools-RMX"
-  GITBRNCH="master"
+  GITBRNCH="devel"
   THISSCRIPT="bootstrap.sh"
-  VERSION="0.5.2.0"
-  CMDLINE="curl -L install.brewpiremix.com | sudo bash"
+  VERSION="0.5.2.1"
+  CMDLINE="curl -L devinstall.brewpiremix.com | sudo bash"
   # These should stay the same
   GITRAW="https://raw.githubusercontent.com/lbussy"
   GITHUB="https://github.com/lbussy"
