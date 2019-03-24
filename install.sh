@@ -65,19 +65,19 @@ clean() {
   # Squash any repeated whitespace within string
   input="$(echo "$input" | awk '{$1=$1};1')"
   # Log only first $length chars to allow for date/time stamp
-  input="$(echo "$input" | cut -c-$length)"
+  input="$(echo "$input" | cut -c-"$length")"
   echo "$input"
 }
 
 log() {
-  [[ "$@" == *"-nolog"* ]] && return # Turn off logging
+  [[ "$*" == *"-nolog"* ]] && return # Turn off logging
   # Set up our local variables
   local thisscript scriptname realuser homepath shadow
   # Get scriptname (creates log name) since we start before the main script
-  thisscript="$(basename $(realpath $0))"
+  thisscript="$(basename "$(realpath "$0")")"
   scriptname="${thisscript%%.*}"
   # Get home directory for logging
-  if [ "$SUDO_USER" ]; then realuser="$SUDO_USER"; else realuser=$(whoami); fi
+  if [ -n "$SUDO_USER" ]; then realuser="$SUDO_USER"; else realuser=$(whoami); fi
   shadow="$( (getent passwd "$realuser") 2>&1)"
   if [ -n "$shadow" ]; then
     homepath=$(echo "$shadow" | cut -d':' -f6)
@@ -96,16 +96,16 @@ log() {
 
 init() {
   # Set up some project constants
-  THISSCRIPT="$(basename $(realpath $0))"
+  THISSCRIPT="$(basename "$(realpath "$0")")"
   SCRIPTNAME="${THISSCRIPT%%.*}"
-  SCRIPTPATH="$( cd $(dirname $0) ; pwd -P )"
-  cd "$SCRIPTPATH"
+  SCRIPTPATH="$(cd "$(dirname "$0")" || die ; pwd -P )"
+  cd "$SCRIPTPATH" || die
   if [ -x "$(command -v git)" ] && [ -d .git ]; then
-    VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))"
-    COMMIT="$(git -C $SCRIPTPATH log --oneline -n1)"
+    VERSION="$(git describe --tags "$(git rev-list --tags --max-count=1)")"
+    COMMIT="$(git -C "$SCRIPTPATH" log --oneline -n1)"
     GITBRNCH="$(git branch | grep \* | cut -d ' ' -f2)"
     GITURL="$(git config --get remote.origin.url)"
-    GITPROJ="$(basename $GITURL)"
+    GITPROJ="$(basename "$GITURL")"
     GITPROJ="${GITPROJ%.*}"
     PACKAGE="${GITPROJ^^}"
     GITBRNCH="$(git rev-parse --abbrev-ref HEAD)"
@@ -172,24 +172,25 @@ arguments() {
 ############
 
 checkroot() {
+  local retval shadow
   ### Check if we have root privs to run
   if [[ "$EUID" -ne 0 ]]; then
     sudo -n true 2> /dev/null
-    local retval="$?"
+    retval="$?"
     if [ "$retval" -eq 0 ]; then
       echo -e "\nNot running as root, relaunching correctly.\n"
       sleep 2
-      eval "sudo bash $SCRIPTPATH/$THISSCRIPT $@"
+      eval "sudo bash $SCRIPTPATH/$THISSCRIPT $*"
       exit "$?"
     else
       # sudo not available, give instructions
-      echo -e "\nThis script must be run as root: sudo $SCRIPTPATH/$THISSCRIPT $@" 1>&2
+      echo -e "\nThis script must be run as root: sudo $SCRIPTPATH/$THISSCRIPT $*" 1>&2
       exit 1
     fi
   fi
   # And get the user home directory
-  if [ "$SUDO_USER" ]; then REALUSER="$SUDO_USER"; else REALUSER=$(whoami); fi
-  local shadow="$((getent passwd $REALUSER) 2>&1)"
+  if [ -n "$SUDO_USER" ]; then REALUSER="$SUDO_USER"; else REALUSER=$(whoami); fi
+  shadow="$( (getent passwd "$REALUSER") 2>&1)"
   retval="$?"
   if [ "$retval" -eq 0 ]; then
     HOMEPATH="$(echo "$shadow" | cut -d':' -f6)"
@@ -298,13 +299,14 @@ checknet() {
 ############
 
 checkfree() {
-  local req=512
-  local freek=$(df -Pk | grep -m1 '\/$' | awk '{print $4}')
-  local freem="$(expr $freek / 1024)"
-  local freep=$(df -Pk | grep -m1 '\/$' | awk '{print $5}')
+  local req freek freem freep
+  req=512
+  freek=$(df -Pk | grep -m1 '\/$' | awk '{print $4}')
+  freem="$((freek / 1024))"
+  freep=$(df -Pk | grep -m1 '\/$' | awk '{print $5}')
 
   if [ "$freem" -le "$req" ]; then
-    echo -e "\nDisk usage is $freep, free disk space is $free MB,"
+    echo -e "\nDisk usage is $freep, free disk space is $freem MB,"
     echo -e "Not enough space to continue setup. Installing $PACKAGE requires"
     echo -e "at least $req MB free space."
     exit 1
@@ -350,7 +352,7 @@ checkchamber() {
 
 getscriptpath() {
   # See if we already have chambers installed
-  if [ ! -z "$instances" ]; then
+  if [ -n "$instances" ]; then
     # We've already got BrewPi installed in multi-chamber
     echo -e "\nThe following chambers are already configured on this Pi:\n"
     for instance in $instances
@@ -360,7 +362,7 @@ getscriptpath() {
     # Get $source, $scriptSource and $webSource for git clone
     set -- $instances
     scriptSource=$(dirname "${1}")
-    source=$(basename $scriptSource)
+    source=$(basename "$scriptSource")
     webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* | xargs | cut -d " " -f2)"
     if [ -z "$webPath" ]; then
       echo "Something went wrong searching for /etc/apache2/sites-enabled/000-default*."
@@ -372,13 +374,13 @@ getscriptpath() {
     echo -e "character entered that is not [a-z], [0-9], - or _ will be converted to an"
     echo -e "underscore.  Alpha characters will be converted to lowercase.  Do not enter a"
     echo -e "full path, enter the name to be appended to the standard paths.\n"
-    read -p "Enter chamber name: " chamber < /dev/tty
+    read -rp "Enter chamber name: " chamber < /dev/tty
     chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
     chamber="${chamber,,}"
     while [ -z "$chamber" ] || [ "$(checkchamber "$chamber")" == false ]
     do
       echo -e "\nError: Device/directory name blank or already exists."
-      read -p "Enter chamber name: " chamber < /dev/tty
+      read -rp "Enter chamber name: " chamber < /dev/tty
       chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
       chamber="${chamber,,}"
     done
@@ -392,7 +394,7 @@ getscriptpath() {
     echo -e "converted to an underscore.  Alpha characters will be converted to lowercase."
     echo -e "Do not enter a full path, enter the name to be appended to the standard path.\n"
     echo -e "Enter device/directory name or hit enter to accept the defaults."
-    read -p "[<Enter> = Single chamber only]:  " chamber < /dev/tty
+    read -rp "[<Enter> = Single chamber only]:  " chamber < /dev/tty
     if [ -z "$chamber" ]; then
       scriptPath="/home/brewpi"
     else
@@ -403,11 +405,11 @@ getscriptpath() {
     echo -e "\nUsing '$scriptPath' for scripts directory."
   fi
 
-  if [ ! -z "$chamber" ]; then
+  if [ -n "$chamber" ]; then
     echo -e "\nNow enter a friendly name to be used for the chamber as it will be displayed."
     echo -e "Capital letters may be used, however any character entered that is not [A-Z],"
     echo -e "[a-z], [0-9], - or _ will be replaced with an underscore. Spaces are allowed.\n"
-    read -p "[<Enter> = $chamber]: " chamberName < /dev/tty
+    read -rp "[<Enter> = $chamber]: " chamberName < /dev/tty
     if [ -z "$chamberName" ]; then
       chamberName="$chamber"
     else
@@ -422,9 +424,9 @@ getscriptpath() {
 ############
 
 doport(){
-  if [ ! -z "$chamber" ]; then
+  if [ -n "$chamber" ]; then
     declare -i count=-1
-    declare -a port
+    #declare -a port
     declare -a serial
     declare -a manuf
     rules="/etc/udev/rules.d/99-arduino.rules"
@@ -433,7 +435,7 @@ doport(){
     for device in $devices; do
       declare ok=false
       # Walk device tree | awk out the stanza with the last device in chain
-      board=$(udevadm info --a -n $device | awk -v RS='' '/ATTRS{maxchild}=="0"/')
+      board=$(udevadm info --a -n "$device" | awk -v RS='' '/ATTRS{maxchild}=="0"/')
       thisSerial=$(echo "$board" | grep "serial" | cut -d'"' -f 2)
       grep -q "$thisSerial" "$rules" 2> /dev/null || ok=true # Serial not in file
       [ -z "$board" ] && ok=false # Board exists
@@ -442,7 +444,7 @@ doport(){
         # Get the device Product ID, Vendor ID and Serial Number
         #idProduct=$(echo "$board" | grep "idProduct" | cut -d'"' -f 2)
         #idVendor=$(echo "$board" | grep "idVendor" | cut -d'"' -f 2)
-        port[count]="$device"
+        #port[count]="$device"
         serial[count]=$(echo "$board" | grep "serial" | cut -d'"' -f 2)
         manuf[count]=$(echo "$board" | grep "manufacturer" | cut -d'"' -f 2)
       fi
@@ -457,7 +459,7 @@ doport(){
       done
       echo
       while :; do
-        read -p "Please select an Arduino [0-$count] to associate with this chamber:  " board < /dev/tty
+        read -rp "Please select an Arduino [0-$count] to associate with this chamber:  " board < /dev/tty
         [[ "$board" =~ ^[0-"$count"]+$ ]] || { echo "Please enter a valid choice."; continue; }
         if ((board >= 0 && board <= count)); then
           break
@@ -513,10 +515,10 @@ doport(){
 ############
 
 killproc() {
-  if [ $(getent passwd brewpi) ]; then
+  if [ -n "$(getent passwd brewpi)" ]; then
     pidlist=$(pgrep -u brewpi)
   fi
-  for pid in "$pidlist"
+  for pid in $pidlist
   do
     # Stop (kill) brewpi
     touch /var/www/html/do_not_run_brewpi > /dev/null 2>&1
@@ -551,7 +553,7 @@ killproc() {
 
 backupscript() {
   # Back up installpath if it has any files in it
-  if [ -d "$scriptPath" ] && [ "$(ls -A ${scriptPath})" ]; then
+  if [ -d "$scriptPath" ] && [ -n "$(ls -A "${scriptPath}")" ]; then
     # Set place to put backups
     BACKUPDIR="$HOMEPATH/$GITPROJ-backup"
     # Stop (kill) brewpi
@@ -562,8 +564,8 @@ backupscript() {
     echo -e "'$dirName' and then deleting contents."
     mkdir -p "$dirName"
     cp -R "$scriptPath" "$dirName"/||die
-    rm -rf "$scriptPath"/*||die
-    find "$scriptPath"/ -name '.*' | xargs rm -rf||die
+    rm -rf "${scriptPath:?}"||die
+    find "$scriptPath"/ -name '.*' -print0 | xargs -0 rm -rf||die
   fi
 }
 
@@ -574,7 +576,7 @@ backupscript() {
 makeuser() {
   echo -e "\nCreating and configuring accounts."
   if ! id -u brewpi >/dev/null 2>&1; then
-    useradd brewpi -m -G dialout,sudo,www-data||die
+    useradd brewpi -m -G dialout,www-data||die
   fi
   # Add current user to www-data & brewpi group
   usermod -a -G www-data,brewpi "$SUDO_USER"||die
@@ -618,7 +620,7 @@ getwwwpath() {
   # Find web path based on Apache2 config
   echo -e "\nSearching for default web location."
   webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
-  if [ ! -z "$webPath" ]; then
+  if [ -n "$webPath" ]; then
     echo -e "\nFound $webPath in /etc/apache2/sites-enabled/000-default*."
   else
     echo "Something went wrong searching for /etc/apache2/sites-enabled/000-default*."
@@ -626,7 +628,7 @@ getwwwpath() {
     exit 1
   fi
   # Use chamber name if configured
-  if [ ! -z "$chamber" ]; then
+  if [ -n "$chamber" ]; then
     webPath="$webPath/$chamber"
   fi
   # Create web path if it does not exist
@@ -644,14 +646,14 @@ backupwww() {
   /etc/init.d/apache2 stop||die
   rm -rf "$webPath/do_not_run_brewpi" 2> /dev/null || true
   rm -rf "$webPath/index.html" 2> /dev/null || true
-  if [ -d "$webPath" ] && [ "$(ls -A ${webPath})" ]; then
+  if [ -d "$webPath" ] && [ -n "$(ls -A "${webPath}")" ]; then
     dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-WWW"
     echo -e "\nWeb directory is not empty, backing up the web directory to:"
     echo -e "'$dirName' and then deleting contents of web directory."
     mkdir -p "$dirName"
     cp -R "$webPath" "$dirName"/||die
-    rm -rf "$webPath"/*||die
-    find "$webPath"/ -name '.*' | xargs rm -rf||die
+    rm -rf "${webPath:?}"||die
+    find "$webPath"/ -name '.*' -print0 | xargs -0 rm -rf||die
   fi
 }
 
@@ -679,7 +681,7 @@ clonewww() {
 ##########
 
 updateconfig() {
-  if [ ! -z "$chamber" ]; then
+  if [ -n "$chamber" ]; then
     echo -e "\nCreating custom configurations for $chamber."
     # Create script path in custom script configuration file
     echo "scriptPath = $scriptPath" >> "$scriptPath/settings/config.cfg"
@@ -734,7 +736,7 @@ fixsafari() {
 
 flash() {
   echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
-  read -p "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
+  read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
   case "$yn" in
     [Yy]* ) eval "python -u $scriptPath/utils/updateFirmware.py" ;;
     * ) ;;
@@ -747,10 +749,11 @@ flash() {
 
 complete() {
   clear
-  local sp7="$(printf ' %.0s' {1..7})" sp11="$(printf ' %.0s' {1..11})"
-  local sp18="$(printf ' %.0s' {1..18})" sp28="$(printf ' %.0s' {1..28})"
-  local sp49="$(printf ' %.0s' {1..49})"
-  local IP=$(ip -4 addr | grep 'global' | cut -f1  -d'/' | cut -d" " -f6)
+  local sp7 sp11 sp18 sp28 sp49 IP
+  sp7="$(printf ' %.0s' {1..7})" sp11="$(printf ' %.0s' {1..11})"
+  sp18="$(printf ' %.0s' {1..18})" sp28="$(printf ' %.0s' {1..28})"
+  sp49="$(printf ' %.0s' {1..49})"
+  IP=$(ip -4 addr | grep 'global' | cut -f1  -d'/' | cut -d" " -f6)
   # Note:  $(printf ...) hack adds spaces at beg/end to support non-black BG
   cat << EOF
 
@@ -766,7 +769,7 @@ BrewPi scripts will start shortly, usually within 30 seconds.
                   -or- : http://$(hostname).local/$chamber
  - Installation path   : $scriptPath
  - Release version     : $VERSION ($GITBRNCH)
- - Commit version      : $(git -C $scriptPath log --oneline -n1)
+ - Commit version      : $COMMIT
  - Install tools path  : $SCRIPTPATH
 EOF
   if [ -n "$chamber" ]; then
@@ -788,7 +791,7 @@ EOF
 # TODO:  Make decisions to do things based on [ ! -z "$instances" ] (true if multichamber)
 
 main() {
-  [[ "$@" == *"-verbose"* ]] && verbose=true # Do not trim logs
+  [[ "$*" == *"-verbose"* ]] && verbose=true # Do not trim logs
   log "$@" # Create installation log
   init "$@" # Initialize constants and variables
   arguments "$@" # Handle command line arguments
