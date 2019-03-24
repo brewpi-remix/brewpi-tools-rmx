@@ -254,7 +254,7 @@ warn() {
   echo -e "Setup NOT completed.\n"
 }
 
-die () {
+die() {
   local st="$?"
   warn "$@"
   exit "$st"
@@ -511,17 +511,51 @@ doport(){
 }
 
 ############
+### Handle the do_not_run files
+############
+
+create_donotrun() {
+  local webroot chamber chamberdir instance
+  # Do our best here - we have no idea where the web root may be
+  webroot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* 2>/dev/null |xargs |cut -d " " -f2)"
+  if [ -z "$webroot" ]; then
+    # Make a decent guess
+    if [ -d "/var/www/html" ]; then
+      webroot="/var/www/html"
+    else
+      webroot="/var/www"
+    fi
+  fi
+  for instance in $instances
+  do
+    chamber=$(dirname "${instance}")
+    chamberdir="$webroot/$chamber"
+    # If it looks like BrewPi is there, touch a file.  If not give up.
+    if [ -f "$chamberdir/beer-panel.php" ]; then
+      touch "$chamberdir/do_not_run_brewpi" > /dev/null 2>&1
+    fi
+  done
+}
+
+delete_donotrun() {
+    local webRoot
+    webRoot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* 2>/dev/null |xargs |cut -d " " -f2)"
+    find "$webRoot"/ -name 'do_not_run_brewpi' -print0 | xargs -0 rm -rf||warn
+}
+
+############
 ### Stop all BrewPi processes
 ############
 
 killproc() {
+  local pidlist pid
   if [ -n "$(getent passwd brewpi)" ]; then
     pidlist=$(pgrep -u brewpi)
   fi
+  create_donotrun # Touch the do_not_run_brewpi files
   for pid in $pidlist
   do
     # Stop (kill) brewpi
-    touch /var/www/html/do_not_run_brewpi > /dev/null 2>&1
     if ps -p "$pid" > /dev/null 2>&1; then
       echo -e "\nAttempting graceful shutdown of process $pid."
       kill -15 "$pid"
@@ -822,7 +856,7 @@ main() {
   fi
   flash # Flash controller
   # Allow BrewPi to start via daemon
-  rm "$webPath/do_not_run_brewpi" 2> /dev/null
+  delete_donotrun
   complete # Cleanup and display instructions
 }
 
