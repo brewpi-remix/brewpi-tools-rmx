@@ -30,12 +30,25 @@
 # license and credits.
 
 ############
+### Global Declarations
+############
+
+# General constants
+declare THISSCRIPT TOOLPATH VERSION GITBRNCH GITURL GITPROJ PACKAGE GITPROJWWW
+declare GITPROJSCRIPT GITURLWWW GITURLSCRIPT INSTANCES SCRIPTPATH WEBPATH
+declare CHAMBER VERBOSE REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME
+declare WEBSOURCE
+# Color/character codes
+declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
+declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
+
+############
 ### Handle logging
 ############
 
 timestamp() {
     # Add date in '2019-02-26 08:19:22' format to log
-    [[ "$verbose" == "true" ]] && length=999 || length=60 # Allow full logging
+    [[ "$VERBOSE" == "true" ]] && length=999 || length=60 # Allow full logging
     while read -r; do
         # Clean and trim line to 60 characters to allow for timestamp on one line
         REPLY="$(clean "$REPLY" 60)"
@@ -70,6 +83,7 @@ clean() {
 }
 
 log() {
+    local thisscript scriptname shadow homepath
     [[ "$*" == *"-nolog"* ]] && return # Turn off logging
     # Set up our local variables
     local thisscript scriptname realuser homepath shadow
@@ -97,12 +111,11 @@ log() {
 init() {
     # Set up some project constants
     THISSCRIPT="$(basename "$(realpath "$0")")"
-    SCRIPTNAME="${THISSCRIPT%%.*}"
-    SCRIPTPATH="$(cd "$(dirname "$0")" || die ; pwd -P )"
-    cd "$SCRIPTPATH" || die
+    TOOLPATH="$(cd "$(dirname "$0")" || die ; pwd -P )"
+    cd "$TOOLPATH" || die
     if [ -x "$(command -v git)" ] && [ -d .git ]; then
         VERSION="$(git describe --tags "$(git rev-list --tags --max-count=1)")"
-        COMMIT="$(git -C "$SCRIPTPATH" log --oneline -n1)"
+        COMMIT="$(git -C "$TOOLPATH" log --oneline -n1)"
         GITBRNCH="$(git branch | grep \* | cut -d ' ' -f2)"
         GITURL="$(git config --get remote.origin.url)"
         GITPROJ="$(basename "$GITURL")"
@@ -179,13 +192,13 @@ checkroot() {
         sudo -n true 2> /dev/null
         retval="$?"
         if [ "$retval" -eq 0 ]; then
-            echo -e "\nNot running as root, relaunching correctly.\n"
+            echo -e "\nNot running as root, relaunching correctly."
             sleep 2
-            eval "sudo bash $SCRIPTPATH/$THISSCRIPT $*"
+            eval "sudo bash $TOOLPATH/$THISSCRIPT $*"
             exit "$?"
         else
             # sudo not available, give instructions
-            echo -e "\nThis script must be run as root: sudo $SCRIPTPATH/$THISSCRIPT $*" 1>&2
+            echo -e "\nThis script must be run as root: sudo $TOOLPATH/$THISSCRIPT $*" 1>&2
             exit 1
         fi
     fi
@@ -206,9 +219,10 @@ checkroot() {
 ############
 
 term() {
+    local retval
     # If we are colors capable, allow them
     tput colors > /dev/null 2>&1
-    local retval="$?"
+    retval="$?"
     if [ "$retval" == "0" ]; then
         BOLD=$(tput bold)   # Start bold text
         SMSO=$(tput smso)   # Start "standout" mode
@@ -245,7 +259,8 @@ term() {
 ############
 
 warn() {
-    local fmt="$1"
+    local fmt
+    fmt="$1"
     command shift 2>/dev/null
     echo -e "$fmt"
     echo -e "${@}"
@@ -256,7 +271,8 @@ warn() {
 }
 
 die() {
-    local st="$?"
+    local st
+    st="$?"
     warn "$@"
     exit "$st"
 }
@@ -266,10 +282,11 @@ die() {
 ###########
 
 findbrewpi() {
-    declare home="/home/brewpi"
-    instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
-    IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list
-    if [ ${#instances} -eq 22 ]; then
+    declare home
+    home="/home/brewpi"
+    INSTANCES=$(find "$home" -name "brewpi.py" 2> /dev/null)
+    IFS=$'\n' INSTANCES=("$(sort <<<"${INSTANCES[*]}")") && unset IFS # Sort list
+    if [ ${#INSTANCES} -eq 22 ]; then
         echo -e "\nFound BrewPi installed and configured to run in single instance mode.  To"
         echo -e "change to multi-chamber mode you must uninstall this instance configured as"
         echo -e "single-use and re-run the installer to configure multi-chamber."
@@ -321,8 +338,9 @@ checkfree() {
 ############
 
 checkchamber() {
-    local chamber="$1"
-    local retval=0
+    local chamber retval
+    chamber="$1"
+    retval=0
     # Check /dev/$chamber
     if [ -L "/dev/$chamber" ]; then
         echo -e "\nA device with the name of /dev/$chamber already exists." > /dev/tty
@@ -352,25 +370,26 @@ checkchamber() {
 ############
 
 getscriptpath() {
+    local chamber chamberName
     # See if we already have chambers installed
-    if [ -n "$instances" ]; then
+    if [ -n "${INSTANCES[*]}" ]; then
         # We've already got BrewPi installed in multi-chamber
         echo -e "\nThe following chambers are already configured on this Pi:\n"
-        for instance in $instances
+        for instance in $INSTANCES
         do
             echo -e "\t$(dirname "${instance}")"
         done
-        # Get $source, $scriptSource and $webSource for git clone
-        set -- $instances
-        scriptSource=$(dirname "${1}")
-        source=$(basename "$scriptSource")
-        webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* | xargs | cut -d " " -f2)"
-        if [ -z "$webPath" ]; then
+        # Get $SOURCE, $SCRIPTSOURCE and $WEBSOURCE for git clone
+        set -- $INSTANCES
+        SCRIPTSOURCE=$(dirname "${1}")
+        SOURCE=$(basename "$SCRIPTSOURCE")
+        WEBPATH="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* | xargs | cut -d " " -f2)"
+        if [ -z "$WEBPATH" ]; then
             echo "Something went wrong searching for /etc/apache2/sites-enabled/000-default*."
             echo "Fix that and come back to try again."
             exit 1
         fi
-        webSource="$webPath/$source"
+        WEBSOURCE="$WEBPATH/$SOURCE"
         echo -e "\nWhat device/directory name would you like to use for this installation?  Any"
         echo -e "character entered that is not [a-z], [0-9], - or _ will be converted to an"
         echo -e "underscore.  Alpha characters will be converted to lowercase.  Do not enter a"
@@ -385,8 +404,9 @@ getscriptpath() {
             chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
             chamber="${chamber,,}"
         done
-        scriptPath="/home/brewpi/$chamber"
-        echo -e "\nUsing '$scriptPath' for scripts directory."
+        CHAMBER="$chamber"
+        SCRIPTPATH="/home/brewpi/$CHAMBER"
+        echo -e "\nUsing '$SCRIPTPATH' for scripts directory."
     else
         # First install; give option to do multi-chamber
         echo -e "\nIf you would like to use BrewPi in multi-chamber mode, or simply not use the"
@@ -397,26 +417,26 @@ getscriptpath() {
         echo -e "Enter device/directory name or hit enter to accept the defaults."
         read -rp "[<Enter> = Single chamber only]:  " chamber < /dev/tty
         if [ -z "$chamber" ]; then
-            scriptPath="/home/brewpi"
+            SCRIPTPATH="/home/brewpi"
         else
             chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
-            chamber="${chamber,,}"
-            scriptPath="/home/brewpi/$chamber"
+            CHAMBER="${chamber,,}"
+            SCRIPTPATH="/home/brewpi/$CHAMBER"
         fi
-        echo -e "\nUsing '$scriptPath' for scripts directory."
+        echo -e "\nUsing '$SCRIPTPATH' for scripts directory."
     fi
     
-    if [ -n "$chamber" ]; then
+    if [ -n "$CHAMBER" ]; then
         echo -e "\nNow enter a friendly name to be used for the chamber as it will be displayed."
         echo -e "Capital letters may be used, however any character entered that is not [A-Z],"
         echo -e "[a-z], [0-9], - or _ will be replaced with an underscore. Spaces are allowed.\n"
-        read -rp "[<Enter> = $chamber]: " chamberName < /dev/tty
+        read -rp "[<Enter> = $CHAMBER]: " chamberName < /dev/tty
         if [ -z "$chamberName" ]; then
-            chamberName="$chamber"
+            CHAMBERNAME="$CHAMBER"
         else
-            chamberName="$(echo "$chamberName" | sed -e 's/[^A-Za-z0-9._-\ ]/_/g')"
+            CHAMBERNAME="$(echo "$chamberName" | sed -e 's/[^A-Za-z0-9._-\ ]/_/g')"
         fi
-        echo -e "\nUsing '$chamberName' for chamber name."
+        echo -e "\nUsing '$CHAMBERNAME' for chamber name."
     fi
 }
 
@@ -425,7 +445,7 @@ getscriptpath() {
 ############
 
 doport(){
-    if [ -n "$chamber" ]; then
+    if [ -n "$CHAMBER" ]; then
         declare -i count=-1
         #declare -a port
         declare -a serial
@@ -467,32 +487,32 @@ doport(){
                 fi
             done
             # Device already exists - well-meaning user may have set it up
-            if [ -L "/dev/$chamber" ]; then
-                echo -e "\nPort /dev/$chamber already exists as a link; using it but check your setup."
+            if [ -L "/dev/$CHAMBER" ]; then
+                echo -e "\nPort /dev/$CHAMBER already exists as a link; using it but check your setup."
             else
-                echo -e "\nCreating rule for board ${serial[board]} as /dev/$chamber."
+                echo -e "\nCreating rule for board ${serial[board]} as /dev/$CHAMBER."
                 # Concatenate the rule
                 rule='SUBSYSTEM=="tty", ATTRS{serial}=="sernum", SYMLINK+="chambr"'
                 #rule+=', GROUP="brewpi"'
                 # Replace placeholders with real values
                 rule="${rule/sernum/${serial[board]}}"
-                rule="${rule/chambr/$chamber}"
+                rule="${rule/chambr/$CHAMBER}"
                 echo "$rule" >> "$rules"
             fi
             udevadm control --reload-rules
             udevadm trigger
             elif [ "$count" -eq 0 ]; then
             # Only one (it's 0-based), use it
-            if [ -L "/dev/$chamber" ]; then
-                echo -e "\nPort /dev/$chamber already exists as a link; using it but check your setup."
+            if [ -L "/dev/$CHAMBER" ]; then
+                echo -e "\nPort /dev/$CHAMBER already exists as a link; using it but check your setup."
             else
-                echo -e "\nCreating rule for board ${serial[0]} as /dev/$chamber."
+                echo -e "\nCreating rule for board ${serial[0]} as /dev/$CHAMBER."
                 # Concatenate the rule
                 rule='SUBSYSTEM=="tty", ATTRS{serial}=="sernum", SYMLINK+="chambr"'
                 #rule+=', GROUP="brewpi"'
                 # Replace placeholders with real values
                 rule="${rule/sernum/${serial[0]}}"
-                rule="${rule/chambr/$chamber}"
+                rule="${rule/chambr/$CHAMBER}"
                 echo "$rule" >> "$rules"
             fi
             udevadm control --reload-rules
@@ -502,8 +522,8 @@ doport(){
             echo -e "\nYou've configured the system for multi-chamber support however no Arduinos were"
             echo -e "found to configure. The following configuration will be created, however you"
             echo -e "must manually create a rule for your device to match the configuration file."
-            echo -e "\n\tConfiguration File: $scriptPath/settings/config.cnf"
-            echo -e "\tDevice:             /dev/$chamber\n"
+            echo -e "\n\tConfiguration File: $SCRIPTPATH/settings/config.cnf"
+            echo -e "\tDevice:             /dev/$CHAMBER\n"
             read -n 1 -s -r -p "Press any key to continue. "  < /dev/tty
         fi
     else
@@ -512,91 +532,22 @@ doport(){
 }
 
 ############
-### Handle the do_not_run files
-############
-
-create_donotrun() {
-    local webroot chamber chamberdir instance
-    # Do our best here - we have no idea where the web root may be
-    webroot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* 2>/dev/null |xargs |cut -d " " -f2)"
-    if [ -z "$webroot" ]; then
-        # Make a decent guess
-        if [ -d "/var/www/html" ]; then
-            webroot="/var/www/html"
-        else
-            webroot="/var/www"
-        fi
-    fi
-    for instance in $instances
-    do
-        chamber=$(dirname "${instance}")
-        chamberdir="$webroot/$chamber"
-        # If it looks like BrewPi is there, touch a file.  If not give up.
-        if [ -f "$chamberdir/beer-panel.php" ]; then
-            touch "$chamberdir/do_not_run_brewpi" > /dev/null 2>&1
-        fi
-    done
-}
-
-delete_donotrun() {
-    local webRoot
-    webRoot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* 2>/dev/null |xargs |cut -d " " -f2)"
-    find "$webRoot"/ -name 'do_not_run_brewpi' -print0 | xargs -0 rm -f||warn
-}
-
-############
-### Stop all BrewPi processes
-############
-
-killproc() {
-    local pidlist pid
-    if [ -n "$(getent passwd brewpi)" ]; then
-        pidlist=$(pgrep -u brewpi)
-    fi
-    for pid in $pidlist
-    do
-        # Stop (kill) brewpi
-        if ps -p "$pid" > /dev/null 2>&1; then
-            echo -e "\nAttempting graceful shutdown of process $pid."
-            kill -15 "$pid"
-            sleep 2
-            if ps -p "$pid" > /dev/null 2>&1; then
-                echo -e "\nTrying a little harder to terminate process $pid."
-                kill -2 "$pid"
-                sleep 2
-                if ps -p "$pid" > /dev/null 2>&1; then
-                    echo -e "\nBeing more forceful with process $pid."
-                    kill -1 "$pid"
-                    sleep 2
-                    while ps -p "$pid" > /dev/null 2>&1;
-                    do
-                        echo -e "\nBeing really insistent about killing process $pid now."
-                        echo -e "(I'm going to keep doing this till the process(es) are gone.)"
-                        kill -9 "$pid"
-                        sleep 2
-                    done
-                fi
-            fi
-        fi
-    done
-}
-
-############
 ### Backup existing scripts directory
 ############
 
 backupscript() {
+    local backupdir dirName
     # Back up installpath if it has any files in it
-    if [ -d "$scriptPath" ] && [ -n "$(ls -A "${scriptPath}")" ]; then
+    if [ -d "$SCRIPTPATH" ] && [ -n "$(ls -A "${SCRIPTPATH}")" ]; then
         # Set place to put backups
-        BACKUPDIR="$HOMEPATH/$GITPROJ-backup"
-        dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-Script"
-        echo -e "\nScript install directory is not empty, backing up this users home directory to"
+        backupdir="$HOMEPATH/$GITPROJ-backup"
+        dirName="$backupdir/$(date +%F%k:%M:%S)-Script"
+        echo -e "\nScript install directory is not empty, backing up thisdirectory to"
         echo -e "'$dirName' and then deleting contents."
         mkdir -p "$dirName"
-        cp -R "$scriptPath" "$dirName"/||die
-        rm -rf "${scriptPath:?}"||die
-        find "$scriptPath"/ -name '.*' -print0 | xargs -0 rm -rf||die
+        cp -R "$SCRIPTPATH" "$dirName"/||die
+        rm -rf "${SCRIPTPATH:?}"||die
+        find "$SCRIPTPATH"/ -name '.*' -print0 | xargs -0 rm -rf||die
     fi
 }
 
@@ -619,18 +570,18 @@ makeuser() {
 
 clonescripts() {
     local sourceURL
-    echo -e "\nCloning BrewPi scripts to $scriptPath."
+    echo -e "\nCloning BrewPi scripts to $SCRIPTPATH."
     # Clean out install path
-    rm -fr "$scriptPath" >/dev/null 2>&1
-    if [ ! -d "$scriptPath" ]; then mkdir -p "$scriptPath"; fi
-    chown -R brewpi:brewpi "$scriptPath"||die
-    if [ -n "$source" ]; then
-        eval "sudo -u brewpi git clone -b $GITBRNCH --single-branch $scriptSource $scriptPath"||die
-        # Update $scriptPath with git origin from $scriptSource
-        sourceURL="$(cd "$scriptSource" && git config --get remote.origin.url)"
-        (cd "$scriptPath" && git remote set-url origin "$sourceURL")
+    rm -fr "$SCRIPTPATH" >/dev/null 2>&1
+    if [ ! -d "$SCRIPTPATH" ]; then mkdir -p "$SCRIPTPATH"; fi
+    chown -R brewpi:brewpi "$SCRIPTPATH"||die
+    if [ -n "$SOURCE" ]; then
+        eval "sudo -u brewpi git clone -b $GITBRNCH --single-branch $SCRIPTSOURCE $SCRIPTPATH"||die
+        # Update $SCRIPTPATH with git origin from $SCRIPTSOURCE
+        sourceURL="$(cd "$SCRIPTSOURCE" && git config --get remote.origin.url)"
+        (cd "$SCRIPTPATH" && git remote set-url origin "$sourceURL")
     else
-        eval "sudo -u brewpi git clone -b $GITBRNCH --single-branch $GITURLSCRIPT $scriptPath"||die
+        eval "sudo -u brewpi git clone -b $GITBRNCH --single-branch $GITURLSCRIPT $SCRIPTPATH"||die
     fi
 }
 
@@ -639,8 +590,8 @@ clonescripts() {
 ############
 
 dodepends() {
-    chmod +x "$scriptPath/utils/doDepends.sh"
-    eval "$scriptPath/utils/doDepends.sh"||die
+    chmod +x "$SCRIPTPATH/utils/doDepends.sh"
+    eval "$SCRIPTPATH/utils/doDepends.sh"||die
 }
 
 ############
@@ -650,22 +601,22 @@ dodepends() {
 getwwwpath() {
     # Find web path based on Apache2 config
     echo -e "\nSearching for default web location."
-    webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
-    if [ -n "$webPath" ]; then
-        echo -e "\nFound $webPath in /etc/apache2/sites-enabled/000-default*."
+    WEBPATH="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
+    if [ -n "$WEBPATH" ]; then
+        echo -e "\nFound $WEBPATH in /etc/apache2/sites-enabled/000-default*."
     else
         echo "Something went wrong searching for /etc/apache2/sites-enabled/000-default*."
         echo "Fix that and come back to try again."
         exit 1
     fi
     # Use chamber name if configured
-    if [ -n "$chamber" ]; then
-        webPath="$webPath/$chamber"
+    if [ -n "$CHAMBER" ]; then
+        WEBPATH="$WEBPATH/$CHAMBER"
     fi
     # Create web path if it does not exist
-    if [ ! -d "$webPath" ]; then mkdir -p "$webPath"; fi
-    chown -R www-data:www-data "$webPath"||die
-    echo -e "\nUsing '$webPath' for web directory."
+    if [ ! -d "$WEBPATH" ]; then mkdir -p "$WEBPATH"; fi
+    chown -R www-data:www-data "$WEBPATH"||die
+    echo -e "\nUsing '$WEBPATH' for web directory."
 }
 
 ############
@@ -673,18 +624,19 @@ getwwwpath() {
 ############
 
 backupwww() {
-    # Back up webPath if it has any files in it
+    local backupdir dirName
+    # Back up WEBPATH if it has any files in it
     /etc/init.d/apache2 stop||die
-    rm -f "$webPath/do_not_run_brewpi" 2> /dev/null || true
-    rm -f "$webPath/index.html" 2> /dev/null || true
-    if [ -d "$webPath" ] && [ -n "$(ls -A "${webPath}")" ]; then
-        dirName="$BACKUPDIR/$(date +%F%k:%M:%S)-WWW"
+    rm -f "$WEBPATH/do_not_run_brewpi" 2> /dev/null || true
+    rm -f "$WEBPATH/index.html" 2> /dev/null || true
+    if [ -d "$WEBPATH" ] && [ -n "$(ls -A "${WEBPATH}")" ]; then
+        dirName="$backupdir/$(date +%F%k:%M:%S)-WWW"
         echo -e "\nWeb directory is not empty, backing up the web directory to:"
         echo -e "'$dirName' and then deleting contents of web directory."
         mkdir -p "$dirName"
-        cp -R "$webPath" "$dirName"/||die
-        rm -rf "${webPath:?}"||die
-        find "$webPath"/ -name '.*' -print0 | xargs -0 rm -rf||die
+        cp -R "$WEBPATH" "$dirName"/||die
+        rm -rf "${WEBPATH:?}"||die
+        find "$WEBPATH"/ -name '.*' -print0 | xargs -0 rm -rf||die
     fi
 }
 
@@ -694,17 +646,17 @@ backupwww() {
 
 clonewww() {
     local sourceURL
-    echo -e "\nCloning web site to $webPath."
-    if [ -n "$source" ]; then
-        eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $webSource $webPath"||die
-        # Update $webPath with git origin from $webSource
-        sourceURL="$(cd "$webSource" && git config --get remote.origin.url)"
-        (cd "$webPath" && git remote set-url origin "$sourceURL")
+    echo -e "\nCloning web site to $WEBPATH."
+    if [ -n "$SOURCE" ]; then
+        eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $WEBSOURCE $WEBPATH"||die
+        # Update $WEBPATH with git origin from $WEBSOURCE
+        sourceURL="$(cd "$WEBSOURCE" && git config --get remote.origin.url)"
+        (cd "$WEBPATH" && git remote set-url origin "$sourceURL")
     else
-        eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $GITURLWWW $webPath"||die
+        eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $GITURLWWW $WEBPATH"||die
     fi
     # Keep BrewPi from running while we do things
-    touch "$webPath/do_not_run_brewpi"
+    touch "$WEBPATH/do_not_run_brewpi"
 }
 
 ###########
@@ -712,19 +664,19 @@ clonewww() {
 ##########
 
 updateconfig() {
-    if [ -n "$chamber" ]; then
-        echo -e "\nCreating custom configurations for $chamber."
+    if [ -n "$CHAMBER" ]; then
+        echo -e "\nCreating custom configurations for $CHAMBER."
         # Create script path in custom script configuration file
-        echo "scriptPath = $scriptPath" >> "$scriptPath/settings/config.cfg"
+        echo "scriptPath = $SCRIPTPATH" >> "$SCRIPTPATH/settings/config.cfg"
         # Create web path in custom script configuration file
-        echo "wwwPath = $webPath" >> "$scriptPath/settings/config.cfg"
+        echo "wwwPath = $WEBPATH" >> "$SCRIPTPATH/settings/config.cfg"
         # Create port name in custom script configuration file
-        echo "port = /dev/$chamber" >> "$scriptPath/settings/config.cfg"
+        echo "port = /dev/$CHAMBER" >> "$SCRIPTPATH/settings/config.cfg"
         # Create chamber name in custom script configuration file
-        echo "chamber = \"$chamberName\"" >> "$scriptPath/settings/config.cfg"
+        echo "chamber = \"$CHAMBERNAME\"" >> "$SCRIPTPATH/settings/config.cfg"
         # Create script path in custom web configuration file
-        echo "<?php " >> "$webPath"/config_user.php
-        echo "\$scriptPath = '$scriptPath';" >> "$webPath/config_user.php"
+        echo "<?php " >> "$WEBPATH"/config_user.php
+        echo "\$scriptPath = '$SCRIPTPATH';" >> "$WEBPATH/config_user.php"
     fi
 }
 
@@ -733,8 +685,8 @@ updateconfig() {
 ############
 
 doperms() {
-    chmod +x "$scriptPath/utils/doPerms.sh"
-    eval "$scriptPath/utils/doPerms.sh"||die
+    chmod +x "$SCRIPTPATH/utils/doPerms.sh"
+    eval "$SCRIPTPATH/utils/doPerms.sh"||die
 }
 
 ############
@@ -742,12 +694,12 @@ doperms() {
 ############
 
 dodaemon() {
-    touch "$webPath/do_not_run_brewpi" # make sure BrewPi does not start yet
-    chmod +x "$scriptPath/utils/doDaemon.sh"
-    if [ -n "$source" ]; then
-        eval "$scriptPath/utils/doDaemon.sh -nowifi"||die
+    touch "$WEBPATH/do_not_run_brewpi" # make sure BrewPi does not start yet
+    chmod +x "$SCRIPTPATH/utils/doDaemon.sh"
+    if [ -n "$SOURCE" ]; then
+        eval "$SCRIPTPATH/utils/doDaemon.sh -nowifi"||die
     else
-        eval "$scriptPath/utils/doDaemon.sh"||die
+        eval "$SCRIPTPATH/utils/doDaemon.sh"||die
     fi
 }
 
@@ -769,7 +721,7 @@ flash() {
     echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
     read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
     case "$yn" in
-        [Yy]* ) eval "python -u $scriptPath/utils/updateFirmware.py" ;;
+        [Yy]* ) eval "python -u $SCRIPTPATH/utils/updateFirmware.py" ;;
         * ) ;;
     esac
 }
@@ -796,20 +748,20 @@ $DOT$BGBLK$FGYLW$sp49|_|$sp28
 $DOT$BGBLK$FGGRN$HHR$RESET
 BrewPi scripts will start shortly, usually within 30 seconds.
 
- - BrewPi frontend URL : http://$IP/$chamber
-                  -or- : http://$(hostname).local/$chamber
- - Installation path   : $scriptPath
+ - BrewPi frontend URL : http://$IP/$CHAMBER
+                  -or- : http://$(hostname).local/$CHAMBER
+ - Installation path   : $SCRIPTPATH
  - Release version     : $VERSION ($GITBRNCH)
  - Commit version      : $COMMIT
- - Install tools path  : $SCRIPTPATH
+ - Install tools path  : $TOOLPATH
 EOF
-    if [ -n "$chamber" ]; then
+    if [ -n "$CHAMBER" ]; then
     cat << EOF
  - Multi-chamber URL   : http://$IP
                   -or- : http://$(hostname).local
 
 If you would like to install another chamber, issue the command:
-sudo $SCRIPTPATH/install.sh
+sudo $TOOLPATH/install.sh
 EOF
     fi
     echo -e "\nHappy Brewing!"
@@ -819,27 +771,25 @@ EOF
 ### Main
 ############
 
-# TODO:  Make decisions to do things based on [ ! -z "$instances" ] (true if multichamber)
+# TODO:  Make decisions to do things based on [ ! -z "$INSTANCES" ] (true if multichamber)
 
 main() {
     init "$@" # Initialize constants and variables
     checkroot "$@" # Make sure we are using sudo
-    [[ "$*" == *"-verbose"* ]] && verbose=true # Do not trim logs
+    [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
     log "$@" # Create installation log
     arguments "$@" # Handle command line arguments
     echo -e "\n***Script $THISSCRIPT starting.***"
     term # Provide term codes
     findbrewpi # See if BrewPi is already installed
-    [ -z "$source" ] && checknet # Check for connection to GitHub
+    [ -z "$SOURCE" ] && checknet # Check for connection to GitHub
     checkfree # Make sure there's enough free space for install
     getscriptpath # Choose a sub directory name or take default for scripts
     doport # Install a udev rule for the Arduino connected to this installation
-    create_donotrun # Touch the do_not_run_brewpi files
-    killproc # Stop all BrewPi processes
     backupscript # Backup anything in the scripts directory
     makeuser # Create/configure user account
     clonescripts # Clone scripts git repository
-    [ -z "$source" ] && dodepends # Install dependencies
+    [ -z "$SOURCE" ] && dodepends # Install dependencies
     getwwwpath # Get WWW install location
     backupwww # Backup anything in WWW location
     clonewww # Clone WWW files
@@ -848,13 +798,13 @@ main() {
     dodaemon # Set up daemons
     fixsafari # Fix display bug with Safari browsers
     # Add links for multi-chamber dashboard
-    if [ -n "$chamber" ]; then
+    if [ -n "$CHAMBER" ]; then
         webRoot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
-        [ ! -L "$webRoot/index.php" ] && (eval "$scriptPath/utils/doIndex.sh"||warn)
+        [ ! -L "$webRoot/index.php" ] && (eval "$SCRIPTPATH/utils/doIndex.sh"||warn)
     fi
     flash # Flash controller
     # Allow BrewPi to start via daemon
-    delete_donotrun
+    rm -f "$WEBPATH/do_not_run_brewpi"
     complete # Cleanup and display instructions
 }
 
