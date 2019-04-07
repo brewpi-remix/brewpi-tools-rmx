@@ -800,7 +800,10 @@ main() {
     # Add links for multi-chamber dashboard
     if [ -n "$CHAMBER" ]; then
         webRoot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
-        [ ! -L "$webRoot/index.php" ] && (eval "$SCRIPTPATH/utils/doIndex.sh"||warn)
+        if [ ! -L "$webRoot/index.php" ]
+            echo -e "\nDEBUG: Creating link."
+            eval "$SCRIPTPATH/utils/doIndex.sh"||warn
+        fi
     fi
     flash # Flash controller
     # Allow BrewPi to start via daemon
