@@ -624,11 +624,12 @@ getwwwpath() {
 ############
 
 backupwww() {
-    local backupdir dirName
+    local backupdir dirName rootWeb
     # Back up WEBPATH if it has any files in it
+    rootWeb="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
     /etc/init.d/apache2 stop||die
     rm -f "$WEBPATH/do_not_run_brewpi" 2> /dev/null || true
-    rm -f "$WEBPATH/index.html" 2> /dev/null || true
+    rm -f "$rootWeb/index.html" 2> /dev/null || true
     if [ -d "$WEBPATH" ] && [ -n "$(ls -A "${WEBPATH}")" ]; then
         dirName="$backupdir/$(date +%F%k:%M:%S)-WWW"
         echo -e "\nWeb directory is not empty, backing up the web directory to:"
