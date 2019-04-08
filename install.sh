@@ -524,6 +524,7 @@ doport(){
             echo -e "\n\tConfiguration File: $SCRIPTPATH/settings/config.cnf"
             echo -e "\tDevice:             /dev/$CHAMBER\n"
             read -n 1 -s -r -p "Press any key to continue. "  < /dev/tty
+            echo -e ""
         fi
     else
         echo -e "\nScripts will use default 'port = auto' setting."
