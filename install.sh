@@ -35,9 +35,8 @@
 
 # General constants
 declare THISSCRIPT TOOLPATH VERSION GITBRNCH GITURL GITPROJ PACKAGE GITPROJWWW
-declare GITPROJSCRIPT GITURLWWW GITURLSCRIPT INSTANCES SCRIPTPATH WEBPATH
-declare CHAMBER VERBOSE REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME
-declare WEBSOURCE
+declare GITPROJSCRIPT GITURLWWW GITURLSCRIPT INSTANCES WEBPATH CHAMBER VERBOSE
+declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME WEBSOURCE
 # Color/character codes
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
@@ -800,8 +799,7 @@ main() {
     # Add links for multi-chamber dashboard
     if [ -n "$CHAMBER" ]; then
         webRoot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
-        if [ ! -L "$webRoot/index.php" ]
-            echo -e "\nDEBUG: Creating link."
+        if [ ! -L "$webRoot/index.php" ]; then
             eval "$SCRIPTPATH/utils/doIndex.sh"||warn
         fi
     fi

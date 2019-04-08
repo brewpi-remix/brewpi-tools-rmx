@@ -30,6 +30,18 @@
 # license and credits.
 
 ############
+### Global Declarations
+############
+
+# General constants
+declare THISSCRIPT VERSION GITBRNCH GITURL GITPROJ PACKAGE CHAMBER VERBOSE
+declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME CMDLINE GITRAW GITHUB
+declare SCRIPTNAME GITCMD GITTEST APTPACKAGES VERBOSE
+# Color/character codes
+declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
+declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
+
+############
 ### Init
 ############
 
@@ -61,7 +73,7 @@ init() {
 
 timestamp() {
     # Add date in '2019-02-26 08:19:22' format to log
-    [[ "$verbose" == "true" ]] && length=999 || length=60 # Allow full logging
+    [[ "$VERBOSE" == "true" ]] && length=999 || length=60 # Allow full logging
     while read -r; do
         # Clean and trim line to 60 characters to allow for timestamp on one line
         REPLY="$(clean "$REPLY" $length)"
@@ -96,6 +108,7 @@ clean() {
 }
 
 log() {
+    local thisscript scriptname shadow homepath
     [[ "$*" == *"-nolog"* ]] && return # Turn off logging
     # Set up our local variables
     local thisscript scriptname realuser homepath shadow
@@ -151,6 +164,7 @@ EOF
 
 # Parse arguments and call usage or version
 arguments() {
+    local arg
     while [[ "$#" -gt 0 ]]; do
         arg="$1"
         case "$arg" in
@@ -158,6 +172,8 @@ arguments() {
             usage; exit 0 ;;
             --v* )
             version; exit 0 ;;
+            * )
+            break;;
         esac
     done
 }
@@ -167,12 +183,14 @@ arguments() {
 ############
 
 checkroot() {
+    local retval shadow
     if [ -n "$SUDO_USER" ]; then REALUSER="$SUDO_USER"; else REALUSER=$(whoami); fi
+    ### Check if we have root privs to run
     if [[ "$EUID" -ne 0 ]]; then
         sudo -n true 2> /dev/null
-        local retval="$?"
+        retval="$?"
         if [ "$retval" -eq 0 ]; then
-            echo -e "\nNot running as root, relaunching correctly.\n"
+            echo -e "\nNot running as root, relaunching correctly."
             sleep 2
             eval "$CMDLINE"
             exit "$?"
@@ -188,7 +206,7 @@ checkroot() {
     shadow="$( (getent passwd "$REALUSER") 2>&1)"
     retval="$?"
     if [ "$retval" -eq 0 ]; then
-        HOMEPATH=$(echo "$shadow" | cut -d':' -f6)
+        HOMEPATH="$(echo "$shadow" | cut -d':' -f6)"
     else
         echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install may be necessary."
         exit 1
@@ -200,9 +218,10 @@ checkroot() {
 ############
 
 term() {
+    local retval
     # If we are colors capable, allow them
     tput colors > /dev/null 2>&1
-    local retval="$?"
+    retval="$?"
     if [ "$retval" == "0" ]; then
         BOLD=$(tput bold)   # Start bold text
         SMSO=$(tput smso)   # Start "standout" mode
@@ -235,19 +254,19 @@ term() {
 }
 
 ############
-### Functions to catch/display errors during setup
+### Functions to catch/display errors during execution
 ############
 
 warn() {
     local fmt
     fmt="$1"
     command shift 2>/dev/null
-    echo -e "\n$fmt"
+    echo -e "$fmt"
     echo -e "${@}"
-    echo -e "\n*** ERROR ERROR ERROR ERROR ERROR ***"
-    echo -e "-------------------------------------"
-    echo -e "See above lines for error message."
-    echo -e "Setup NOT completed.\n"
+    echo -e "\n*** ERROR ERROR ERROR ERROR ERROR ***" > /dev/tty
+    echo -e "-------------------------------------" > /dev/tty
+    echo -e "\nSee above lines for error message." > /dev/tty
+    echo -e "Setup NOT completed.\n" > /dev/tty
 }
 
 die() {
@@ -262,7 +281,7 @@ die() {
 ############
 
 instructions() {
-    local sp14 sp17 sp22
+    local any sp14 sp17 sp22
     sp14="$(printf ' %.0s' {1..14})" sp17="$(printf ' %.0s' {1..17})"
     sp22="$(printf ' %.0s' {1..22})"
     clear
@@ -297,7 +316,7 @@ EOF
 ############
 
 checkpass() {
-    local user_exists
+    local user_exists salt extpass match badpwd yn setpass
     user_exists=$(id -u 'pi' > /dev/null 2>&1; echo $?)
     if [ "$user_exists" -eq 0 ]; then
         salt=$(getent shadow "pi" | cut -d$ -f3)
@@ -330,10 +349,12 @@ checkpass() {
 ###########
 
 settime() {
+    local date tz
     date=$(date)
     while true; do
         echo -e "\nThe time is currently set to $date."
-        if [ "$(date | cut -d ' ' -f 5)" == "GMT" ]; then
+        tz="$(date | cut -d ' ' -f 5)"
+        if [  "$tz" == "GMT" ] || [  "$tz" == "BST" ]; then
             # Probably never been set
             read -rp "Is this correct? [y/N]: " yn  < /dev/tty
             case "$yn" in
@@ -359,7 +380,7 @@ settime() {
 ###########
 
 host_name() {
-    local oldHostName newHostName sethost host1 host2
+    local oldHostName yn sethost host1 host2 newHostName
     oldHostName=$(hostname)
     if [ "$oldHostName" = "raspberrypi" ]; then
         while true; do
@@ -403,6 +424,7 @@ host_name() {
 ############
 
 packages() {
+    local lastUpdate nowTime pkgOk upgradesAvail pkg
     # Run 'apt update' if last run was > 1 week ago
     lastUpdate=$(stat -c %Y /var/lib/apt/lists)
     nowTime=$(date +%s)
@@ -415,7 +437,7 @@ packages() {
     # Now install any necessary packages if they are not installed
     echo -e "\nChecking and installing required dependencies via apt."
     for pkg in $APTPACKAGES; do
-        pkgOk=$(dpkg-query -W --showformat='${Status}\n' $pkg | \
+        pkgOk=$(dpkg-query -W --showformat='${Status}\n' "$pkg" | \
         grep "install ok installed")
         if [ -z "$pkgOk" ]; then
             echo -e "\nInstalling '$pkg'."
@@ -442,7 +464,7 @@ packages() {
 
 check_brewpi() {
     if [ -d "$HOMEPATH/$GITPROJ" ]; then
-        if [ -n "$(ls -A $HOMEPATH/$GITPROJ)" ]; then
+        if [ -n "$(ls -A "$HOMEPATH/$GITPROJ")" ]; then
             echo -e "\nWarning: $HOMEPATH/$GITPROJ exists and is not empty."
         else
             echo -e "\nWarning: $HOMEPATH/$GITPROJ exists."
@@ -476,7 +498,7 @@ clonetools() {
 ############
 
 main() {
-    [[ "$*" == *"-verbose"* ]] && verbose=true # Do not trim logs
+    [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
     log "$@" # Start logging
     init "$@" # Get constants
     arguments "$@" # Check command line arguments
