@@ -353,8 +353,8 @@ settime() {
     date=$(date)
     while true; do
         echo -e "\nThe time is currently set to $date."
-        tz="$(date | cut -d ' ' -f 5)"
-        if [  "$tz" == "GMT" ] || [  "$tz" == "BST" ]; then
+        tz="$(date +%Z)"
+        if [ "$tz" == "GMT" ] || [ "$tz" == "BST" ]; then
             # Probably never been set
             read -rp "Is this correct? [y/N]: " yn  < /dev/tty
             case "$yn" in
