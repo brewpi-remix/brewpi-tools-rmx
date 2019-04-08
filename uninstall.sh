@@ -29,7 +29,11 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-# Declare script constants
+############
+### Global Declarations
+############
+
+# General constants
 declare CMDLINE PACKAGE GITBRNCH THISSCRIPT VERSION APTPACKAGES NGINXPACKAGES
 declare PIPPACKAGES REPLY REALUSER
 
@@ -39,12 +43,12 @@ declare PIPPACKAGES REPLY REALUSER
 
 init() {
     # Commandline to run this script
-    CMDLINE="curl -L uninstall.brewpiremix.com | sudo bash"
+    CMDLINE="curl -L devuninstall.brewpiremix.com | sudo bash"
     # Set up some project variables we won't have
     PACKAGE="BrewPi-Tools-RMX"
-    GITBRNCH="master"
+    GITBRNCH="devel"
     THISSCRIPT="uninstall.sh"
-    VERSION="0.5.2.0"
+    VERSION="0.5.2.1"
     # Packages to be uninstalled via apt
     APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php"
     # nginx packages to be uninstalled via apt if present
@@ -195,6 +199,31 @@ checkroot() {
 }
 
 ############
+### Handle the do_not_run files
+############
+
+create_donotrun() {
+    local webroot chamberdir instance instances
+    # Do our best here - we have no idea where the web root may be
+    webroot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* 2>/dev/null |xargs |cut -d " " -f2)"
+    if [ -z "$webroot" ]; then
+        # Make a decent guess
+        if [ -d "/var/www/html" ]; then
+            webroot="/var/www/html"
+        else
+            webroot="/var/www"
+        fi
+    fi
+    instances=$(find "$webroot" -name "beer-panel.php" 2> /dev/null)
+    IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list
+    for instance in $instances
+    do
+        chamberdir=$(dirname "${instance}")
+        touch "$chamberdir/do_not_run_brewpi" > /dev/null 2>&1
+    done
+}
+
+############
 ### Remove cron for brewpi
 ############
 
@@ -236,37 +265,13 @@ syslogd() {
 }
 
 ############
-### Handle the do_not_run files
-############
-
-create_donotrun() {
-    local webroot chamberdir instance instances
-    # Do our best here - we have no idea where the web root may be
-    webroot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* 2>/dev/null |xargs |cut -d " " -f2)"
-    if [ -z "$webroot" ]; then
-        # Make a decent guess
-        if [ -d "/var/www/html" ]; then
-            webroot="/var/www/html"
-        else
-            webroot="/var/www"
-        fi
-    fi
-    instances=$(find "$webroot" -name "beer-panel.php" 2> /dev/null)
-    IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list
-    for instance in $instances
-    do
-        chamberdir=$(dirname "${instance}")
-        touch "$chamberdir/do_not_run_brewpi" > /dev/null 2>&1
-    done
-}
-
-############
 ### Stop all BrewPi processes the right way
 ############
 
 quitproc() {
     declare home instance instances
     home="/home/brewpi"
+    echo -e "\nQuitting any running BrewPi processes." > /dev/tty
     instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
     IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list
     # Send quit messages to all BrewPi instances
@@ -275,11 +280,15 @@ quitproc() {
         /usr/bin/python -u "$instance" --quit
     done
     sleep 2
-    # Send kill messages to all BrewPi instances
+    # Get instances again
+    echo -e "\nKilling any running BrewPi processes." > /dev/tty
+    instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
+    IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list    # Send kill messages to all BrewPi instances
     for instance in $instances
     do
         /usr/bin/python -u "$instance" --kill
     done
+    sleep 2
 }
 
 ############
@@ -324,8 +333,6 @@ killproc() {
 ### Remove all BrewPi repositories
 ############
 
-#!/bin/bash
-
 delrepo() {
     local webroot
     # Wipe out tools
@@ -367,34 +374,36 @@ delrepo() {
 ############
 
 cleanusers() {
-    local retval username
-    username="$SUDO_USER"
-    if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
-        echo > /dev/tty
-        deluser "username" brewpi
+    local retval realuser username
+    # Cleanup real user membership
+    if [ -n "$SUDO_USER" ]; then realuser="$SUDO_USER"; else realuser=$(whoami); fi
+    echo -e "\nCleaning up group membership for $realuser."
+    if getent group brewpi | grep &>/dev/null "\b${realuser}\b"; then
+        deluser "$realuser" brewpi &>/dev/null
     fi
-    if getent group www-data | grep &>/dev/null "\b${username}\b"; then
-        echo > /dev/tty
-        deluser "username" www-data
+    if getent group www-data | grep &>/dev/null "\b${realuser}\b"; then
+        deluser "$realuser" www-data &>/dev/null
     fi
+    # Cleanup www-data user membership
     username="www-data"
+    echo -e "\nCleaning up group membership for $username."
     if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
-        echo > /dev/tty
-        deluser www-data brewpi
+        deluser "$username" brewpi &>/dev/null
     fi
+    # Delete brewpi user
     username="brewpi"
+    echo -e "\nCleaning up group membership for $username."
     if getent group www-data | grep &>/dev/null "\b${username}\b"; then
-        echo > /dev/tty
-        deluser brewpi www-data
+        deluser "$username" www-data &>/dev/null
     fi
     if id "$username" > /dev/null 2>&1; then
         echo -e "\nRemoving user $username." > /dev/tty
-        userdel "$username"
+        userdel "$username" &>/dev/null
     fi
     grep -E "^$username" /etc/group;
     retval="$?"
     if [ "$retval" -eq 0 ]; then
-        groupdel "$username"
+        groupdel "$username" &>/dev/null
     fi
 }
 
@@ -523,9 +532,9 @@ delnginx() {
 cleanapt() {
     # Cleanup
     echo -e "\nCleaning up local apt packages." > /dev/tty
+    apt-get autoremove --purge -y
     apt-get clean -y
     apt-get autoclean -y
-    apt-get autoremove --purge -y
 }
 
 ############
@@ -794,9 +803,9 @@ main() {
                 echo -e "\nNo chambers installed or no chamber selected, exiting."
             fi
         else
+            [ "$level" -ge 1 ] && create_donotrun # Stop all brewpi procs
             [ "$level" -ge 1 ] && cron # Clean up crontab
             [ "$level" -ge 1 ] && syslogd # Cleanup syslogd
-            [ "$level" -ge 1 ] && create_donotrun # Stop all brewpi procs
             [ "$level" -ge 1 ] && quitproc # Quit all brewpi procs
             [ "$level" -ge 1 ] && killproc # Kill all brewpi procs
             [ "$level" -ge 1 ] && delrepo # Remove all the repos
