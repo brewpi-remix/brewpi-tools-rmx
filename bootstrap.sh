@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
-#
+
 # This file is part of LBussy's BrewPi Tools Remix (BrewPi-Tools-RMX).
 #
 # BrewPi Tools RMX is free software: you can redistribute it and/or
@@ -34,37 +34,27 @@
 ############
 
 # General constants
-declare THISSCRIPT VERSION GITBRNCH GITURL GITPROJ PACKAGE CHAMBER VERBOSE
-declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME CMDLINE GITRAW GITHUB
-declare SCRIPTNAME GITCMD GITTEST APTPACKAGES VERBOSE
-# Color/character codes
-declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
-declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
+declare CMDLINE PACKAGE GITBRNCH THISSCRIPT VERSION APTPACKAGES NGINXPACKAGES
+declare PIPPACKAGES REPLY REALUSER
 
 ############
 ### Init
 ############
 
 init() {
-    # Set up some project variables we won't have running as a bootstrap
+    # Commandline to run this script
+    CMDLINE="curl -L devuninstall.brewpiremix.com | sudo bash"
+    # Set up some project variables we won't have
     PACKAGE="BrewPi-Tools-RMX"
     GITBRNCH="devel"
-    THISSCRIPT="bootstrap.sh"
+    THISSCRIPT="uninstall.sh"
     VERSION="0.5.2.1"
-    CMDLINE="curl -L devinstall.brewpiremix.com | sudo bash"
-    # These should stay the same
-    GITRAW="https://raw.githubusercontent.com/lbussy"
-    GITHUB="https://github.com/lbussy"
-    # Cobble together some strings
-    SCRIPTNAME="${THISSCRIPT%%.*}"
-    GITPROJ="${PACKAGE,,}"
-    GITHUB="$GITHUB/$GITPROJ.git"
-    GITRAW="$GITRAW/$GITPROJ/$GITBRNCH/$THISSCRIPT"
-    GITCMD="-b $GITBRNCH --single-branch $GITHUB"
-    # Website for network test
-    GITTEST="$GITHUB"
-    # Packages to be installed/checked via apt
-    APTPACKAGES="git"
+    # Packages to be uninstalled via apt
+    APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php"
+    # nginx packages to be uninstalled via apt if present
+    NGINXPACKAGES="libgd-tools fcgiwrap nginx-doc ssl-cert fontconfig-config fonts-dejavu-core libfontconfig1 libgd3 libjbig0 libnginx-mod-http-auth-pam libnginx-mod-http-dav-ext libnginx-mod-http-echo libnginx-mod-http-geoip libnginx-mod-http-image-filter libnginx-mod-http-subs-filter libnginx-mod-http-upstream-fair libnginx-mod-http-xslt-filter libnginx-mod-mail libnginx-mod-stream libtiff5 libwebp6 libxpm4 libxslt1.1 nginx nginx-common nginx-full"
+    # Packages to be uninstalled via pip
+    PIPPACKAGES="pyserial psutil simplejson gitpython configobj"
 }
 
 ############
@@ -73,10 +63,9 @@ init() {
 
 timestamp() {
     # Add date in '2019-02-26 08:19:22' format to log
-    [[ "$VERBOSE" == "true" ]] && length=999 || length=60 # Allow full logging
     while read -r; do
         # Clean and trim line to 60 characters to allow for timestamp on one line
-        REPLY="$(clean "$REPLY" $length)"
+        REPLY="$(clean "$REPLY" 60)"
         # Strip blank lines
         if [ -n "$REPLY" ]; then
             # Add date in '2019-02-26 08:19:22' format to log
@@ -108,13 +97,11 @@ clean() {
 }
 
 log() {
-    local thisscript scriptname shadow homepath
-    [[ "$*" == *"-nolog"* ]] && return # Turn off logging
-    # Set up our local variables
     local thisscript scriptname realuser homepath shadow
+    [[ "$*" == *"-nolog"* ]] && return # Don;t turn on logging
     # Explicit scriptname (creates log name) since we start
     # before the main script
-    thisscript="bootstrap.sh"
+    thisscript="uninstall.sh"
     scriptname="${thisscript%%.*}"
     # Get home directory for logging
     if [ -n "$SUDO_USER" ]; then realuser="$SUDO_USER"; else realuser=$(whoami); fi
@@ -164,7 +151,6 @@ EOF
 
 # Parse arguments and call usage or version
 arguments() {
-    local arg
     while [[ "$#" -gt 0 ]]; do
         arg="$1"
         case "$arg" in
@@ -179,18 +165,17 @@ arguments() {
 }
 
 ############
-### Make sure command is running with sudo
+### Check privileges and permissions
 ############
 
 checkroot() {
-    local retval shadow
+    local shadow retval
     if [ -n "$SUDO_USER" ]; then REALUSER="$SUDO_USER"; else REALUSER=$(whoami); fi
-    ### Check if we have root privs to run
     if [[ "$EUID" -ne 0 ]]; then
         sudo -n true 2> /dev/null
-        retval="$?"
+        local retval="$?"
         if [ "$retval" -eq 0 ]; then
-            echo -e "\nNot running as root, relaunching correctly."
+            echo -e "\nNot running as root, relaunching correctly.\n"
             sleep 2
             eval "$CMDLINE"
             exit "$?"
@@ -206,7 +191,7 @@ checkroot() {
     shadow="$( (getent passwd "$REALUSER") 2>&1)"
     retval="$?"
     if [ "$retval" -eq 0 ]; then
-        HOMEPATH="$(echo "$shadow" | cut -d':' -f6)"
+        HOMEPATH=$(echo "$shadow" | cut -d':' -f6)
     else
         echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install may be necessary."
         exit 1
@@ -214,311 +199,629 @@ checkroot() {
 }
 
 ############
-### Provide terminal escape codes
+### Handle the do_not_run files
 ############
 
-term() {
-    local retval
-    # If we are colors capable, allow them
-    tput colors > /dev/null 2>&1
-    retval="$?"
-    if [ "$retval" == "0" ]; then
-        BOLD=$(tput bold)   # Start bold text
-        SMSO=$(tput smso)   # Start "standout" mode
-        RMSO=$(tput rmso)   # End "standout" mode
-        FGBLK=$(tput setaf 0)   # FG Black
-        FGRED=$(tput setaf 1)   # FG Red
-        FGGRN=$(tput setaf 2)   # FG Green
-        FGYLW=$(tput setaf 3)   # FG Yellow
-        FGBLU=$(tput setaf 4)   # FG Blue
-        FGMAG=$(tput setaf 5)   # FG Magenta
-        FGCYN=$(tput setaf 6)   # FG Cyan
-        FGWHT=$(tput setaf 7)   # FG White
-        FGRST=$(tput setaf 9)   # FG Reset to default color
-        BGBLK=$(tput setab 0)   # BG Black
-        BGRED=$(tput setab 1)   # BG Red
-        BGGRN=$(tput setab 2)   # BG Green$(tput setaf $fg_color)
-        BGYLW=$(tput setab 3)   # BG Yellow
-        BGBLU=$(tput setab 4)   # BG Blue
-        BGMAG=$(tput setab 5)   # BG Magenta
-        BGCYN=$(tput setab 6)   # BG Cyan
-        BGWHT=$(tput setab 7)   # BG White
-        BGRST=$(tput setab 9)   # BG Reset to default color
-        # Some constructs
-        # "Invisible" period (black FG/BG and a backspace)
-        DOT="$(tput sc)$(tput setaf 0)$(tput setab 0).$(tput sgr 0)$(tput rc)"
-        HHR="$(eval printf %.0s═ '{1..'"${COLUMNS:-$(tput cols)}"\}; echo)"
-        LHR="$(eval printf %.0s─ '{1..'"${COLUMNS:-$(tput cols)}"\}; echo)"
-        RESET=$(tput sgr0)  # FG/BG reset to default color
-    fi
-}
-
-############
-### Functions to catch/display errors during execution
-############
-
-warn() {
-    local fmt
-    fmt="$1"
-    command shift 2>/dev/null
-    echo -e "$fmt"
-    echo -e "${@}"
-    echo -e "\n*** ERROR ERROR ERROR ERROR ERROR ***" > /dev/tty
-    echo -e "-------------------------------------" > /dev/tty
-    echo -e "\nSee above lines for error message." > /dev/tty
-    echo -e "Setup NOT completed.\n" > /dev/tty
-}
-
-die() {
-    local st
-    st="$?"
-    warn "$@"
-    exit "$st"
-}
-
-############
-### Instructions
-############
-
-instructions() {
-    local any sp14 sp17 sp22
-    sp14="$(printf ' %.0s' {1..14})" sp17="$(printf ' %.0s' {1..17})"
-    sp22="$(printf ' %.0s' {1..22})"
-    clear
-    # Note:  $(printf ...) hack adds spaces at beg/end to support non-black BG
-  cat << EOF
-
-$DOT$BGBLK$FGYLW$sp14 ___                ___ _   ___           _ $sp22
-$DOT$BGBLK$FGYLW$sp14| _ )_ _ _____ __ _| _ (_) | _ \___ _ __ (_)_ __ $sp17
-$DOT$BGBLK$FGYLW$sp14| _ \ '_/ -_) V  V /  _/ | |   / -_) '  \| \ \ / $sp17
-$DOT$BGBLK$FGYLW$sp14|___/_| \___|\_/\_/|_| |_| |_|_\___|_|_|_|_/_\_\ $sp17
-$DOT$BGBLK$FGGRN$HHR$RESET
-You will be presented with some choices during the install. Most frequently
-you will see a 'yes or no' choice, with the default choice capitalized like
-so: [y/N]. Default means if you hit <enter> without typing anything, you will
-make the capitalized choice, i.e. hitting <enter> when you see [Y/n] will
-default to 'yes.'
-
-Yes/no choices are not case sensitive. However; passwords, system names and
-install paths are. Be aware of this. There is generally no difference between
-'y', 'yes', 'YES', 'Yes'; you get the idea. In some areas you are asked for a
-path; the default/recommended choice is in braces like: [/home/brewpi].
-Pressing <enter> without typing anything will take the default/recommended
-choice.
-
-EOF
-    read -n 1 -s -r -p  "Press any key when you are ready to proceed. " < /dev/tty
-    echo -e ""
-}
-
-############
-### Check for default 'pi' password and gently prompt to change it now
-############
-
-checkpass() {
-    local user_exists salt extpass match badpwd yn setpass
-    user_exists=$(id -u 'pi' > /dev/null 2>&1; echo $?)
-    if [ "$user_exists" -eq 0 ]; then
-        salt=$(getent shadow "pi" | cut -d$ -f3)
-        extpass=$(getent shadow "pi" | cut -d: -f2)
-        match=$(python -c 'import crypt; print crypt.crypt("'"raspberry"'", "$6$'${salt}'")')
-        [ "${match}" == "${extpass}" ] && badpwd=true || badpwd=false
-        if [ "$badpwd" = true ]; then
-            echo -e "\nDefault password found for the 'pi' account. This should be changed."
-            while true; do
-                read -rp "Do you want to change the password now? [Y/n]: " yn  < /dev/tty
-                case "$yn" in
-                    '' ) setpass=1; break ;;
-                    [Yy]* ) setpass=1; break ;;
-                    [Nn]* ) break ;;
-                    * ) echo "Enter [y]es or [n]o." ;;
-                esac
-            done
-        fi
-        if [ -n "$setpass" ]; then
-            echo
-            until passwd pi < /dev/tty; do sleep 2; echo; done
-            echo -e "\nYour password has been changed, remember it or write it down now."
-            sleep 5
-        fi
-    fi
-}
-
-############
-### Set timezone
-###########
-
-settime() {
-    local date tz
-    date=$(date)
-    while true; do
-        echo -e "\nThe time is currently set to $date."
-        tz="$(date +%Z)"
-        if [ "$tz" == "GMT" ] || [ "$tz" == "BST" ]; then
-            # Probably never been set
-            read -rp "Is this correct? [y/N]: " yn  < /dev/tty
-            case "$yn" in
-                '' ) dpkg-reconfigure tzdata; break ;;
-                [Nn]* ) dpkg-reconfigure tzdata; break ;;
-                [Yy]* ) echo ; break ;;
-                * ) echo "Enter [y]es or [n]o." ;;
-            esac
+create_donotrun() {
+    local webroot chamberdir instance instances
+    # Do our best here - we have no idea where the web root may be
+    webroot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* 2>/dev/null |xargs |cut -d " " -f2)"
+    if [ -z "$webroot" ]; then
+        # Make a decent guess
+        if [ -d "/var/www/html" ]; then
+            webroot="/var/www/html"
         else
-            # Probably been set
-            read -rp "Is this correct? [Y/n]: " yn  < /dev/tty
-            case "$yn" in
-                [Nn]* ) dpkg-reconfigure tzdata; break ;;
-                [Yy]* ) break ;;
-                * ) break ;;
-            esac
+            webroot="/var/www"
+        fi
+    fi
+    instances=$(find "$webroot" -name "beer-panel.php" 2> /dev/null)
+    IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list
+    for instance in $instances
+    do
+        chamberdir=$(dirname "${instance}")
+        touch "$chamberdir/do_not_run_brewpi" > /dev/null 2>&1
+    done
+}
+
+############
+### Remove cron for brewpi
+############
+
+cron() {
+    # Clear out the old brewpi cron if it exists
+    if [ -f /etc/cron.d/brewpi ]; then
+        echo -e "\nResetting cron." > /dev/tty
+        rm -f /etc/cron.d/brewpi
+        /etc/init.d/cron restart
+    fi
+}
+
+############
+### Remove syslogd unit files for brewpi and wificheck
+############
+
+syslogd() {
+    local ddir targets target filename name
+    ddir="/etc/systemd/system"
+    targets="$(grep -rl "# Created for BrewPi version" $ddir)"
+    
+    for target in $targets
+    do
+        filename="$(basename "$target")"
+        name="$(basename -s ".service" "$target")"
+        echo -e "\nRemoving $name daemon:" > /dev/tty
+        echo -e "Stopping $name daemon." > /dev/tty
+        eval "systemctl stop $name"
+        echo -e "Disabling $name daemon." > /dev/tty
+        eval "systemctl disable $name"
+        echo -e "Removing leftover files." > /dev/tty
+        rm "/etc/systemd/system/$filename" 2> /dev/null
+        rm "/etc/systemd/system/multi-user.target.wants/$filename" 2> /dev/null
+        echo -e "Reloading systemd configuration." > /dev/tty
+        systemctl daemon-reload
+        echo -e "Resetting any failed systemd daemons." > /dev/tty
+        systemctl reset-failed
+    done
+}
+
+############
+### Stop all BrewPi processes the right way
+############
+
+quitproc() {
+    declare home instance instances
+    home="/home/brewpi"
+    echo -e "\nQuitting any running BrewPi processes." > /dev/tty
+    instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
+    IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list
+    # Send quit messages to all BrewPi instances
+    for instance in $instances
+    do
+        /usr/bin/python -u "$instance" --quit
+    done
+    sleep 2
+    # Get instances again
+    echo -e "\nKilling any running BrewPi processes." > /dev/tty
+    instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
+    IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list    # Send kill messages to all BrewPi instances
+    for instance in $instances
+    do
+        /usr/bin/python -u "$instance" --kill
+    done
+    sleep 2
+}
+
+############
+### Stop all BrewPi processes the hard way
+############
+
+killproc() {
+    # Kill all brewpi.py processes owned by brewpi - one way or another
+    local pidlist pid
+    if [ -n "$(getent passwd brewpi)" ]; then
+        pidlist=$(pgrep -u brewpi -i -a python | grep -i brewpi.py)
+    fi
+    for pid in $pidlist
+    do
+        # Stop (kill) brewpi
+        if ps -p "$pid" > /dev/null 2>&1; then
+            echo -e "\nAttempting graceful shutdown of process $pid."
+            kill -15 "$pid"
+            sleep 2
+            if ps -p "$pid" > /dev/null 2>&1; then
+                echo -e "\nTrying a little harder to terminate process $pid."
+                kill -2 "$pid"
+                sleep 2
+                if ps -p "$pid" > /dev/null 2>&1; then
+                    echo -e "\nBeing more forceful with process $pid."
+                    kill -1 "$pid"
+                    sleep 2
+                    while ps -p "$pid" > /dev/null 2>&1;
+                    do
+                        echo -e "\nBeing really insistent about killing process $pid now."
+                        echo -e "(I'm going to keep doing this till the process(es) are gone.)"
+                        kill -9 "$pid"
+                        sleep 2
+                    done
+                fi
+            fi
         fi
     done
 }
 
 ############
-### Change hostname
+### Remove all BrewPi repositories
+############
+
+delrepo() {
+    local webroot
+    # Wipe out tools
+    if [ -d "/home/$REALUSER/brewpi-tools-rmx" ]; then
+        echo -e "\nClearing /home/$REALUSER/brewpi-tools-rmx." > /dev/tty
+        rm -fr "/home/$REALUSER/brewpi-tools-rmx"
+    fi
+    # Wipe out legacy tools
+    if [ -d "/home/$REALUSER/brewpi-tools" ]; then
+        echo -e "\nClearing /home/$REALUSER/brewpi-tools." > /dev/tty
+        rm -fr "/home/$REALUSER/brewpi-tools"
+    fi
+    # Wipe out BrewPi scripts
+    if [ -d /home/brewpi ]; then
+        echo -e "\nClearing /home/brewpi." > /dev/tty
+        rm -fr /home/brewpi
+    fi
+    # Wipe out www if it exists and is not empty
+    webroot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* 2>/dev/null |xargs |cut -d " " -f2)"
+    if [ -z "$webroot" ]; then
+        # Make a decent guess
+        if [ -d "/var/www/html" ]; then
+            webroot="/var/www/html"
+        else
+            webroot="/var/www"
+        fi
+    fi
+    if [ -n "$(ls -A "$webroot")" ]; then
+        echo -e "\nClearing $webroot." > /dev/tty
+        rm -fr "$webroot"
+        # Re-create html durectory
+        mkdir "$webroot"
+        chown www-data:www-data "$webroot"
+    fi
+}
+
+############
+### Remove brewpi user/group
+############
+
+cleanusers() {
+    local retval realuser username
+    # Cleanup real user membership
+    if [ -n "$SUDO_USER" ]; then realuser="$SUDO_USER"; else realuser=$(whoami); fi
+    echo -e "\nCleaning up group membership for $realuser."
+    if getent group brewpi | grep &>/dev/null "\b${realuser}\b"; then
+        deluser "$realuser" brewpi &>/dev/null
+    fi
+    if getent group www-data | grep &>/dev/null "\b${realuser}\b"; then
+        deluser "$realuser" www-data &>/dev/null
+    fi
+    # Cleanup www-data user membership
+    username="www-data"
+    echo -e "\nCleaning up group membership for $username."
+    if getent group brewpi | grep &>/dev/null "\b${username}\b"; then
+        deluser "$username" brewpi &>/dev/null
+    fi
+    # Delete brewpi user
+    username="brewpi"
+    echo -e "\nCleaning up group membership for $username."
+    if getent group www-data | grep &>/dev/null "\b${username}\b"; then
+        deluser "$username" www-data &>/dev/null
+    fi
+    if id "$username" > /dev/null 2>&1; then
+        echo -e "\nRemoving user $username." > /dev/tty
+        userdel "$username" &>/dev/null
+    fi
+    grep -E "^$username" /etc/group;
+    retval="$?"
+    if [ "$retval" -eq 0 ]; then
+        groupdel "$username" &>/dev/null
+    fi
+}
+
+############
+### Reset Apache
+############
+
+resetapache() {
+    # Reset Apache config to stock
+    if [ -f /etc/apache2/apache2.conf ]; then
+        if grep -qF "KeepAliveTimeout 99" /etc/apache2/apache2.conf; then
+            echo -e "\nResetting /etc/apache2/apache2.conf." > /dev/tty
+            sed -i -e 's/KeepAliveTimeout 99/KeepAliveTimeout 5/g' /etc/apache2/apache2.conf
+            /etc/init.d/apache2 restart
+        fi
+    fi
+}
+
+############
+### Remove pip packages
+############
+
+delpip() {
+    local retval pkg pipInstalled
+    echo -e "\nChecking for pip packages installed with BrewPi." > /dev/tty
+    if pip &>/dev/null; then
+        pipInstalled=$(pip list --format=legacy)
+        retval="$?"
+        if [ "$retval" -eq 0 ]; then
+            pipInstalled=$(echo "$pipInstalled" | awk '{ print $1 }')
+            for pkg in ${PIPPACKAGES,,}; do
+                if [[ ${pipInstalled,,} == *"$pkg"* ]]; then
+                    echo -e "\nRemoving '$pkg'.\n" > /dev/tty
+                    pip uninstall "$pkg" -y
+                fi
+            done
+        fi
+    fi
+}
+
+############
+### Remove apt packages
+############
+
+delapt() {
+    local pkg packagesInstalled
+    echo -e "\nChecking for apt packages installed with BrewPi." > /dev/tty
+    # Get list of installed packages
+    packagesInstalled=$(dpkg --get-selections | awk '{ print $1 }')
+    # Loop through the required packages and uninstall those in $APTPACKAGES
+    for pkg in ${APTPACKAGES,,}; do
+        if [[ ${packagesInstalled,,} == *"$pkg"* ]]; then
+            echo -e "\nRemoving '$pkg'.\n" > /dev/tty
+            apt remove --purge "$pkg" -y
+        fi
+    done
+}
+
+############
+### Remove php5 packages if installed
+############
+
+delphp5() {
+    local pkg php5packages yn
+    echo -e "\nChecking for previously installed php5 packages." > /dev/tty
+    # Get list of installed packages
+    php5packages="$(dpkg --get-selections | awk '{ print $1 }' | grep 'php5')"
+    if [[ -z "$php5packages" ]] ; then
+        echo -e "\nNo php5 packages found." > /dev/tty
+    else
+        echo -e "\nFound php5 packages installed.  It is recomended to uninstall all php before" > /dev/tty
+        echo -e "proceeding as BrewPi requires php7 and will install it during the install" > /dev/tty
+        read -rp "process.  Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
+        case $yn in
+            [Nn]* )
+                echo -e "\nUnable to proceed with php5 installed, exiting." > /dev/tty;
+            exit 1;;
+            * )
+                php_packages="$(dpkg --get-selections | awk '{ print $1 }' | grep 'php')"
+                # Loop through the php5 packages that we've found
+                for pkg in ${php_packages,,}; do
+                    echo -e "\nRemoving '$pkg'.\n" > /dev/tty
+                    apt remove --purge "$pkg" -y
+                done
+                echo -e "\nCleanup of the php environment complete." > /dev/tty
+            ;;
+        esac
+    fi
+}
+
+############
+### Remove nginx packages if installed
+############
+
+delnginx() {
+    local nginxPackage yn pkg
+    echo -e "\nChecking for previously installed nginx packages." > /dev/tty
+    # Get list of installed packages
+    nginxPackage="$(dpkg --get-selections | awk '{ print $1 }' | grep 'nginx')"
+    if [[ -z "$nginxPackage" ]] ; then
+        echo -e "\nNo nginx packages found." > /dev/tty
+    else
+        echo -e "\nFound nginx packages installed.  It is recomended to uninstall nginx before" > /dev/tty
+        echo -e "proceeding as BrewPi requires apache2 and they will conflict with each other." > /dev/tty
+        read -rp "Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
+        case $yn in
+            [Nn]* )
+                echo -e "\nUnable to proceed with nginx installed, exiting." > /dev/tty;
+            exit 1;;
+            * )
+                # Loop through the php5 packages that we've found
+                for pkg in ${NGINXPACKAGES,,}; do
+                    echo -e "\nRemoving '$pkg'.\n" > /dev/tty
+                    apt remove --purge "$pkg" -y
+                done
+                echo -e "\nCleanup of the nginx environment complete." > /dev/tty
+            ;;
+        esac
+    fi
+}
+
+############
+### Cleanup local packages
+############
+
+cleanapt() {
+    # Cleanup
+    echo -e "\nCleaning up local apt packages." > /dev/tty
+    apt-get autoremove --purge -y
+    apt-get clean -y
+    apt-get autoclean -y
+}
+
+############
+### Reset hostname
 ###########
 
-host_name() {
-    local oldHostName yn sethost host1 host2 newHostName
+resethost() {
+    local oldHostName newHostName sed1 sed2
     oldHostName=$(hostname)
-    if [ "$oldHostName" = "raspberrypi" ]; then
-        while true; do
-            echo -e "Your hostname is set to '$oldHostName'. Each machine"
-            echo -e "on your network should have a unique name to prevent"
-            echo -e "issues. Do you want to change it now, maybe to"
-            read -rp "'brewpi'? [Y/n]: " yn < /dev/tty
-            case "$yn" in
-                '' ) sethost=1; break ;;
-                [Yy]* ) sethost=1; break ;;
-                [Nn]* ) break ;;
-                * ) echo "Enter [y]es or [n]o." ; sleep 1 ; echo ;;
+    newHostName="raspberrypi"
+    if [ "$oldHostName" != "$newHostName" ]; then
+        echo -e "\nResetting hostname from $oldHostName back to $newHostName." > /dev/tty
+        sed1="sed -i 's/$oldHostName/$newHostName/g' /etc/hosts"
+        sed2="sed -i 's/$oldHostName/$newHostName/g' /etc/hostname"
+        eval "$sed1"
+        eval "$sed2"
+        hostnamectl set-hostname $newHostName
+        /etc/init.d/avahi-daemon restart
+        echo -e "\nYour hostname has been changed back to '$newHostName'.\n" > /dev/tty
+        echo -e "(If your hostname is part of your prompt, your prompt will" > /dev/tty
+        echo -e "not change until you log out and in again.  This will have" > /dev/tty
+        echo -e "no effect on anything but the way the prompt looks.)" > /dev/tty
+        sleep 3
+    fi
+}
+
+############
+### Remove device rules
+###########
+
+resetudev() {
+    local rules
+    rules="/etc/udev/rules.d/99-arduino.rules"
+    if [ -f "$rules" ]; then
+        echo -e "\nRemoving udev rules." > /dev/tty
+        rm "$rules"
+        udevadm control --reload-rules
+        udevadm trigger
+    fi
+}
+
+############
+### Reset pi password
+###########
+
+resetpwd() {
+    if getent passwd "pi" > /dev/null; then
+        echo -e "\nResetting password for 'pi' back to 'raspberry'." > /dev/tty
+        echo "pi:raspberry" | chpasswd
+    fi
+}
+
+############
+### Process single chamber
+############
+
+delchamber() {
+    local chamber newchamber link home instances newlink webDir unitFile
+    local daemonName rules scriptDir webPath
+    chamber="$1"
+    home="/home/brewpi"
+    rules="/etc/udev/rules.d/99-arduino.rules"
+    # Get $chamber, $scriptDir and $webDir for uninstall
+    scriptDir="$home/$chamber"
+    webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* | xargs | cut -d " " -f2)"
+    if [ -z "$webPath" ]; then
+        echo -e "\nSomething went wrong searching for /etc/apache2/sites-enabled/000-default*."
+        echo -e "Fix that and come back to try again."
+        exit 1
+    fi
+    webDir="$webPath/$chamber"
+    unitFile="/etc/systemd/system/$chamber.service"
+    daemonName="$chamber.service"
+    
+    # Check and fix symlink if needed
+    echo
+    link=$(dirname "$(readlink "$webPath/index.php")")
+    if [ "$link" == "$webDir" ]; then
+        echo -e "\nThis operation will delete the target of the multi-chamber index link."
+        instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
+        for instance in $instances; do
+            if [ ! "$(dirname "$instance")" == "$scriptDir" ]; then
+                newchamber="$(basename "$(dirname "$instance")")"
+                newlink="$webPath/$newchamber/multi-index.php"
+                break
+            fi
+        done
+        echo -e "\nReplacing multi-chamber symlink:"
+        echo -e "Target: $newlink"
+        echo -e "Link:   $webPath/index.php"
+        ln -sfn "$newlink" "$webPath/index.php"
+    fi
+    
+    # Delete daemon for chamber
+    if [ -f "$unitFile" ]; then
+        # TODO:  Delete unit file for that chamber
+        echo -e "\nStopping $chamber daemon."
+        systemctl stop "$daemonName"
+        echo -e "Disabling $chamber daemon."
+        systemctl disable "$daemonName"
+        echo -e "Removing unit file for $chamber."
+        rm "$unitFile" > /dev/null 2>&1
+        systemctl daemon-reload
+    fi
+    # Delete BrewPi scripts for chamber
+    if [ -d "$scriptDir" ]; then
+        # Stop running instance
+        "$scriptDir/brewpi.py --quit" > /dev/null 2>&1
+        "$scriptDir/brewpi.py --kill" > /dev/null 2>&1
+        # Remove BrewPi script instance
+        echo -e "\nRemoving $scriptDir."
+        rm -fr "$scriptDir" > /dev/null 2>&1
+    fi
+    # Delete BrewPi web for chamber
+    if [ -d "$webDir" ]; then
+        # TODO:  See if we have links pointed here
+        # Remove BrewPi web instance
+        echo -e "\nRemoving $webDir."
+        rm -fr "$webDir" > /dev/null 2>&1
+    fi
+    # Delete device for chamber
+    if [ -L "/dev/$chamber" ]; then
+        # TODO:  Delete rule for that chamber
+        echo -e "\nRemoving rule for /dev/$chamber."
+        sed -i "/$chamber/d" "$rules" > /dev/null 2>&1
+        udevadm control --reload-rules
+        udevadm trigger
+    fi
+}
+
+############
+### Select a chamber
+###########
+
+numchamber() {
+    local home instances
+    home="/home/brewpi"
+    instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
+    if [ ${#instances} -gt 22 ]; then
+        arr=($instances)
+        return $((${#arr[@]}))
+    fi
+    return 0
+}
+
+############
+### Select a chamber
+###########
+
+getchamber() {
+    local home idx arr re sel instances
+    home="/home/brewpi"
+    idx=0
+    instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
+    IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list
+    arr=($instances)
+    if [ ${#instances} -gt 22 ]; then
+        # Found multiple chambers
+        echo -e "\nThe following chambers are configured on this device:\n" > /dev/tty
+        for instance in $instances
+        do
+            echo -e "\t[$idx] $(dirname "${instance}")" > /dev/tty
+            arr[$idx]="$(basename "$(dirname "${arr[$idx]}")")"
+            ((idx++))
+        done
+        echo > /dev/tty
+        read -r -s -n1 -p "Enter chamber to uninstall [0-$((${#arr[@]}-1))] or any other key to quit: " sel < /dev/tty
+        re='^[0-9]+$'
+        if [[ "$sel" =~ $re ]] ; then echo "${arr["$sel"]}"; fi
+    else
+        echo -e "\nNot configured for multi-chamber mode." > /dev/tty
+    fi
+}
+
+############
+### Choose uninstall level
+###########
+
+wipelevel () {
+    local level retval
+    echo -e "\nSelect the level of uninstall you wish to execute.  The least is level [1]" > /dev/tty
+    echo -e "which is probably appropriate if you have an issue and are looking to cleanup" > /dev/tty
+    echo -e "and reinstall.  Level [2] will reset the hostname and the password for 'pi'" > /dev/tty
+    echo -e "back to 'raspberry.'  Level [3] is the most intense, adding the execution of" > /dev/tty
+    echo -e "apt and pip package removals.  [3] is likely only appropriate for testers and" > /dev/tty
+    echo -e "you should not run it unless you know what you are doing or someone tells you" > /dev/tty
+    echo -e "that you need to.\n" > /dev/tty
+    echo -e "   [1] - Normal uninstall of BrewPi repositories, services and devices" > /dev/tty
+    echo -e "   [2] - Everything in [1] plus reset hostname and pi password" > /dev/tty
+    echo -e "   [3] - Everything in [1] and [2] plus wipe pip and apt packages" > /dev/tty
+    numchamber
+    retval=$?
+    if [[ $retval -gt 1 ]]; then
+        echo -e "   [4] - Select a single chamber to uninstall\n" > /dev/tty
+        while :
+        do
+            read -r -s -n1 -p "Enter level of uninstall to execute [1-4] or any other key to quit: " level < /dev/tty
+            case "$level" in
+                1 )
+                    echo -e "\n\nExecuting a level one (mild) uninstall." > /dev/tty
+                    echo 1
+                break ;;
+                2 )
+                    echo -e "\n\nExecuting a level two (medium) uninstall." > /dev/tty
+                    echo 2
+                break ;;
+                3 )
+                    echo -e "\n\nExecuting a level three (hard) uninstall." > /dev/tty
+                    echo 3
+                break ;;
+                4 )
+                    echo -e "\n\nExecuting a selective uninstall." > /dev/tty
+                    echo 4
+                break ;;
+                * )
+                    echo -e "\n\nUninstall canceled." > /dev/tty
+                    echo "Q"
+                break ;;
             esac
         done
-        echo
-        if [ "$sethost" -eq 1 ]; then
-            echo -e "You will now be asked to enter a new hostname."
-            while
-            read -rp "Enter new hostname: " host1  < /dev/tty
-            read -rp "Enter new hostname again: " host2 < /dev/tty
-            [[ -z "$host1" || "$host1" != "$host2" ]]
-            do
-                echo -e "\nHost names blank or do not match.\n";
-                sleep 1
-            done
-            echo
-            newHostName=$(echo "$host1" | awk '{print tolower($0)}')
-            eval "sed -i 's/$oldHostName/$newHostName/g' /etc/hosts"||die
-            eval "sed -i 's/$oldHostName/$newHostName/g' /etc/hostname"||die
-            hostnamectl set-hostname "$newHostName"
-            /etc/init.d/avahi-daemon restart
-            echo -e "\nYour hostname has been changed to '$newHostName'.\n"
-            echo -e "(If your hostname is part of your prompt, your prompt will"
-            echo -e "not change until you log out and in again.  This will have"
-            echo -e "no effect on anything but the way the prompt looks.)"
-            sleep 5
-        fi
+    else
+        echo > /dev/tty
+        while :
+        do
+            read -r -s -n1 -p "Enter level of uninstall to execute [1-3] or any other key to quit: " level < /dev/tty
+            case "$level" in
+                1 )
+                    echo -e "\n\nExecuting a level one (mild) uninstall." > /dev/tty
+                    echo 1
+                break ;;
+                2 )
+                    echo -e "\n\nExecuting a level two (medium) uninstall." > /dev/tty
+                    echo 2
+                break ;;
+                3 )
+                    echo -e "\n\nExecuting a level three (hard) uninstall." > /dev/tty
+                    echo 3
+                break ;;
+                * )
+                    echo -e "\n\nUninstall canceled." > /dev/tty
+                    echo "Q"
+                break ;;
+            esac
+        done
     fi
 }
 
 ############
-### Install or update required packages
-############
-
-packages() {
-    local lastUpdate nowTime pkgOk upgradesAvail pkg
-    # Run 'apt update' if last run was > 1 week ago
-    lastUpdate=$(stat -c %Y /var/lib/apt/lists)
-    nowTime=$(date +%s)
-    if [ $(("$nowTime" - "$lastUpdate")) -gt 604800 ] ; then
-        echo -e "\nLast apt update was over a week ago. Running apt update before updating"
-        echo -e "dependencies."
-        apt update||die
-    fi
-    
-    # Now install any necessary packages if they are not installed
-    echo -e "\nChecking and installing required dependencies via apt."
-    for pkg in $APTPACKAGES; do
-        pkgOk=$(dpkg-query -W --showformat='${Status}\n' "$pkg" | \
-        grep "install ok installed")
-        if [ -z "$pkgOk" ]; then
-            echo -e "\nInstalling '$pkg'."
-            apt install "$pkg" -y||die
-        fi
-    done
-    
-    # Get list of installed packages with updates available
-    upgradesAvail=$(dpkg --get-selections | xargs apt-cache policy {} | \
-        grep -1 Installed | sed -r 's/(:|Installed: |Candidate: )//' | \
-    uniq -u | tac | sed '/--/I,+1 d' | tac | sed '$d' | sed -n 1~2p)
-    # Loop through the required packages and see if they need an upgrade
-    for pkg in $APTPACKAGES; do
-        if [[ "$upgradesAvail" == *"$pkg"* ]]; then
-            echo -e "\nUpgrading '$pkg'."
-            apt install "$pkg"||die
-        fi
-    done
-}
-
-############
-### Check for an existing BrewPi installation
-############
-
-check_brewpi() {
-    if [ -d "$HOMEPATH/$GITPROJ" ]; then
-        if [ -n "$(ls -A "$HOMEPATH/$GITPROJ")" ]; then
-            echo -e "\nWarning: $HOMEPATH/$GITPROJ exists and is not empty."
-        else
-            echo -e "\nWarning: $HOMEPATH/$GITPROJ exists."
-        fi
-        echo -e "\nIf you are sure you do not need it, or you are starting over completely, we can"
-        echo -e "delete the old repo by accepting the below prompt. If you are running multi-"
-        echo -e "chamber and are trying to add a new chamber, select 'N' below, and add a new"
-        echo -e "chamber by executing: 'sudo $HOMEPATH/$GITPROJ/install.sh'\n"
-        read -rp "Remove $HOMEPATH/$GITPROJ? [y/N] " < /dev/tty
-        if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-            rm -fr "${HOMEPATH:?}/$GITPROJ"
-            echo
-        else
-            echo -e "\nLeaving $HOMEPATH/$GITPROJ in place and exiting."
-            exit 1
-        fi
-    fi
-}
-
-############
-### Clone BrewPi-Tools-RMX repo
-############
-
-clonetools() {
-    echo -e "\nCloning $GITPROJ repo."
-    eval "sudo -u $REALUSER git clone $GITCMD $HOMEPATH/$GITPROJ"||die
-}
-
-############
-### Main function
-############
+### Main
+###########
 
 main() {
-    [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
     log "$@" # Start logging
     init "$@" # Get constants
     arguments "$@" # Check command line arguments
-    echo -e "\n***Script $THISSCRIPT starting.***\n"
-    checkroot # Make sure we are su into root
-    term # Add term command constants
-    instructions # Show instructions
-    check_brewpi # See if BrewPi is installed
-    checkpass # Check for default password
-    settime # Set timezone
-    host_name # Change hostname
-    packages # Install and update required packages
-    clonetools # Clone tools repo
-    eval "$HOMEPATH/$GITPROJ/install.sh -nolog" || die # Start installer
+    echo -e "\n***Script $THISSCRIPT starting.***" > /dev/tty
+    checkroot # Check for root privs
+    cd ~ || exit 1 # Start from home
+    level="$(wipelevel)"
+    if [ ! "$level" == "Q" ]; then
+        if [ "$level" -eq 4 ]; then
+            chamber=$(getchamber)
+            if [ -n "$chamber" ]; then
+                delchamber "$chamber"
+            else
+                echo -e "\nNo chambers installed or no chamber selected, exiting."
+            fi
+        else
+            [ "$level" -ge 1 ] && create_donotrun # Stop all brewpi procs
+            [ "$level" -ge 1 ] && cron # Clean up crontab
+            [ "$level" -ge 1 ] && syslogd # Cleanup syslogd
+            [ "$level" -ge 1 ] && quitproc # Quit all brewpi procs
+            [ "$level" -ge 1 ] && killproc # Kill all brewpi procs
+            [ "$level" -ge 1 ] && delrepo # Remove all the repos
+            [ "$level" -ge 1 ] && cleanusers # Clean up users and groups
+            [ "$level" -ge 1 ] && resetapache # Reset Apache config to stock
+            [ "$level" -ge 3 ] && delpip # Remove pip packages
+            [ "$level" -ge 3 ] && delapt # Remove apt dependencies
+            [ "$level" -ge 1 ] && delphp5 # Remove php5 packages
+            [ "$level" -ge 1 ] && delnginx # Remove nginx
+            [ "$level" -ge 1 ] && cleanapt # Clean up apt packages locally
+            [ "$level" -ge 2 ] && resethost # Reset hostname
+            [ "$level" -ge 1 ] && resetudev # Remove udev rules
+            [ "$level" -ge 2 ] && resetpwd # Reset pi password
+        fi
+        echo -e "\n***Script BrewPi Uninstaller complete.***" > /dev/tty
+    fi
 }
-
-############
-### Start the script
-############
 
 main "$@" && exit 0
