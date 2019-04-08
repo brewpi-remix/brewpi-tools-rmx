@@ -384,8 +384,10 @@ host_name() {
     oldHostName=$(hostname)
     if [ "$oldHostName" = "raspberrypi" ]; then
         while true; do
-            echo -e "\nYour hostname is set to '$oldHostName'. Do you"
-            read -rp "want to change it now, maybe to 'brewpi'? [Y/n]: " yn < /dev/tty
+            echo -e "Your hostname is set to '$oldHostName'. Each machine"
+            echo -e "on your network should have a unique name to prevent"
+            echo -e "issues. Do you want to change it now, maybe to"
+            read -rp "'brewpi'? [Y/n]: " yn < /dev/tty
             case "$yn" in
                 '' ) sethost=1; break ;;
                 [Yy]* ) sethost=1; break ;;
