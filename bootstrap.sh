@@ -359,10 +359,9 @@ settime() {
             # Probably never been set
             read -rp "Is this correct? [y/N]: " yn  < /dev/tty
             case "$yn" in
-                '' ) dpkg-reconfigure tzdata; break ;;
-                [Nn]* ) dpkg-reconfigure tzdata; break ;;
                 [Yy]* ) echo ; break ;;
-                * ) echo "Enter [y]es or [n]o." ;;
+                [Nn]* ) dpkg-reconfigure tzdata; break ;;
+                * ) dpkg-reconfigure tzdata; break ;;
             esac
         else
             # Probably been set
@@ -385,7 +384,7 @@ host_name() {
     oldHostName=$(hostname)
     if [ "$oldHostName" = "raspberrypi" ]; then
         while true; do
-            echo -e "Your hostname is set to '$oldHostName'. Each machine"
+            echo -e "\nYour hostname is set to '$oldHostName'. Each machine"
             echo -e "on your network should have a unique name to prevent"
             echo -e "issues. Do you want to change it now, maybe to"
             read -rp "'brewpi'? [Y/n]: " yn < /dev/tty
@@ -434,7 +433,7 @@ packages() {
     if [ $(("$nowTime" - "$lastUpdate")) -gt 604800 ] ; then
         echo -e "\nLast apt update was over a week ago. Running apt update before updating"
         echo -e "dependencies."
-        apt update||die
+        apt-get update -q||die
     fi
     
     # Now install any necessary packages if they are not installed
@@ -444,7 +443,7 @@ packages() {
         grep "install ok installed")
         if [ -z "$pkgOk" ]; then
             echo -e "\nInstalling '$pkg'."
-            apt install "$pkg" -y||die
+            apt-get install "$pkg" -y -q=2||die
         fi
     done
     
@@ -456,7 +455,7 @@ packages() {
     for pkg in $APTPACKAGES; do
         if [[ "$upgradesAvail" == *"$pkg"* ]]; then
             echo -e "\nUpgrading '$pkg'."
-            apt install "$pkg"||die
+            apt-get install "$pkg" -y -q=2||die
         fi
     done
 }
