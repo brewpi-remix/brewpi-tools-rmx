@@ -60,7 +60,8 @@ init() {
     GITPROJ="${PACKAGE,,}"
     GITHUB="$GITHUB/$GITPROJ.git"
     GITRAW="$GITRAW/$GITPROJ/$GITBRNCH/$THISSCRIPT"
-    GITCMD="-b $GITBRNCH --single-branch $GITHUB"
+    # GITCMD="-b $GITBRNCH --single-branch $GITHUB"
+    GITCMD="-b $GITBRNCH $GITHUB"
     # Website for network test
     GITTEST="$GITHUB"
     # Packages to be installed/checked via apt
