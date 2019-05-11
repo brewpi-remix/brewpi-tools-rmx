@@ -442,6 +442,7 @@ restoreArchive() {
             $(cd "$SCRIPTBACKUP/" || die ; cp -rf * "$SCRIPTPATH/")
             echo -e "\nRestoring data and user files to $WWWPATH/"
             $(cd "$WWWBACKUP/" || die ; cp -rf * "$WWWPATH/")
+            rm -fr "$BACKUPDIR"
             # Reset perms
             if [[ -f "$SCRIPTPATH/utils/doPerms.sh" ]]; then
                 eval "$SCRIPTPATH/utils/doPerms.sh"
