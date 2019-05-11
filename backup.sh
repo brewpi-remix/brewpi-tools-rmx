@@ -208,46 +208,6 @@ checkroot() {
 }
 
 ############
-### Provide terminal escape codes
-############
-
-term() {
-    local retval
-    # If we are colors capable, allow them
-    tput colors > /dev/null 2>&1
-    retval="$?"
-    if [ "$retval" == "0" ]; then
-        BOLD=$(tput bold)   # Start bold text
-        SMSO=$(tput smso)   # Start "standout" mode
-        RMSO=$(tput rmso)   # End "standout" mode
-        FGBLK=$(tput setaf 0)   # FG Black
-        FGRED=$(tput setaf 1)   # FG Red
-        FGGRN=$(tput setaf 2)   # FG Green
-        FGYLW=$(tput setaf 3)   # FG Yellow
-        FGBLU=$(tput setaf 4)   # FG Blue
-        FGMAG=$(tput setaf 5)   # FG Magenta
-        FGCYN=$(tput setaf 6)   # FG Cyan
-        FGWHT=$(tput setaf 7)   # FG White
-        FGRST=$(tput setaf 9)   # FG Reset to default color
-        BGBLK=$(tput setab 0)   # BG Black
-        BGRED=$(tput setab 1)   # BG Red
-        BGGRN=$(tput setab 2)   # BG Green$(tput setaf $fg_color)
-        BGYLW=$(tput setab 3)   # BG Yellow
-        BGBLU=$(tput setab 4)   # BG Blue
-        BGMAG=$(tput setab 5)   # BG Magenta
-        BGCYN=$(tput setab 6)   # BG Cyan
-        BGWHT=$(tput setab 7)   # BG White
-        BGRST=$(tput setab 9)   # BG Reset to default color
-        # Some constructs
-        # "Invisible" period (black FG/BG and a backspace)
-        DOT="$(tput sc)$(tput setaf 0)$(tput setab 0).$(tput sgr 0)$(tput rc)"
-        HHR="$(eval printf %.0s═ '{1..'"${COLUMNS:-$(tput cols)}"\}; echo)"
-        LHR="$(eval printf %.0s─ '{1..'"${COLUMNS:-$(tput cols)}"\}; echo)"
-        RESET=$(tput sgr0)  # FG/BG reset to default color
-    fi
-}
-
-############
 ### Functions to catch/display errors during execution
 ############
 
@@ -268,43 +228,6 @@ die() {
     st="$?"
     warn "$@"
     exit "$st"
-}
-
-############
-### Instructions
-############
-
-instructions() {
-    local any sp11 sp17 sp22
-    sp11="$(printf ' %.0s' {1..11})" sp17="$(printf ' %.0s' {1..17})"
-    sp22="$(printf ' %.0s' {1..22})"
-    clear
-    # Note:  $(printf ...) hack adds spaces at beg/end to support non-black BG
-    # http://patorjk.com/software/taag/#p=display&f=Small&t=BrewPi%20Backup
-    cat  > /dev/tty << EOF
-
-$DOT$BGBLK$FGYLW$sp11 ___                ___ _   ___          _                           
-$DOT$BGBLK$FGYLW$sp11| _ )_ _ _____ __ _| _ (_) | _ ) __ _ __| |___  _ _ __               
-$DOT$BGBLK$FGYLW$sp11| _ \ '_/ -_) V  V /  _/ | | _ \/ _' / _| / / || | '_ \\              
-$DOT$BGBLK$FGYLW$sp11|___/_| \___|\_/\_/|_| |_| |___/\__,_\__|_\_\\\_,_| .__/              
-$DOT$BGBLK$FGYLW$sp11                                                 |_|                 
-$DOT$BGBLK$FGGRN$HHR$RESET
-You may be presented with some choices during pogram execution. Most
-frequently you will see a 'yes or no' choice, with the default choice
-capitalized like so: [y/N]. Default means if you hit <enter> without typing
-anything, you will make the capitalized choice, i.e. hitting <enter> when you
-see [Y/n] will default to 'yes.'
-
-Yes/no choices are not case sensitive. However; passwords, system names and
-install paths are. Be aware of this. There is generally no difference between
-'y', 'yes', 'YES', 'Yes'; you get the idea. In some areas you are asked for a
-path; the default/recommended choice is in braces like: [/home/brewpi].
-Pressing <enter> without typing anything will take the default/recommended
-choice.
-
-EOF
-    read -n 1 -s -r -p  "Press any key when you are ready to proceed. " < /dev/tty
-    echo -e ""
 }
 
 ############
@@ -410,7 +333,7 @@ allowrun() {
 ############
 
 doBackup() {
-    local HOMEPATH SCRIPTPATH WWWPATH DT ARCHIVE
+    local HOMEPATH SCRIPTPATH WWWPATH DT ARCHIVE retval
     HOMEPATH="$1"
     SCRIPTPATH="$2"
     WWWPATH="$3"
@@ -418,7 +341,10 @@ doBackup() {
     SCRIPTBACKUP="$BACKUPDIR/scripts"
     WWWBACKUP="$BACKUPDIR/www"
     DT=$(date +"%Y%m%dT%H%M%S")
-    ARCHIVE="$HOMEPATH/$DT-brewpi-backup.zip"
+    ARCHIVE="$DT-brewpi-backup.zip"
+
+    # Stop BrewPi
+    killproc "$SCRIPTPATH" "$WWWPATH"
 
     # Create directories
     echo -e "\nCreating backup directories." > /dev/tty
@@ -460,12 +386,76 @@ doBackup() {
 
     # Make a zip archive
     echo -e "\nCreating zip archive from backup set." > /dev/tty
-    zip -r "$ARCHIVE" "$HOMEPATH/brewpi-backup" > /dev/null
+    retval="$(cd "$HOMEPATH" || die ; zip -r "$ARCHIVE" "brewpi-backup" > /dev/null )"
     # And remove temp files
     rm -fr "$HOMEPATH/brewpi-backup/"
 
     # Return filename
-    echo "$ARCHIVE"
+    echo -e "\nCreated archive: $ARCHIVE in $HOMEPATH."
+}
+
+############
+### Restore backup archive
+############
+
+restoreArchive() {
+    local HOMEPATH SCRIPTPATH WWWPATH i archives choice file restoreFile
+    HOMEPATH="$1"
+    SCRIPTPATH="$2"
+    WWWPATH="$3"
+    BACKUPDIR="$HOMEPATH/brewpi-backup"
+    SCRIPTBACKUP="$BACKUPDIR/scripts"
+    WWWBACKUP="$BACKUPDIR/www"
+    i=0
+    while read -r -d ''; do
+        archives+=("$REPLY")
+    done < <(find $HOMEPATH/????????T??????-brewpi-backup.zip -print0)
+    if [ -n "$archives" ]; then
+        echo -e "\nAvailable archives in $HOMEPATH:\n" > /dev/tty
+        for file in "${archives[@]}"
+        do
+            ((i++))
+            echo -e "\t[$i]\t${file##*/}" > /dev/tty
+        done
+        echo -e "" > /dev/tty
+        read -r -p  "Select a file to restore (1-$i). [$i]:  " choice < /dev/tty
+        if ((choice >= 1 && choice <= "$i")); then
+            restoreFile="${archives[(($choice - 1))]}"
+            echo -e "\nRestoring: $restoreFile" > /dev/tty
+            killproc "$SCRIPTPATH" "$WWWPATH"
+            (cd "$HOMEPATH" || die ; unzip "$restoreFile" > /dev/null )
+            # Change permissions
+            echo -e "\nFixing file permissions for $BACKUPDIR." > /dev/tty
+            chown -R "$REALUSER":"$REALUSER" "$BACKUPDIR"||warn
+            chown -R "$REALUSER":"$REALUSER" "$WWWBACKUP"||warn
+            find "$WWWBACKUP" -type d -exec chmod 2770 {} \; || warn
+            find "$WWWBACKUP" -type f -exec chmod 640 {} \;||warn
+            find "$WWWBACKUP/data" -type f -exec chmod 660 {} \;||warn
+            find "$WWWBACKUP" -type f -name "*.json" -exec chmod 660 {} \;||warn
+            chown -R "$REALUSER":"$REALUSER" "$SCRIPTBACKUP"||warn
+            find "$SCRIPTBACKUP" -type d -exec chmod 775 {} \;||warn
+            find "$SCRIPTBACKUP" -type f -exec chmod 660 {} \;||warn
+            find "$SCRIPTBACKUP" -type f -regex ".*\.\(py\|sh\)" -exec chmod 770 {} \;||warn
+            find "$SCRIPTBACKUP"/settings -type f -exec chmod 664 {} \;||warn
+            # Move files back
+            echo -e "\nRestoring data and user files to $SCRIPTPATH/"
+            $(cd "$SCRIPTBACKUP/" || die ; cp -rf * "$SCRIPTPATH/")
+            echo -e "\nRestoring data and user files to $WWWPATH/"
+            $(cd "$WWWBACKUP/" || die ; cp -rf * "$WWWPATH/")
+            # Reset perms
+            if [[ -f "$SCRIPTPATH/utils/doPerms.sh" ]]; then
+                eval "$SCRIPTPATH/utils/doPerms.sh"
+            elif [[ -f "$SCRIPTPATH/utils/fixPermissions.sh" ]]; then
+                eval "$SCRIPTPATH/utils/fixPermissions.sh"
+            else
+                echo -e "\nUnable to reset permissions on files. You must do this manually."
+            fi
+        else
+            echo -e "\nInvalid selection."
+        fi
+    else
+        echo -e "\nNo archives found."
+    fi
 }
 
 ############
@@ -473,25 +463,39 @@ doBackup() {
 ############
 
 main() {
-    local retVal
+    local retVal flielist
     [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
     log "$@" # Start logging
     init "$@" # Get constants
     arguments "$@" # Check command line arguments
     banner "starting"
     checkroot "$@" # Make sure we are su into root
-    term "$@" # Add term command constants
-    instructions "$@" # Show instructions
     WWWPATH=$(getwwwpath "$@") # Get path to WWW files
     SCRIPTPATH=$(getbrewpipath "$@") # Check path to BrewPi files
     if [ -n "$HOMEPATH" ] && [ -n "$WWWPATH" ] && [ -n "$SCRIPTPATH" ]; then
-        killproc "$SCRIPTPATH" "$WWWPATH"
-        retVal=$(doBackup "$HOMEPATH" "$SCRIPTPATH" "$WWWPATH")
-        if [ -n "$retVal" ]; then
-            echo -e "\nCreated backup in $retVal."
-        else
-            echo -e "\nUnable to create backup archive."
-        fi
+        echo -e "\nSelect your desired action:\n"
+        PS3="Please enter your choice: "
+        options=("Backup BrewPi" "Restore BrewPi" "Quit")
+        select opt in "${options[@]}"
+        do
+            case $opt in
+                "Backup BrewPi")
+                    echo -e "\nBackup selected."
+                    doBackup "$HOMEPATH" "$SCRIPTPATH" "$WWWPATH"
+                    break
+                    ;;
+                "Restore BrewPi")
+                    echo -e "\nRestore selected."
+                    restoreArchive "$HOMEPATH" "$SCRIPTPATH" "$WWWPATH"
+                    break
+                    ;;
+                "Quit")
+                    echo -e "\nExit selected."
+                    break
+                    ;;
+                *) echo -e "\nInvalid option '$REPLY.'";;
+            esac
+        done
     else
         echo -e "\nUnable to determine BrewPi environment."
     fi
