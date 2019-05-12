@@ -36,7 +36,8 @@
 # General constants
 declare THISSCRIPT TOOLPATH VERSION GITBRNCH GITURL GITPROJ PACKAGE GITPROJWWW
 declare GITPROJSCRIPT GITURLWWW GITURLSCRIPT INSTANCES WEBPATH CHAMBER VERBOSE
-declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME WEBSOURCE
+declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME WEBSOURCE GRAVITY
+declare TILTCOLOR
 # Color/character codes
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
@@ -667,20 +668,31 @@ clonewww() {
 ##########
 
 doGravity() {
-    if [ -n "$CHAMBER" ]; then
-        echo -e "\nCreating custom configurations for $CHAMBER."
-        # Create script path in custom script configuration file
-        echo "scriptPath = $SCRIPTPATH" >> "$SCRIPTPATH/settings/config.cfg"
-        # Create web path in custom script configuration file
-        echo "wwwPath = $WEBPATH" >> "$SCRIPTPATH/settings/config.cfg"
-        # Create port name in custom script configuration file
-        echo "port = /dev/$CHAMBER" >> "$SCRIPTPATH/settings/config.cfg"
-        # Create chamber name in custom script configuration file
-        echo "chamber = \"$CHAMBERNAME\"" >> "$SCRIPTPATH/settings/config.cfg"
-        # Create script path in custom web configuration file
-        echo "<?php " >> "$WEBPATH"/config_user.php
-        echo "\$scriptPath = '$SCRIPTPATH';" >> "$WEBPATH/config_user.php"
-    fi
+    local colors color i tiltColor
+    colors=("Red" "Green" "Black" "Purple" "Orange" "Blue" "Yellow" "Pink")
+    echo -e "" > /dev/tty
+    read -rp "Would you like to add a Tilt to your configuration? [y/N]: " yn  < /dev/tty
+    case "$yn" in
+        [Yy]* )
+            GRAVITY="true"
+            i=0
+            echo -e "\nWhat color Tilt are you using?\n" > /dev/tty
+            for color in "${colors[@]}";
+            do
+                ((i++))
+                echo -e "\t[$i]\t$color"
+            done
+            echo -e "" > /dev/tty
+            read -rp "Select 1-$i: " tiltColor  < /dev/tty
+            while [[ -z "$tiltColor" || "$tiltColor" -lt 1 || "$tiltColor" -gt "$i" ]]
+            do
+                read -rp "Select 1-$i: " tiltColor  < /dev/tty
+            done
+            ((tiltColor--))
+            ;;
+        * ) ;;
+    esac
+    TILTCOLOR="${colors[$tiltColor]}"
 }
 
 ###########
@@ -688,7 +700,7 @@ doGravity() {
 ##########
 
 updateconfig() {
-    if [ -n "$CHAMBER" ] || [ -n $TILT ]; then
+    if [ -n "$CHAMBER" ] || [ -n $GRAVITY ]; then
         echo -e "\nCreating custom configurations for $CHAMBER."
         # Create script path in custom script configuration file
         echo "scriptPath = $SCRIPTPATH" >> "$SCRIPTPATH/settings/config.cfg"
@@ -699,8 +711,8 @@ updateconfig() {
         # Create chamber name in custom script configuration file
         echo "chamber = \"$CHAMBERNAME\"" >> "$SCRIPTPATH/settings/config.cfg"
         # Create Tilt name in custom script configuration file
-        if [ -n $TILT ]; then
-            echo "chamber = \"$CHAMBERNAME\"" >> "$SCRIPTPATH/settings/config.cfg"
+        if [ -n $TILTCOLOR ]; then
+            echo "tiltColor = $TILTCOLOR" >> "$SCRIPTPATH/settings/config.cfg"
         fi
         # Create script path in custom web configuration file
         echo "<?php " >> "$WEBPATH"/config_user.php
@@ -746,6 +758,7 @@ fixsafari() {
 ############
 
 flash() {
+    local yn
     echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
     read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
     case "$yn" in
