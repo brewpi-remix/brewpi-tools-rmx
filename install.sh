@@ -836,7 +836,6 @@ main() {
     clonewww # Clone WWW files
     doGravity # Check if we are running a Tilt/Tiltbridge/iSpindel
     updateconfig # Update config files if non-default paths are used
-    doperms # Set script and www permissions
     dodaemon # Set up daemons
     fixsafari # Fix display bug with Safari browsers
     # Add links for multi-chamber dashboard
@@ -846,6 +845,7 @@ main() {
             eval "$SCRIPTPATH/utils/doIndex.sh"||warn
         fi
     fi
+    doperms # Set script and www permissions
     flash # Flash controller
     # Allow BrewPi to start via daemon
     rm -f "$WEBPATH/do_not_run_brewpi"
