@@ -121,6 +121,7 @@ log() {
         exit 1
     fi
     # Tee all output to log file in home directory
+    sudo -u "$realuser" touch "$homepath/$scriptname.log"
     exec > >(tee >(timestamp >> "$homepath/$scriptname.log")) 2>&1
 }
 
