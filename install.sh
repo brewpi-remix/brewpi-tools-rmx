@@ -663,10 +663,10 @@ clonewww() {
 }
 
 ###########
-### If non-default paths are used, create/update configuration files accordingly
+### See if we are running Tilt/Tiltbridge/iSpindel
 ##########
 
-updateconfig() {
+doGravity() {
     if [ -n "$CHAMBER" ]; then
         echo -e "\nCreating custom configurations for $CHAMBER."
         # Create script path in custom script configuration file
@@ -677,6 +677,31 @@ updateconfig() {
         echo "port = /dev/$CHAMBER" >> "$SCRIPTPATH/settings/config.cfg"
         # Create chamber name in custom script configuration file
         echo "chamber = \"$CHAMBERNAME\"" >> "$SCRIPTPATH/settings/config.cfg"
+        # Create script path in custom web configuration file
+        echo "<?php " >> "$WEBPATH"/config_user.php
+        echo "\$scriptPath = '$SCRIPTPATH';" >> "$WEBPATH/config_user.php"
+    fi
+}
+
+###########
+### If non-default paths are used, create/update configuration files accordingly
+##########
+
+updateconfig() {
+    if [ -n "$CHAMBER" ] || [ -n $TILT ]; then
+        echo -e "\nCreating custom configurations for $CHAMBER."
+        # Create script path in custom script configuration file
+        echo "scriptPath = $SCRIPTPATH" >> "$SCRIPTPATH/settings/config.cfg"
+        # Create web path in custom script configuration file
+        echo "wwwPath = $WEBPATH" >> "$SCRIPTPATH/settings/config.cfg"
+        # Create port name in custom script configuration file
+        echo "port = /dev/$CHAMBER" >> "$SCRIPTPATH/settings/config.cfg"
+        # Create chamber name in custom script configuration file
+        echo "chamber = \"$CHAMBERNAME\"" >> "$SCRIPTPATH/settings/config.cfg"
+        # Create Tilt name in custom script configuration file
+        if [ -n $TILT ]; then
+            echo "chamber = \"$CHAMBERNAME\"" >> "$SCRIPTPATH/settings/config.cfg"
+        fi
         # Create script path in custom web configuration file
         echo "<?php " >> "$WEBPATH"/config_user.php
         echo "\$scriptPath = '$SCRIPTPATH';" >> "$WEBPATH/config_user.php"
@@ -796,6 +821,7 @@ main() {
     getwwwpath # Get WWW install location
     backupwww # Backup anything in WWW location
     clonewww # Clone WWW files
+    doGravity # Check if we are running a Tilt/Tiltbridge/iSpindel
     updateconfig # Update config files if non-default paths are used
     doperms # Set script and www permissions
     dodaemon # Set up daemons
