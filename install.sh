@@ -700,6 +700,7 @@ doGravity() {
 ##########
 
 updateconfig() {
+    local port
     if [ -n "$CHAMBER" ] || [ -n $GRAVITY ]; then
         echo -e "\nCreating custom configurations for $CHAMBER."
         # Create script path in custom script configuration file
@@ -707,7 +708,12 @@ updateconfig() {
         # Create web path in custom script configuration file
         echo "wwwPath = $WEBPATH" >> "$SCRIPTPATH/settings/config.cfg"
         # Create port name in custom script configuration file
-        echo "port = /dev/$CHAMBER" >> "$SCRIPTPATH/settings/config.cfg"
+        if [ -z "$CHAMBER" ]; then
+            port="auto"
+        else
+            port="/dev/$CHAMBER"
+        fi
+        echo "port = $port" >> "$SCRIPTPATH/settings/config.cfg"
         # Create chamber name in custom script configuration file
         echo "chamber = \"$CHAMBERNAME\"" >> "$SCRIPTPATH/settings/config.cfg"
         # Create Tilt name in custom script configuration file
