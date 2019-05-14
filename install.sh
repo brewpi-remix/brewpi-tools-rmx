@@ -747,6 +747,11 @@ dodaemon() {
     else
         eval "$SCRIPTPATH/utils/doDaemon.sh"||die
     fi
+    if [ -n "$CHAMBER" ]; then
+        systemctl stop "$CHAMBER"
+    else
+        systemctl stop brewpi
+    fi
 }
 
 ############
@@ -861,6 +866,11 @@ main() {
     flash # Flash controller
     # Allow BrewPi to start via daemon
     rm -f "$WEBPATH/do_not_run_brewpi"
+    if [ -n "$CHAMBER" ]; then
+        systemctl start "$CHAMBER"
+    else
+        systemctl start brewpi
+    fi
     complete # Cleanup and display instructions
 }
 
