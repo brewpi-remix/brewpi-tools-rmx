@@ -758,11 +758,17 @@ fixsafari() {
 ############
 
 flash() {
-    local yn
+    local yn branch
+    branch="${GITBRNCH,,}"
+    if [ ! "$branch" == "master" ]; then
+        branch="--beta"
+    else
+        branch=""
+    fi
     echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
     read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
     case "$yn" in
-        [Yy]* ) eval "python -u $SCRIPTPATH/utils/updateFirmware.py" ;;
+        [Yy]* ) eval "python -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;
         * ) ;;
     esac
 }
