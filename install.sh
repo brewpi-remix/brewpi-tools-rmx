@@ -742,7 +742,10 @@ doperms() {
 dodaemon() {
     touch "$WEBPATH/do_not_run_brewpi" # make sure BrewPi does not start yet
     chmod +x "$SCRIPTPATH/utils/doDaemon.sh"
-    if [ -n "$SOURCE" ]; then
+    # Get wireless lan device name
+    WLAN="$(iw dev | awk '$1=="Interface"{print $2}')"
+    # If no WLAN or if we are cloning from a local git
+    if [ -n "$SOURCE" ] || [ -z $WLAN ]; then
         eval "$SCRIPTPATH/utils/doDaemon.sh -nowifi"||die
     else
         eval "$SCRIPTPATH/utils/doDaemon.sh"||die
