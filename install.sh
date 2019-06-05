@@ -577,12 +577,15 @@ clonescripts() {
     rm -fr "$SCRIPTPATH" >/dev/null 2>&1
     if [ ! -d "$SCRIPTPATH" ]; then mkdir -p "$SCRIPTPATH"; fi
     chown -R brewpi:brewpi "$SCRIPTPATH"||die
-    #eval "sudo -u brewpi git clone -b $GITBRNCH --single-branch $SCRIPTSOURCE $SCRIPTPATH"||die
-    eval "sudo -u brewpi git clone -b $GITBRNCH $SCRIPTSOURCE $SCRIPTPATH"||die
     if [ -n "$SOURCE" ]; then
+        # Clone from local
+        eval "sudo -u brewpi git clone -b $GITBRNCH $scriptSource $scriptPath"||die
         # Update $SCRIPTPATH with git origin from $SCRIPTSOURCE
         sourceURL="$(cd "$SCRIPTSOURCE" && git config --get remote.origin.url)"
         (cd "$SCRIPTPATH" && git remote set-url origin "$sourceURL")
+    else
+        # Clone from GitHub
+        eval "sudo -u brewpi git clone -b $GITBRNCH --single-branch $GITURLSCRIPT $scriptPath"||die
     fi
 }
 
