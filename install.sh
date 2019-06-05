@@ -585,7 +585,7 @@ clonescripts() {
         (cd "$SCRIPTPATH" && git remote set-url origin "$sourceURL")
     else
         # Clone from GitHub
-        eval "sudo -u brewpi git clone -b $GITBRNCH --single-branch $GITURLSCRIPT $scriptPath"||die
+        eval "sudo -u brewpi git clone -b $GITBRNCH $GITURLSCRIPT $SCRIPTPATH"||die
     fi
 }
 
