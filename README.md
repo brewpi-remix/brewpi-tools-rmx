@@ -1,4 +1,3 @@
-
 # ![BrewPi Legacy Remix Logo](https://raw.githubusercontent.com/lbussy/brewpi-www-rmx/master/images/brewpi_logo.png)
 *[@LBussy](https://github.com/lbussy)'s forks of the original [BrewPi Project](https://github.com/BrewPi)*.  This project has a new website, please also visit https://www/brewpiremix.com.  All code will remain here, the website is just to make it easier for me to keep current information available.
 
@@ -13,21 +12,21 @@ Check [Assumptions and Proceedings](#assumptions-proceedings) before moving forw
 
 To begin installing BrewPi, you need only issue the following command in a [terminal window](https://www.raspberrypi.org/documentation/usage/terminal/) (or via [ssh](https://www.raspberrypi.org/documentation/remote-access/ssh/)) on your Internet-connected Raspberry Pi:
 
-`curl -L raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/bootstrap.sh | sudo bash`
-
-*or the much shorter:*
-
 `curl -L install.brewpiremix.com | sudo bash`
+
+Or, if you must know and type a longer URL (all one line):
+
+`curl -L raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/bootstrap.sh | sudo bash`
 
 These are the same links, I merely have created a redirect on the [BrewPi Remix domain](https://www.brewpiremix.com) for your convenience to make it shorter and easier to remember.
 
 If you have a broken installation and/or need to run the uninstaller without BrewPi being installed correctly for some reason, you may use (all one line):
 
-`curl -L https://raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/uninstall.sh | sudo bash`
-
-*or*
-
 `curl -L uninstall.brewpiremix.com | sudo bash`
+
+*or:*
+
+`curl -L https://raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/uninstall.sh | sudo bash`
 
 Please read the notes in the table below before running the uninstaller.
 
@@ -61,6 +60,7 @@ In order to make this work well, I have to make some assumptions about the envir
  - I've assumed throughout that this is the only function the Pi will handle.  This is not unique to this remix project.  Some other projects use things (like nginx for example) which have known incompatibilities with packages used by BrewPi. It makes sense when you think about it (having two packages both trying to be the web server on the system) but it gets confusing the first time you hit the errors.
  - While I'm semi-paranoid and I have worked on some security related improvements, this will **not** create a BrewPi which is secure enough to connect to *from* the Internet.  There's a whole host of reasons for this, but please, do not do it unless you know what you are doing.  I suggest you consider [Dataplicity](https://www.dataplicity.com) if you really need/want to do this.  If I get bored I might add some thought to this but in general I don't think a poor Raspberry Pi needs to be connected to all those bad actors out there.
  - This has been developed and tested using the default user 'pi' which by default has password-less `sudo` rights.  This is how Raspbian is shipped, and this is how I'll continue to test it.  If you know enough to change or disagree with any of this, you know enough to figure out why this process may not work for you.  If you simply MUST change things, I suggest you do it after you get BrewPi Remix running. As I go along I have tried to remove hard dependencies on the pi account for instance, but not all paths have been tested.
+ - At the very least, you MUST NOT be logged in as (or have used `su` to) `root`.  The script needs to be a real user, not root, and that user needs to have sudo access.  I can't emphasize this enough: You should NEVER log in as root unless there's simply no way around it.  I will not change this; I think it's bad enough that `sudo` has to be used because of the package installs but that's a problem for a different day. 
  - You need for your Pi to have access *to* the Internet.  I think this is obvious, but the Pi needs to access GitHub and standard Raspbian repositories to download code.  Generally speaking, plugging your Pi into your home network with an Ethernet cable will do this without any configuration necessary.  Attaching to wireless will take a little more work that's not in scope of this project (but I do have [another project](https://github.com/lbussy/headless-pi) that will help.)
  - This has been developed and tested on a bone-stock Raspbian setup, with no user or local customization implemented.  The only things that has been tested which do not inherently work on a fresh setup is wireless connectivity and ssh over wireless.  The bootstrap script will:
    1. Check to make sure the script has executed with `sudo` to `root` (this is how the [instructions above](#getting-started) will work if you follow them)
@@ -116,10 +116,10 @@ Cheers!
 
 # FAQ:
 
- - "*What about some other scenario, when will you test that?*" - Maybe never.  This is not a commercial venture; chances are once I'm "done enough" making it work on the target system, I'll be done for good.  The original/current [BrewPi](https://www.brewpi.com) is a far more capable system, with a wider adoption base, and excellent support.  That's probably a better choice for you if you want to venture from this path I've created for you.
- - "*Do you plan to create/implement/merge {insert cool idea here} functionality?*" - No I do not.  I'm not a software developer by trade, and this is not a commercial venture so there's probably little reason to implement something I'll never use.  To be embarrassingly and brutally honest, I hardly get a chance to even brew anymore.  I started this initially to make it easier for a friend of mine to get going again after his Pi ate his SD card.  I'll repeat: The original/current [BrewPi](https://www.brewpi.com) is a far more capable system, with a wider adoption base, and excellent support.  That's probably a better choice for you if you want expanded capabilities.
- - "*Will you accept pull requests*?" - Maybe.  Here's the honest truth however:  Not being a software developer by trade means that working with typical software development tools in a collaborative environment like GitHub is new to me.  I am probably doing this wrong/poorly and in a way that doesn't easily allow such collaboration.  If you're willing to work with someone who does not have these skills in order that you may contribute your own work, it's likely best to [contact me directly](https://github.com/lbussy/) before you start so we can work out the details to avoid frustration for both of us (mostly you.)
- - "*What about older versions of the Pi or Raspbian Stretch, etc.?*" - I've no reason to believe older versions will not work, but they've not been tested.  In theory it should work fine, but at some point, on a platform like Raspberry Pi, you just need to say "flash a new card and get over it."  These are not desktop machines that accumulate "stuff" over the years.  If you have a Pi that's on it's original SD card for more than a couple years you have a rare bird indeed.  I'd be more than happy to discuss why it didn't work if you run into an issue, it would be interesting I think, but it might not be something I choose to address.
+ - "*What about some other scenario, when will you test that?*" - Maybe never.  This is not a commercial venture; chances are once I'm "done enough" making it work on the target system, I'll be done for good.  Who knows though.  The original/current [BrewPi](https://www.brewpi.com) is a far more capable system, with a wider adoption base, and excellent support.  That's probably a better choice for you if you want to venture from this path I've created for you.
+ - "*Do you plan to create/implement/merge {insert cool idea here} functionality?*" - Probably not.  I'm not a software developer by trade, and this is not a commercial venture so there's probably little reason to implement something I'll never use.  If you can convince me I'd use it, maybe, or you can do it and we can talk about merging it in.  To be embarrassingly and brutally honest, I hardly get a chance to even brew anymore.  I started this initially to make it easier for a friend of mine to get going again after his Pi ate his SD card.  I'll repeat: The original/current [BrewPi](https://www.brewpi.com) is a far more capable system, with a wider adoption base, and excellent support.  That's probably a better choice for you if you want expanded capabilities.
+ - "*Will you accept pull requests*?" - Maybe.  Here's the honest truth however:  Not being a software developer by trade means that working with typical software development tools in a collaborative environment like GitHub is somewhat alien to me.  If you're willing to work with someone who does not have these skills in order that you may contribute your own work, it's likely best to [contact me directly](https://github.com/lbussy/) before you start so we can work out the details to avoid frustration for both of us (mostly you.)
+ - "*What about older versions of the Pi or Raspbian Stretch, etc.?*" - I've no reason to believe older versions will not work, but they've not been tested.  In theory it should work fine, but at some point, on a platform like Raspberry Pi, you just need to say "flash a new card and get over it."  These are not desktop machines that accumulate "stuff" over the years which you want to keep, and there's no cost to downloading the new version.  If you have a Pi that's on it's original SD card for more than a couple years you have a rare bird indeed.  I'd be more than happy to discuss why it didn't work if you run into an issue, it would be interesting I think, but it might not be something I choose to address.
 
 # Known Issues
 You can view or log new issues via the links below:
@@ -132,6 +132,3 @@ You can view or log new issues via the links below:
 | BrewPi-Firmware-RMX | Arduino firmware | [Issues List](https://github.com/lbussy/brewpi-firmware-rmx/issues) |
 
 Back up to [Getting Started](#getting-started).
-<!--stackedit_data:
-eyJoaXN0b3J5IjpbMTc0Nzc1MjgwM119
--->
