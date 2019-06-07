@@ -187,6 +187,11 @@ arguments() {
 checkroot() {
     local retval shadow
     if [ -n "$SUDO_USER" ]; then REALUSER="$SUDO_USER"; else REALUSER=$(whoami); fi
+    if [ "$REALUSER" == "root" ]; then
+        # We're not gonna run as the root user
+        echo -e "\nThis script may not be run from the root account, use 'sudo' instead."
+        exit 1
+    fi
     ### Check if we have root privs to run
     if [[ "$EUID" -ne 0 ]]; then
         sudo -n true 2> /dev/null
