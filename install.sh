@@ -609,8 +609,8 @@ getwwwpath() {
     if [ -n "$WEBPATH" ]; then
         echo -e "\nFound $WEBPATH in /etc/apache2/sites-enabled/000-default*."
     else
-        echo "Something went wrong searching for /etc/apache2/sites-enabled/000-default*."
-        echo "Fix that and come back to try again."
+        echo -e "\nSomething went wrong searching for /etc/apache2/sites-enabled/000-default*."
+        echo -e "Fix that and come back to try again."
         exit 1
     fi
     # Use chamber name if configured
