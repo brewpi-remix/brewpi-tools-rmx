@@ -1,4 +1,6 @@
 #!/bin/bash
+# shellcheck disable=SC2119
+# shellcheck disable=SC2034
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 #
@@ -70,6 +72,7 @@ clean() {
     # If we lead the line with our semaphore, return a blank line
     if [[ "$input" == "$dot"* ]]; then echo ""; return; fi
     # Strip color codes
+    # shellcheck disable=SC2001
     input="$(echo "$input" | sed 's,\x1B[[(][0-9;]*[a-zA-Z],,g')"
     # Strip beginning spaces
     input="$(printf "%s" "${input#"${input%%[![:space:]]*}"}")"
@@ -117,6 +120,7 @@ init() {
     if [ -x "$(command -v git)" ] && [ -d .git ]; then
         VERSION="$(git describe --tags "$(git rev-list --tags --max-count=1)")"
         COMMIT="$(git -C "$TOOLPATH" log --oneline -n1)"
+        # shellcheck disable=SC2063
         GITBRNCH="$(git branch | grep \* | cut -d ' ' -f2)"
         GITURL="$(git config --get remote.origin.url)"
         GITPROJ="$(basename "$GITURL")"
@@ -271,6 +275,7 @@ warn() {
     echo -e "Setup NOT completed.\n" > /dev/tty
 }
 
+# shellcheck disable=SC2120
 die() {
     local st
     st="$?"
@@ -376,11 +381,13 @@ getscriptpath() {
     if [ -n "${INSTANCES[*]}" ]; then
         # We've already got BrewPi installed in multi-chamber
         echo -e "\nThe following chambers are already configured on this Pi:\n"
+        # shellcheck disable=SC2128
         for instance in $INSTANCES
         do
             echo -e "\t$(dirname "${instance}")"
         done
         # Get $SOURCE, $SCRIPTSOURCE and $WEBSOURCE for git clone
+        # shellcheck disable=SC2128,SC2086
         set -- $INSTANCES
         SCRIPTSOURCE=$(dirname "${1}")
         SOURCE=$(basename "$SCRIPTSOURCE")
@@ -396,13 +403,13 @@ getscriptpath() {
         echo -e "underscore.  Alpha characters will be converted to lowercase.  Do not enter a"
         echo -e "full path, enter the name to be appended to the standard paths.\n"
         read -rp "Enter chamber name: " chamber < /dev/tty
-        chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
+        chamber=${chamber//[^[:digit:][:alpha:].-]/_}
         chamber="${chamber,,}"
         while [ -z "$chamber" ] || [ "$(checkchamber "$chamber")" == false ]
         do
             echo -e "\nError: Device/directory name blank or already exists."
             read -rp "Enter chamber name: " chamber < /dev/tty
-            chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
+            chamber=${chamber//[^[:digit:][:alpha:].-]/_}
             chamber="${chamber,,}"
         done
         CHAMBER="$chamber"
@@ -420,7 +427,7 @@ getscriptpath() {
         if [ -z "$chamber" ]; then
             SCRIPTPATH="/home/brewpi"
         else
-            chamber="$(echo "$chamber" | sed -e 's/[^A-Za-z0-9._-]/_/g')"
+            chamber=${chamber//[^[:digit:][:alpha:].-]/_}
             CHAMBER="${chamber,,}"
             SCRIPTPATH="/home/brewpi/$CHAMBER"
         fi
@@ -435,7 +442,7 @@ getscriptpath() {
         if [ -z "$chamberName" ]; then
             CHAMBERNAME="$CHAMBER"
         else
-            CHAMBERNAME="$(echo "$chamberName" | sed -e 's/[^A-Za-z0-9._-\ ]/_/g')"
+            CHAMBERNAME=${chamberName//[^[:digit:][:alpha:][:space:].-]/_}
         fi
         echo -e "\nUsing '$CHAMBERNAME' for chamber name."
     fi
@@ -579,7 +586,7 @@ clonescripts() {
     chown -R brewpi:brewpi "$SCRIPTPATH"||die
     if [ -n "$SOURCE" ]; then
         # Clone from local
-        eval "sudo -u brewpi git clone -b $GITBRNCH $scriptSource $scriptPath"||die
+        eval "sudo -u brewpi git clone -b $GITBRNCH $SCRIPTSOURCE $SCRIPTPATH"||die
         # Update $SCRIPTPATH with git origin from $SCRIPTSOURCE
         sourceURL="$(cd "$SCRIPTSOURCE" && git config --get remote.origin.url)"
         (cd "$SCRIPTPATH" && git remote set-url origin "$sourceURL")
@@ -702,7 +709,7 @@ doGravity() {
 
 updateconfig() {
     local port
-    if [ -n "$CHAMBER" ] || [ -n $GRAVITY ]; then
+    if [ -n "$CHAMBER" ] || [ -n "$GRAVITY" ]; then
         echo -e "\nCreating custom configurations for $CHAMBER."
         # Create script path in custom script configuration file
         echo "scriptPath = $SCRIPTPATH" >> "$SCRIPTPATH/settings/config.cfg"
@@ -718,7 +725,7 @@ updateconfig() {
         # Create chamber name in custom script configuration file
         echo "chamber = \"$CHAMBERNAME\"" >> "$SCRIPTPATH/settings/config.cfg"
         # Create Tilt name in custom script configuration file
-        if [ -n $TILTCOLOR ]; then
+        if [ -n "$TILTCOLOR" ]; then
             echo "tiltColor = $TILTCOLOR" >> "$SCRIPTPATH/settings/config.cfg"
         fi
         # Create script path in custom web configuration file
@@ -746,7 +753,7 @@ dodaemon() {
     # Get wireless lan device name
     WLAN="$(iw dev | awk '$1=="Interface"{print $2}')"
     # If no WLAN or if we are cloning from a local git
-    if [ -n "$SOURCE" ] || [ -z $WLAN ]; then
+    if [ -n "$SOURCE" ] || [ -z "$WLAN" ]; then
         eval "$SCRIPTPATH/utils/doDaemon.sh -nowifi"||die
     else
         eval "$SCRIPTPATH/utils/doDaemon.sh"||die
