@@ -38,11 +38,13 @@
 # General constants
 declare THISSCRIPT TOOLPATH VERSION GITBRNCH GITURL GITPROJ PACKAGE GITPROJWWW
 declare GITPROJSCRIPT GITURLWWW GITURLSCRIPT INSTANCES WEBPATH CHAMBER VERBOSE
-declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME WEBSOURCE GRAVITY
-declare TILTCOLOR
+declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME WEBSOURCE
+declare TILTCOLOR TILTCOLORS
 # Color/character codes
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
+# Tilt colors
+TILTCOLORS=("Red" "Green" "Black" "Purple" "Orange" "Blue" "Yellow" "Pink")
 
 ############
 ### Handle logging
@@ -381,7 +383,6 @@ getscriptpath() {
     if [ -n "${INSTANCES[*]}" ]; then
         # We've already got BrewPi installed in multi-chamber
         echo -e "\nThe following chambers are already configured on this Pi:\n"
-        # shellcheck disable=SC2128
         for instance in $INSTANCES
         do
             echo -e "\t$(dirname "${instance}")"
@@ -424,10 +425,10 @@ getscriptpath() {
         echo -e "Do not enter a full path, enter the name to be appended to the standard path.\n"
         echo -e "Enter device/directory name or hit enter to accept the defaults."
         read -rp "[<Enter> = Single chamber only]:  " chamber < /dev/tty
+        chamber=${chamber//[^[:digit:][:alpha:].-]/_}
         if [ -z "$chamber" ]; then
             SCRIPTPATH="/home/brewpi"
         else
-            chamber=${chamber//[^[:digit:][:alpha:].-]/_}
             CHAMBER="${chamber,,}"
             SCRIPTPATH="/home/brewpi/$CHAMBER"
         fi
@@ -439,10 +440,11 @@ getscriptpath() {
         echo -e "Capital letters may be used, however any character entered that is not [A-Z],"
         echo -e "[a-z], [0-9], - or _ will be replaced with an underscore. Spaces are allowed.\n"
         read -rp "[<Enter> = $CHAMBER]: " chamberName < /dev/tty
+        chamberName=${chamberName//[^[:digit:][:alpha:][:space:].-]/_}
         if [ -z "$chamberName" ]; then
             CHAMBERNAME="$CHAMBER"
         else
-            CHAMBERNAME=${chamberName//[^[:digit:][:alpha:][:space:].-]/_}
+            CHAMBERNAME="$chamberName"
         fi
         echo -e "\nUsing '$CHAMBERNAME' for chamber name."
     fi
@@ -461,7 +463,7 @@ doport(){
         rules="/etc/udev/rules.d/99-arduino.rules"
         devices=$(ls /dev/ttyACM* /dev/ttyUSB* 2> /dev/null)
         # Get a list of USB TTY devices
-        for device in $devices; do
+        for device in "${devices[@]}"; do
             declare ok=false
             # Walk device tree | awk out the stanza with the last device in chain
             board=$(udevadm info --a -n "$device" | awk -v RS='' '/ATTRS{maxchild}=="0"/')
@@ -489,6 +491,7 @@ doport(){
             echo
             while :; do
                 read -rp "Please select an Arduino [0-$count] to associate with this chamber:  " board < /dev/tty
+                board=${board//[^[:digit:].-]/}
                 [[ "$board" =~ ^[0-"$count"]+$ ]] || { echo "Please enter a valid choice."; continue; }
                 if ((board >= 0 && board <= count)); then
                     break
@@ -532,7 +535,7 @@ doport(){
             echo -e "must manually create a rule for your device to match the configuration file."
             echo -e "\n\tConfiguration File: $SCRIPTPATH/settings/config.cnf"
             echo -e "\tDevice:             /dev/$CHAMBER\n"
-            read -n 1 -s -r -p "Press any key to continue. "  < /dev/tty
+            read -n 1 -s -r -p "Press any key to continue. " < /dev/tty
             echo -e ""
         fi
     else
@@ -676,31 +679,34 @@ clonewww() {
 ##########
 
 doGravity() {
-    local colors color i tiltColor
-    colors=("Red" "Green" "Black" "Purple" "Orange" "Blue" "Yellow" "Pink")
+    local color i tiltColor
     echo -e "" > /dev/tty
     read -rp "Would you like to add a Tilt to your configuration? [y/N]: " yn  < /dev/tty
     case "$yn" in
         [Yy]* )
-            GRAVITY="true"
             i=0
-            echo -e "\nWhat color Tilt are you using?\n" > /dev/tty
-            for color in "${colors[@]}";
+            echo -e "\nWhat color Tilt would you like to configure?\n" > /dev/tty
+            for color in "${TILTCOLORS[@]}"
             do
                 ((i++))
-                echo -e "\t[$i]\t$color"
+                echo -e "\t[$i] $color" > /dev/tty
             done
             echo -e "" > /dev/tty
-            read -rp "Select 1-$i: " tiltColor  < /dev/tty
-            while [[ -z "$tiltColor" || "$tiltColor" -lt 1 || "$tiltColor" -gt "$i" ]]
+            read -rp "Select 1-$i or '0' to skip: " tiltColor  < /dev/tty
+            tiltColor=${tiltColor//[^[:digit:].-]/}
+            while [[ ! "$tiltColor" =~ ^[0-"$i"]+$ ]]
+            # while [[ -z "$tiltColor" || "$tiltColor" -lt 1 || "$tiltColor" -gt "$i" ]]
             do
-                read -rp "Select 1-$i: " tiltColor  < /dev/tty
+                read -rp "Invalid selection, select 1-$i or '0' to skip: " tiltColor  < /dev/tty
+                tiltColor=${tiltColor//[^[:digit:].-]/}
             done
-            ((tiltColor--))
+            if [[ "$tiltColor" -ne 0 ]]; then
+                ((tiltColor--))
+                TILTCOLOR="${TILTCOLORS[$tiltColor]}"
+            fi
             ;;
         * ) ;;
     esac
-    TILTCOLOR="${colors[$tiltColor]}"
 }
 
 ###########
@@ -709,7 +715,7 @@ doGravity() {
 
 updateconfig() {
     local port
-    if [ -n "$CHAMBER" ] || [ -n "$GRAVITY" ]; then
+    if [ -n "$CHAMBER" ] || [ -n "$TILTCOLOR" ]; then
         echo -e "\nCreating custom configurations for $CHAMBER."
         # Create script path in custom script configuration file
         echo "scriptPath = $SCRIPTPATH" >> "$SCRIPTPATH/settings/config.cfg"
@@ -789,6 +795,7 @@ flash() {
     fi
     echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
     read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
+    yn=${yn//[^[:alpha:].-]/}
     case "$yn" in
         [Yy]* ) eval "python -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;
         * ) ;;
