@@ -53,8 +53,8 @@ init() {
     VERSION="0.5.2.1"
     CMDLINE="curl -L devinstall.brewpiremix.com | sudo bash"
     # These should stay the same
-    GITRAW="https://raw.githubusercontent.com/lbussy"
-    GITHUB="https://github.com/lbussy"
+    GITRAW="https://raw.githubusercontent.com/brewpi-remix"
+    GITHUB="https://github.com/brewpi-remix"
     # Cobble together some strings
     SCRIPTNAME="${THISSCRIPT%%.*}"
     GITPROJ="${PACKAGE,,}"

@@ -1,4 +1,4 @@
-# ![BrewPi Legacy Remix Logo](https://raw.githubusercontent.com/lbussy/brewpi-www-rmx/master/images/brewpi_logo.png)
+# ![BrewPi Legacy Remix Logo](https://raw.githubusercontent.com/brewpi-remix/brewpi-www-rmx/master/images/brewpi_logo.png)
 *[@LBussy](https://github.com/lbussy)'s forks of the original [BrewPi Project](https://github.com/BrewPi)*.  This project has a new website, please also visit https://www.brewpiremix.com.  All code will remain here, the website is just to make it easier for me to keep current information available.
 
 This project contains the tools to setup, update and configure BrewPi Legacy Remix which runs on a [Raspberry Pi](https://www.raspberrypi.org/), communicating with an [Arduino](https://www.arduino.cc/en/guide/introduction).  Despite the original creators no longer actively supporting BrewPi on Arduino, and despite the Arduino being arguably one of the least capable [controllers](https://en.wikipedia.org/wiki/Controller_(computing)) on the market, BrewPi on Arduino still has an amazing following among home brewers.  As of March 9, 2019 there are [7628 posts in this thread](https://www.homebrewtalk.com/forum/threads/howto-make-a-brewpi-fermentation-controller-for-cheap.466106/) on [HomeBrewTalk.com](https://www.homebrewtalk.com/) since March 19, 2014 when [@FuzzeWuzze](https://www.homebrewtalk.com/forum/members/fuzzewuzze.123340/) started the thread.
@@ -16,7 +16,7 @@ To begin installing BrewPi, you need only issue the following command in a [term
 
 Or, if you must know and type a longer URL (all one line):
 
-`curl -L raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/bootstrap.sh | sudo bash`
+`curl -L raw.githubusercontent.com/brewpi-remix/brewpi-tools-rmx/master/bootstrap.sh | sudo bash`
 
 These are the same links, I merely have created a redirect on the [BrewPi Remix domain](https://www.brewpiremix.com) for your convenience to make it shorter and easier to remember.
 
@@ -26,13 +26,13 @@ If you have a broken installation and/or need to run the uninstaller without Bre
 
 *or:*
 
-`curl -L https://raw.githubusercontent.com/lbussy/brewpi-tools-rmx/master/uninstall.sh | sudo bash`
+`curl -L https://raw.githubusercontent.com/brewpi-remix/brewpi-tools-rmx/master/uninstall.sh | sudo bash`
 
 Please read the notes in the table below before running the uninstaller.
 
 Security-conscious or just plain curious folks will want to read this [security note](#security-note) before proceeding.
  
-When the installation script completes, you will have a working BrewPi Legacy setup.  I'm a little amazed that the work I've done is summed up in one "run this", but if I've done my work right that should be it. Do [let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) if you find differently.  As my online friend [Thorrak](https://github.com/thorrak) tells me, anything different in the user experience is a bug.
+When the installation script completes, you will have a working BrewPi Legacy setup.  I'm a little amazed that the work I've done is summed up in one "run this", but if I've done my work right that should be it. Do [let me know](https://github.com/brewpi-remix/brewpi-tools-rmx/issues) if you find differently.  As my online friend [Thorrak](https://github.com/thorrak) tells me, anything different in the user experience is a bug.
 
 # Scripts in this Repo
 
@@ -74,7 +74,7 @@ In order to make this work well, I have to make some assumptions about the envir
    10. Clone the BrewPi Tools RMX into the `~/brewpi-tools-rmx` folder
    11. Execute install.sh which is responsible for the rest of the setup
 
-I am certain that someone will find an important assumption I did not list here.  We'll see how long that takes.  [Let me know](https://github.com/lbussy/brewpi-tools-rmx/issues) what you find.
+I am certain that someone will find an important assumption I did not list here.  We'll see how long that takes.  [Let me know](https://github.com/brewpi-remix/brewpi-tools-rmx/issues) what you find.
 
 # Credits
 These scripts were originally a part of [brewpi-tools](https://github.com/BrewPi/brewpi-tools), an installer for the [BrewPi project](https://github.com/BrewPi).  My original intent was to simply make the Legacy branch of BrewPi work again since the original install scripts called for PHP5 explicitly and that's no longer available from the regular repositories.  The project grew from there to address some other opportunities to improve the original, as well as to make it easier for beginners to get started.
@@ -85,10 +85,10 @@ All the original [BrewPi](https://github.com/BrewPi) projects' Legacy branches h
 
 Original Repository | Description | Remix Repository
 ------------ | ------------- | ------------- 
-[brewpi-tools](https://github.com/BrewPi/brewpi-tools) | The original version of this tools repository. | [BrewPi Tools Remix](https://github.com/lbussy/brewpi-tools-rmx)
-[brewpi-script](https://github.com/BrewPi/brewpi-script) | Scripts which log the data, monitor the temperature profile and communicate with the BrewPi slave and the web server. | [BrewPi Script Remix](https://github.com/lbussy/brewpi-script-rmx)
-[firmware](https://github.com/BrewPi/firmware) | Temperature control firmware for the BrewPi Arduino. | [BrewPi Firmware Remix](https://github.com/lbussy/brewpi-firmware-rmx)
-[brewpi-www](https://github.com/BrewPi/brewpi-www) | The BrewPi web interface which communicates with the Python script, which will in turn talk to the Arduino - and vice-versa. | [BrewPi WWW Remix](https://github.com/lbussy/brewpi-www-rmx)
+[brewpi-tools](https://github.com/BrewPi/brewpi-tools) | The original version of this tools repository. | [BrewPi Tools Remix](https://github.com/brewpi-remix/brewpi-tools-rmx)
+[brewpi-script](https://github.com/BrewPi/brewpi-script) | Scripts which log the data, monitor the temperature profile and communicate with the BrewPi slave and the web server. | [BrewPi Script Remix](https://github.com/brewpi-remix/brewpi-script-rmx)
+[firmware](https://github.com/BrewPi/firmware) | Temperature control firmware for the BrewPi Arduino. | [BrewPi Firmware Remix](https://github.com/brewpi-remix/brewpi-firmware-rmx)
+[brewpi-www](https://github.com/BrewPi/brewpi-www) | The BrewPi web interface which communicates with the Python script, which will in turn talk to the Arduino - and vice-versa. | [BrewPi WWW Remix](https://github.com/brewpi-remix/brewpi-www-rmx)
 
 # Postscript
 This project takes us back to the days when Arduino was King, firmware v2.10 was as good as it got, and the world was a happy place.  I hope someone enjoys it.
@@ -108,7 +108,7 @@ The lesson to be learned from this is if you are going to copy/paste a command f
 
 Wait.  Now you don't know if you should trust the setup command I provided?  I'm shedding a happy tear.  Security and the Internet is a rabbit hole filled with (justifiable) paranoia and bad actors.  Your choices here however are:
 1. Trust me and run it
-2. Examine [that script](https://github.com/lbussy/brewpi-tools-rmx/blob/master/bootstrap.sh) carefully and make sure it does nothing bad.  Then, since the first one executes as root you need to follow that to the [next one](https://github.com/lbussy/brewpi-tools-rmx/blob/master/install.sh) because it inherits that security construct.  Ultimately you can drive yourself crazy when you realize the implications, or just accept that whenever you install free code from the Internet you take your chances.  This is the case with any software, not just BrewPi.
+2. Examine [that script](https://github.com/brewpi-remix/brewpi-tools-rmx/blob/master/bootstrap.sh) carefully and make sure it does nothing bad.  Then, since the first one executes as root you need to follow that to the [next one](https://github.com/brewpi-remix/brewpi-tools-rmx/blob/master/install.sh) because it inherits that security construct.  Ultimately you can drive yourself crazy when you realize the implications, or just accept that whenever you install free code from the Internet you take your chances.  This is the case with any software, not just BrewPi.
 
 At some point I hope to list out the manual install steps necessary to replicate this series of automated steps.  That's quite frankly not a high priority for me since the goal here is to make BrewPi Legacy Remix available to every-day people.  Those of you who would choose the manual steps can probably figure it all out anyway.
 
@@ -126,9 +126,9 @@ You can view or log new issues via the links below:
 
 | Project | Name | Known Issues |
 | ------------ | ------------- | ------------- |
-| BrewPi-Tools-RMX | Install and uninstall tools | [Issues List](https://github.com/lbussy/brewpi-tools-rmx/issues) |
-| BrewPi-Script-RMX | Python scripts supporting BrewPi website | [Issues List](https://github.com/lbussy/brewpi-script-rmx/issues) |
-| BrewPi-WWW-RMX | Website files | [Issues List](https://github.com/lbussy/brewpi-www-rmx/issues) |
-| BrewPi-Firmware-RMX | Arduino firmware | [Issues List](https://github.com/lbussy/brewpi-firmware-rmx/issues) |
+| BrewPi-Tools-RMX | Install and uninstall tools | [Issues List](https://github.com/brewpi-remix/brewpi-tools-rmx/issues) |
+| BrewPi-Script-RMX | Python scripts supporting BrewPi website | [Issues List](https://github.com/brewpi-remix/brewpi-script-rmx/issues) |
+| BrewPi-WWW-RMX | Website files | [Issues List](https://github.com/brewpi-remix/brewpi-www-rmx/issues) |
+| BrewPi-Firmware-RMX | Arduino firmware | [Issues List](https://github.com/brewpi-remix/brewpi-firmware-rmx/issues) |
 
 Back up to [Getting Started](#getting-started).
