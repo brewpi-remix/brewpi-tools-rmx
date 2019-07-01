@@ -110,7 +110,7 @@ Wait.  Now you don't know if you should trust the setup command I provided?  I'm
 1. Trust me and run it
 2. Examine [that script](https://github.com/brewpi-remix/brewpi-tools-rmx/blob/master/bootstrap.sh) carefully and make sure it does nothing bad.  Then, since the first one executes as root you need to follow that to the [next one](https://github.com/brewpi-remix/brewpi-tools-rmx/blob/master/install.sh) because it inherits that security construct.  Ultimately you can drive yourself crazy when you realize the implications, or just accept that whenever you install free code from the Internet you take your chances.  This is the case with any software, not just BrewPi.
 
-At some point I hope to list out the manual install steps necessary to replicate this series of automated steps.  That's quite frankly not a high priority for me since the goal here is to make BrewPi Legacy Remix available to every-day people.  Those of you who would choose the manual steps can probably figure it all out anyway.
+[I have listed out the steps to install BrewPi manually](https://www.brewpiremix.com/for-the-masochists/).  The steps may change slightly and to be honest I likely won't maintain that page as religiously as the others.  That's quite frankly not a high priority for me since the goal here is to make BrewPi Legacy Remix available to every-day people.  Those of you who would choose the manual steps can probably figure it all out anyway.
 
 Cheers!
 
