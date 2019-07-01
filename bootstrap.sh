@@ -50,7 +50,7 @@ init() {
     PACKAGE="BrewPi-Tools-RMX"
     GITBRNCH="devel"
     THISSCRIPT="bootstrap.sh"
-    VERSION="0.5.2.1"
+    VERSION="0.5.3"
     CMDLINE="curl -L devinstall.brewpiremix.com | sudo bash"
     # These should stay the same
     GITRAW="https://raw.githubusercontent.com/brewpi-remix"

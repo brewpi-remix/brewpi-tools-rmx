@@ -48,7 +48,7 @@ init() {
     PACKAGE="BrewPi-Tools-RMX"
     GITBRNCH="devel"
     THISSCRIPT="uninstall.sh"
-    VERSION="0.5.2.1"
+    VERSION="0.5.3"
     # Packages to be uninstalled via apt
     APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php"
     # nginx packages to be uninstalled via apt if present

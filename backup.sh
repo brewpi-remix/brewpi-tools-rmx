@@ -49,7 +49,7 @@ init() {
     PACKAGE="BrewPi-Tools-RMX"
     GITBRNCH="devel"
     THISSCRIPT="backup.sh"
-    VERSION="0.5.2.1"
+    VERSION="0.5.3"
     CMDLINE="curl -L devbackup.brewpiremix.com | sudo bash"
     # These should stay the same
     GITRAW="https://raw.githubusercontent.com/brewpi-remix"
