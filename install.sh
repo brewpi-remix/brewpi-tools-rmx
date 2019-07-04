@@ -716,7 +716,11 @@ doGravity() {
 updateconfig() {
     local port
     if [ -n "$CHAMBER" ] || [ -n "$TILTCOLOR" ]; then
-        echo -e "\nCreating custom configurations for $CHAMBER."
+        if [ -z "$CHAMBER" ]; then
+            echo -e "\nCreating custom configuration file."
+        else
+            echo -e "\nCreating custom configurations for $CHAMBER."
+        fi
         # Create script path in custom script configuration file
         echo "scriptPath = $SCRIPTPATH" >> "$SCRIPTPATH/settings/config.cfg"
         # Create web path in custom script configuration file
