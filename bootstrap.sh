@@ -36,22 +36,29 @@
 # General constants
 declare THISSCRIPT VERSION GITBRNCH GITURL GITPROJ PACKAGE CHAMBER VERBOSE
 declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME CMDLINE GITRAW GITHUB
-declare SCRIPTNAME GITCMD GITTEST APTPACKAGES VERBOSE
+declare SCRIPTNAME GITCMD GITTEST APTPACKAGES VERBOSE LINK
 # Color/character codes
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
+# Version/Branch Constants
+GITBRNCH="master"
+VERSION="0.5.3.0"
+THISSCRIPT="bootstrap.sh"
+LINK="install.brewpiremix.com"
 
 ############
 ### Init
 ############
 
 init() {
-    # Set up some project variables we won't have running as a bootstrap
+    # Set up some project variables we won't have running as a curled script
     PACKAGE="BrewPi-Tools-RMX"
-    GITBRNCH="devel"
-    THISSCRIPT="bootstrap.sh"
-    VERSION="0.5.3"
-    CMDLINE="curl -L devinstall.brewpiremix.com | sudo bash"
+    if [ ! "GITBRNCH" == "master" ]; then
+    # Use devel branch link
+        CMDLINE="curl -L dev$LINK | sudo bash"
+    else
+        CMDLINE="curl -L $LINK | sudo bash"
+    fi
     # These should stay the same
     GITRAW="https://raw.githubusercontent.com/brewpi-remix"
     GITHUB="https://github.com/brewpi-remix"

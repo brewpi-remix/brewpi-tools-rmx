@@ -35,20 +35,26 @@
 
 # General constants
 declare CMDLINE PACKAGE GITBRNCH THISSCRIPT VERSION APTPACKAGES NGINXPACKAGES
-declare PIPPACKAGES REPLY REALUSER
+declare PIPPACKAGES REPLY REALUSER LINK
+# Version/Branch Constants
+GITBRNCH="master"
+VERSION="0.5.3.0"
+THISSCRIPT="uninstall.sh"
+LINK="uninstall.brewpiremix.com"
 
 ############
 ### Init
 ############
 
 init() {
-    # Commandline to run this script
-    CMDLINE="curl -L devuninstall.brewpiremix.com | sudo bash"
     # Set up some project variables we won't have
     PACKAGE="BrewPi-Tools-RMX"
-    GITBRNCH="devel"
-    THISSCRIPT="uninstall.sh"
-    VERSION="0.5.3"
+    if [ ! "GITBRNCH" == "master" ]; then
+    # Use devel branch link
+        CMDLINE="curl -L dev$LINK | sudo bash"
+    else
+        CMDLINE="curl -L $LINK | sudo bash"
+    fi
     # Packages to be uninstalled via apt
     APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php"
     # nginx packages to be uninstalled via apt if present

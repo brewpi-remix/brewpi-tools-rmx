@@ -33,24 +33,31 @@
 ### Global Declarations
 ############
 
-# General constants
+# General constant declarations
 declare THISSCRIPT VERSION GITBRNCH GITPROJ PACKAGE VERBOSE WWWPATH HOMEPATH
-declare REPLY SOURCE SCRIPTPATH CMDLINE GITRAW GITHUB SCRIPTNAME
+declare REPLY SOURCE SCRIPTPATH CMDLINE GITRAW GITHUB SCRIPTNAME LINK
 # Color/character codes
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
+# Version/Branch Constants
+GITBRNCH="master"
+VERSION="0.5.3.0"
+THISSCRIPT="backup.sh"
+LINK="backup.brewpiremix.com"
 
 ############
 ### Init
 ############
 
 init() {
-    # Set up some project variables we won't have running as a bootstrap
+    # Set up some project variables we won't have running as a curled script
     PACKAGE="BrewPi-Tools-RMX"
-    GITBRNCH="devel"
-    THISSCRIPT="backup.sh"
-    VERSION="0.5.3"
-    CMDLINE="curl -L devbackup.brewpiremix.com | sudo bash"
+    if [ ! "GITBRNCH" == "master" ]; then
+    # Use devel branch link
+        CMDLINE="curl -L dev$LINK | sudo bash"
+    else
+        CMDLINE="curl -L $LINK | sudo bash"
+    fi
     # These should stay the same
     GITRAW="https://raw.githubusercontent.com/brewpi-remix"
     GITHUB="https://github.com/brewpi-remix"
