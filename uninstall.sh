@@ -37,8 +37,8 @@
 declare CMDLINE PACKAGE GITBRNCH THISSCRIPT VERSION APTPACKAGES NGINXPACKAGES
 declare PIPPACKAGES REPLY REALUSER LINK
 # Version/Branch Constants
-GITBRNCH="master"
-VERSION="0.5.3.0"
+GITBRNCH="devel"
+VERSION="0.5.3.1"
 THISSCRIPT="uninstall.sh"
 LINK="uninstall.brewpiremix.com"
 
@@ -464,7 +464,7 @@ delapt() {
     for pkg in ${APTPACKAGES,,}; do
         if [[ ${packagesInstalled,,} == *"$pkg"* ]]; then
             echo -e "\nRemoving '$pkg'.\n" > /dev/tty
-            apt remove --purge "$pkg" -y
+            apt-get remove --purge "$pkg" -y
         fi
     done
 }
@@ -493,7 +493,7 @@ delphp5() {
                 # Loop through the php5 packages that we've found
                 for pkg in ${php_packages,,}; do
                     echo -e "\nRemoving '$pkg'.\n" > /dev/tty
-                    apt remove --purge "$pkg" -y
+                    apt-get remove --purge "$pkg" -y
                 done
                 echo -e "\nCleanup of the php environment complete." > /dev/tty
             ;;
@@ -524,7 +524,7 @@ delnginx() {
                 # Loop through the php5 packages that we've found
                 for pkg in ${NGINXPACKAGES,,}; do
                     echo -e "\nRemoving '$pkg'.\n" > /dev/tty
-                    apt remove --purge "$pkg" -y
+                    apt-get remove --purge "$pkg" -y
                 done
                 echo -e "\nCleanup of the nginx environment complete." > /dev/tty
             ;;
