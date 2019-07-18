@@ -738,9 +738,10 @@ updateconfig() {
         if [ -n "$TILTCOLOR" ]; then
             echo "tiltColor = $TILTCOLOR" >> "$SCRIPTPATH/settings/config.cfg"
         fi
-        # Create script path in custom web configuration file
-        echo "<?php " >> "$WEBPATH"/config_user.php
+        # Create script path in custom web configuration files
+        echo "<?php " >> "$WEBPATH/config_user.php"
         echo "\$scriptPath = '$SCRIPTPATH';" >> "$WEBPATH/config_user.php"
+        echo "{\"chamber\": \"$CHAMBER\", \"scriptPath\": \"$SCRIPTPATH\"}" > "$WEBPATH/userSettings.json"
     fi
 }
 
