@@ -1,3 +1,4 @@
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 # <a name="top"></a>![BrewPi Remix Logo](https://raw.githubusercontent.com/brewpi-remix/brewpi-www-rmx/master/images/brewpi_logo.png)
 
 Before we proceed, a huge thank you to [Elco Jacobs](https://github.com/elcojacobs), without whom none of this would be possible.

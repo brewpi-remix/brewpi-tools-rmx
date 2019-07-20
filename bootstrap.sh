@@ -42,7 +42,7 @@ declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
 # Version/Branch Constants
 GITBRNCH="master"
-VERSION="0.5.3.0"
+VERSION="0.5.3.1"
 THISSCRIPT="bootstrap.sh"
 LINK="install.brewpiremix.com"
 
@@ -397,10 +397,9 @@ host_name() {
     oldHostName=$(hostname)
     if [ "$oldHostName" = "raspberrypi" ]; then
         while true; do
-            echo -e "\nYour hostname is set to '$oldHostName'. Each machine"
-            echo -e "on your network should have a unique name to prevent"
-            echo -e "issues. Do you want to change it now, maybe to"
-            read -rp "'brewpi'? [Y/n]: " yn < /dev/tty
+            echo -e "\nYour hostname is set to '$oldHostName'. Each machine on your network should"
+            echo -e "have a unique name to prevent issues. Do you want to change it now, maybe"
+            read -rp "to 'brewpi'? [Y/n]: " yn < /dev/tty
             case "$yn" in
                 '' ) sethost=1; break ;;
                 [Yy]* ) sethost=1; break ;;
@@ -425,10 +424,10 @@ host_name() {
             eval "sed -i 's/$oldHostName/$newHostName/g' /etc/hostname"||die
             hostnamectl set-hostname "$newHostName"
             /etc/init.d/avahi-daemon restart
-            echo -e "\nYour hostname has been changed to '$newHostName'.\n"
-            echo -e "(If your hostname is part of your prompt, your prompt will"
-            echo -e "not change until you log out and in again.  This will have"
-            echo -e "no effect on anything but the way the prompt looks.)"
+            echo -e "\nYour hostname has been changed to '$newHostName'."
+            echo -e "\n(If your hostname is part of your prompt, your prompt will not change until"
+            echo -e "you log out and in again.  This will have no effect on anything but the way"
+            echo -e "the prompt looks.)"
             sleep 5
         fi
     fi

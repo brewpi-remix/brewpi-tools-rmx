@@ -424,7 +424,7 @@ getscriptpath() {
         echo -e "converted to an underscore.  Alpha characters will be converted to lowercase."
         echo -e "Do not enter a full path, enter the name to be appended to the standard path.\n"
         echo -e "Enter device/directory name or hit enter to accept the defaults."
-        read -rp "[<Enter> = Single chamber only]:  " chamber < /dev/tty
+        read -rp "[<Enter> = Single chamber only]: " chamber < /dev/tty
         chamber=${chamber//[^[:digit:][:alpha:].-]/_}
         if [ -z "$chamber" ]; then
             SCRIPTPATH="/home/brewpi"
@@ -738,9 +738,10 @@ updateconfig() {
         if [ -n "$TILTCOLOR" ]; then
             echo "tiltColor = $TILTCOLOR" >> "$SCRIPTPATH/settings/config.cfg"
         fi
-        # Create script path in custom web configuration file
-        echo "<?php " >> "$WEBPATH"/config_user.php
+        # Create script path in custom web configuration files
+        echo "<?php " >> "$WEBPATH/config_user.php"
         echo "\$scriptPath = '$SCRIPTPATH';" >> "$WEBPATH/config_user.php"
+        # echo "{\"chamber\": \"$CHAMBER\", \"chamberName\": \"$CHAMBERNAME\", \"scriptPath\": \"$SCRIPTPATH\"}" > "$WEBPATH/userSettings.json"
     fi
 }
 
