@@ -824,7 +824,7 @@ complete() {
 $DOT$BGBLK$FGYLW$sp7 ___         _        _ _    ___                _     _$sp18
 $DOT$BGBLK$FGYLW$sp7|_ _|_ _  __| |_ __ _| | |  / __|___ _ __  _ __| |___| |_ ___ $sp11
 $DOT$BGBLK$FGYLW$sp7 | || ' \(_-<  _/ _\` | | | | (__/ _ \ '  \| '_ \ / -_)  _/ -_)$sp11
-$DOT$BGBLK$FGYLW$sp7|___|_||_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|$sp11
+$DOT$BGBLK$FGYLW$sp7|___|_|\_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|$sp11
 $DOT$BGBLK$FGYLW$sp49|_|$sp28
 $DOT$BGBLK$FGGRN$HHR$RESET
 BrewPi scripts will start shortly, usually within 30 seconds.
