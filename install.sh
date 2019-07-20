@@ -741,7 +741,7 @@ updateconfig() {
         # Create script path in custom web configuration files
         echo "<?php " >> "$WEBPATH/config_user.php"
         echo "\$scriptPath = '$SCRIPTPATH';" >> "$WEBPATH/config_user.php"
-        echo "{\"chamber\": \"$CHAMBER\", \"scriptPath\": \"$SCRIPTPATH\"}" > "$WEBPATH/userSettings.json"
+        echo "{\"chamber\": \"$CHAMBER\", \"chamberNAme\": \"$CHAMBERNAME\", \"scriptPath\": \"$SCRIPTPATH\"}" > "$WEBPATH/userSettings.json"
     fi
 }
 
