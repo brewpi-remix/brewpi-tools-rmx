@@ -445,7 +445,7 @@ packages() {
     if [ $(("$nowTime" - "$lastUpdate")) -gt 604800 ] ; then
         echo -e "\nLast apt update was over a week ago. Running apt update before updating"
         echo -e "dependencies."
-        apt-get update -q||die
+        apt update -yq||die
     fi
     
     # Now install any necessary packages if they are not installed
