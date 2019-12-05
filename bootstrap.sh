@@ -440,7 +440,7 @@ host_name() {
 packages() {
     local lastUpdate nowTime pkgOk upgradesAvail pkg
     echo -e "\nFixing any broken installations before proceeding."
-    sudo apt-get --fix-broken install -y
+    sudo apt-get --fix-broken install -y||die
     # Run 'apt update' if last run was > 1 week ago
     lastUpdate=$(stat -c %Y /var/lib/apt/lists)
     nowTime=$(date +%s)
