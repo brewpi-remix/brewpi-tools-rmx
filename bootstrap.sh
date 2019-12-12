@@ -42,9 +42,9 @@ declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
 # Version/Branch Constants
 GITBRNCH="master"
-VERSION="0.5.3.1"
+VERSION="0.5.4.0"
 THISSCRIPT="bootstrap.sh"
-LINK="install.brewpiremix.com"
+LINK="install.brewpiremix.com" # Don't change for dev
 
 ############
 ### Init
