@@ -37,8 +37,8 @@
 declare CMDLINE PACKAGE GITBRNCH THISSCRIPT VERSION APTPACKAGES NGINXPACKAGES
 declare PIPPACKAGES REPLY REALUSER LINK
 # Version/Branch Constants
-GITBRNCH="devel"
-VERSION="0.5.3.2"
+GITBRNCH="master"
+VERSION="0.5.4.0"
 THISSCRIPT="uninstall.sh"
 LINK="uninstall.brewpiremix.com"
 
