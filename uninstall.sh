@@ -56,11 +56,11 @@ init() {
         CMDLINE="curl -L $LINK | sudo bash"
     fi
     # Packages to be uninstalled via apt
-    APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php"
+    APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php libatlas-base-dev python3-numpy python3-scipy"
     # nginx packages to be uninstalled via apt if present
     NGINXPACKAGES="libgd-tools fcgiwrap nginx-doc ssl-cert fontconfig-config fonts-dejavu-core libfontconfig1 libgd3 libjbig0 libnginx-mod-http-auth-pam libnginx-mod-http-dav-ext libnginx-mod-http-echo libnginx-mod-http-geoip libnginx-mod-http-image-filter libnginx-mod-http-subs-filter libnginx-mod-http-upstream-fair libnginx-mod-http-xslt-filter libnginx-mod-mail libnginx-mod-stream libtiff5 libwebp6 libxpm4 libxslt1.1 nginx nginx-common nginx-full"
     # Packages to be uninstalled via pip
-    PIPPACKAGES="pyserial psutil simplejson gitpython configobj"
+    PIPPACKAGES="pyserial psutil simplejson gitpython configobj sentry-sdk numpy scipy"
 }
 
 ############
@@ -284,7 +284,7 @@ quitproc() {
     # Send quit messages to all BrewPi instances
     for instance in $instances
     do
-        /usr/bin/python -u "$instance" --quit
+        /usr/bin/python3 -u "$instance" --quit
     done
     sleep 2
     # Get instances again
@@ -293,7 +293,7 @@ quitproc() {
     IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list    # Send kill messages to all BrewPi instances
     for instance in $instances
     do
-        /usr/bin/python -u "$instance" --kill
+        /usr/bin/python3 -u "$instance" --kill
     done
     sleep 2
 }
