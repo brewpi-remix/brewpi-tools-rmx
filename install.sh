@@ -802,7 +802,7 @@ flash() {
     read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
     yn=${yn//[^[:alpha:].-]/}
     case "$yn" in
-        [Yy]* ) eval "python -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;
+        [Yy]* ) eval "python3 -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;
         * ) ;;
     esac
 }
