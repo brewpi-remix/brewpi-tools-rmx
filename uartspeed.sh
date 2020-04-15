@@ -98,7 +98,7 @@ main {
     asroot
     backup
     update
-	reset_daemon
+    reset_daemon
 }
 
 main() && exit 0
