@@ -439,7 +439,11 @@ host_name() {
 
 packages() {
     local lastUpdate nowTime pkgOk upgradesAvail pkg
-    echo -e "\nFixing any broken installations before proceeding."
+    echo -e "\nUpdating any expired apt keys."
+    for K in $(apt-key list 2> /dev/null | grep expired | cut -d'/' -f2 | cut -d' ' -f1); do
+	    sudo apt-key adv --recv-keys --keyserver keys.gnupg.net $K;
+    done
+    echo -e "\nFixing any broken installations."
     sudo apt-get --fix-broken install -y||die
     # Run 'apt update' if last run was > 1 week ago
     lastUpdate=$(stat -c %Y /var/lib/apt/lists)
