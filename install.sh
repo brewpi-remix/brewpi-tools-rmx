@@ -383,6 +383,7 @@ getscriptpath() {
     if [ -n "${INSTANCES[*]}" ]; then
         # We've already got BrewPi installed in multi-chamber
         echo -e "\nThe following chambers are already configured on this Pi:\n"
+        # shellcheck disable=2128
         for instance in $INSTANCES
         do
             echo -e "\t$(dirname "${instance}")"
