@@ -34,7 +34,7 @@
 ############
 
 # General constants
-declare CMDLINE PACKAGE GITBRNCH THISSCRIPT VERSION APTPACKAGES NGINXPACKAGES
+declare CMDLINE PACKAGE GITBRNCH THISSCRIPT VERSION APTPACKAGES
 declare PIPPACKAGES REPLY REALUSER LINK
 # Version/Branch Constants
 GITBRNCH="master"
@@ -57,8 +57,6 @@ init() {
     fi
     # Packages to be uninstalled via apt
     APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php libatlas-base-dev python3-numpy python3-scipy"
-    # nginx packages to be uninstalled via apt if present
-    NGINXPACKAGES="libgd-tools fcgiwrap nginx-doc ssl-cert fontconfig-config fonts-dejavu-core libfontconfig1 libgd3 libjbig0 libnginx-mod-http-auth-pam libnginx-mod-http-dav-ext libnginx-mod-http-echo libnginx-mod-http-geoip libnginx-mod-http-image-filter libnginx-mod-http-subs-filter libnginx-mod-http-upstream-fair libnginx-mod-http-xslt-filter libnginx-mod-mail libnginx-mod-stream libtiff5 libwebp6 libxpm4 libxslt1.1 nginx nginx-common nginx-full"
     # Packages to be uninstalled via pip
     PIPPACKAGES="pyserial psutil simplejson gitpython configobj sentry-sdk numpy scipy"
 }
@@ -502,37 +500,6 @@ delphp5() {
 }
 
 ############
-### Remove nginx packages if installed
-############
-
-delnginx() {
-    local nginxPackage yn pkg
-    echo -e "\nChecking for previously installed nginx packages." > /dev/tty
-    # Get list of installed packages
-    nginxPackage="$(dpkg --get-selections | awk '{ print $1 }' | grep 'nginx')"
-    if [[ -z "$nginxPackage" ]] ; then
-        echo -e "\nNo nginx packages found." > /dev/tty
-    else
-        echo -e "\nFound nginx packages installed.  It is recomended to uninstall nginx before" > /dev/tty
-        echo -e "proceeding as BrewPi requires apache2 and they will conflict with each other." > /dev/tty
-        read -rp "Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
-        case $yn in
-            [Nn]* )
-                echo -e "\nUnable to proceed with nginx installed, exiting." > /dev/tty;
-            exit 1;;
-            * )
-                # Loop through the php5 packages that we've found
-                for pkg in ${NGINXPACKAGES,,}; do
-                    echo -e "\nRemoving '$pkg'.\n" > /dev/tty
-                    apt-get remove --purge "$pkg" -y
-                done
-                echo -e "\nCleanup of the nginx environment complete." > /dev/tty
-            ;;
-        esac
-    fi
-}
-
-############
 ### Cleanup local packages
 ############
 
@@ -821,7 +788,6 @@ main() {
             [ "$level" -ge 3 ] && delpip # Remove pip packages
             [ "$level" -ge 3 ] && delapt # Remove apt dependencies
             [ "$level" -ge 1 ] && delphp5 # Remove php5 packages
-            [ "$level" -ge 1 ] && delnginx # Remove nginx
             [ "$level" -ge 1 ] && cleanapt # Clean up apt packages locally
             [ "$level" -ge 2 ] && resethost # Reset hostname
             [ "$level" -ge 1 ] && resetudev # Remove udev rules
