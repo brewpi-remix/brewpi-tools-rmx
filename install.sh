@@ -38,7 +38,7 @@
 # General constants
 declare THISSCRIPT TOOLPATH VERSION GITBRNCH GITURL GITPROJ PACKAGE GITPROJWWW
 declare GITPROJSCRIPT GITURLWWW GITURLSCRIPT INSTANCES WEBPATH CHAMBER VERBOSE
-declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME WEBSOURCE
+declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME WEBSOURCE HOMEPATH
 declare TILTCOLOR TILTCOLORS
 # Color/character codes
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
@@ -88,26 +88,15 @@ clean() {
 }
 
 log() {
-    local thisscript scriptname shadow homepath
-    [[ "$*" == *"-nolog"* ]] && return # Turn off logging
     # Set up our local variables
-    local thisscript scriptname realuser homepath shadow
+    local thisscript scriptname shadow realuser
+    [[ "$*" == *"-nolog"* ]] && return # Turn off logging
     # Get scriptname (creates log name) since we start before the main script
     thisscript="$(basename "$(realpath "$0")")"
     scriptname="${thisscript%%.*}"
-    # Get home directory for logging
-    if [ -n "$SUDO_USER" ]; then realuser="$SUDO_USER"; else realuser=$(whoami); fi
-    shadow="$( (getent passwd "$realuser") 2>&1)"
-    if [ -n "$shadow" ]; then
-        homepath=$(echo "$shadow" | cut -d':' -f6)
-    else
-        echo -e "\nERROR: Unable to retrieve $realuser's home directory. Manual install"
-        echo -e "may be necessary."
-        exit 1
-    fi
     # Tee all output to log file in home directory
-    sudo -u "$realuser" touch "$homepath/$scriptname.log"
-    exec > >(tee >(timestamp >> "$homepath/$scriptname.log")) 2>&1
+    sudo -u "$realuser" touch "$HOMEPATH/$scriptname.log"
+    exec > >(tee >(timestamp >> "$HOMEPATH/$scriptname.log")) 2>&1
 }
 
 ############
@@ -118,6 +107,16 @@ init() {
     # Set up some project constants
     THISSCRIPT="$(basename "$(realpath "$0")")"
     TOOLPATH="$(cd "$(dirname "$0")" || die ; pwd -P )"
+    # Get home directory for logging
+    if [ -n "$SUDO_USER" ]; then realuser="$SUDO_USER"; else realuser=$(whoami); fi
+    shadow="$( (getent passwd "$realuser") 2>&1)"
+    if [ -n "$shadow" ]; then
+        HOMEPATH=$(echo "$shadow" | cut -d':' -f6)
+    else
+        echo -e "\nERROR: Unable to retrieve $realuser's home directory. Manual install"
+        echo -e "may be necessary."
+        die
+    fi
     cd "$TOOLPATH" || die
     if [ -x "$(command -v git)" ] && [ -d .git ]; then
         VERSION="$(git describe --tags "$(git rev-list --tags --max-count=1)")"
@@ -383,6 +382,7 @@ getscriptpath() {
     if [ -n "${INSTANCES[*]}" ]; then
         # We've already got BrewPi installed in multi-chamber
         echo -e "\nThe following chambers are already configured on this Pi:\n"
+        # shellcheck disable=2128
         for instance in $INSTANCES
         do
             echo -e "\t$(dirname "${instance}")"
@@ -638,20 +638,20 @@ getwwwpath() {
 ############
 
 backupwww() {
-    local backupdir dirName rootWeb
+    local dirName
     # Back up WEBPATH if it has any files in it
-    rootWeb="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
-    /etc/init.d/apache2 stop||die
+    sudo systemctl stop apache2||die
     rm -f "$WEBPATH/do_not_run_brewpi" 2> /dev/null || true
-    rm -f "$rootWeb/index.html" 2> /dev/null || true
+    rm -f "$WEBPATH/index.html" 2> /dev/null || true
     if [ -d "$WEBPATH" ] && [ -n "$(ls -A "${WEBPATH}")" ]; then
-        dirName="$backupdir/$(date +%F%k:%M:%S)-WWW"
+        dirName="$HOMEPATH/$(date +%F%k:%M:%S)-WWW-Backup"
         echo -e "\nWeb directory is not empty, backing up the web directory to:"
-        echo -e "'$dirName' and then deleting contents of web directory."
+        echo -e "$dirName"
         mkdir -p "$dirName"
         cp -R "$WEBPATH" "$dirName"/||die
         rm -rf "${WEBPATH:?}"||die
-        find "$WEBPATH"/ -name '.*' -print0 | xargs -0 rm -rf||die
+        find "$WEBPATH"/ -name '.*' -print0 2> /dev/null | xargs -0 rm -rf||die
+        sudo -u www-data mkdir -p "$WEBPATH"
     fi
 }
 

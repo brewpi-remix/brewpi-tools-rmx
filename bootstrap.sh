@@ -42,7 +42,7 @@ declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
 # Version/Branch Constants
 GITBRNCH="master"
-VERSION="0.5.4.2"
+VERSION="0.5.4.3"
 THISSCRIPT="bootstrap.sh"
 LINK="install.brewpiremix.com" # Don't change for dev
 
@@ -439,7 +439,11 @@ host_name() {
 
 packages() {
     local lastUpdate nowTime pkgOk upgradesAvail pkg
-    echo -e "\nFixing any broken installations before proceeding."
+    echo -e "\nUpdating any expired apt keys."
+    for K in $(apt-key list 2> /dev/null | grep expired | cut -d'/' -f2 | cut -d' ' -f1); do
+	    sudo apt-key adv --recv-keys --keyserver keys.gnupg.net $K;
+    done
+    echo -e "\nFixing any broken installations."
     sudo apt-get --fix-broken install -y||die
     # Run 'apt update' if last run was > 1 week ago
     lastUpdate=$(stat -c %Y /var/lib/apt/lists)
