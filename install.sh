@@ -638,20 +638,20 @@ getwwwpath() {
 ############
 
 backupwww() {
-    local dirName rootWeb
+    local dirName
     # Back up WEBPATH if it has any files in it
-    rootWeb="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
-    /etc/init.d/apache2 stop||die
+    sudo systemctl stop apache2||die
     rm -f "$WEBPATH/do_not_run_brewpi" 2> /dev/null || true
-    rm -f "$rootWeb/index.html" 2> /dev/null || true
+    rm -f "$WEBPATH/index.html" 2> /dev/null || true
     if [ -d "$WEBPATH" ] && [ -n "$(ls -A "${WEBPATH}")" ]; then
         dirName="$HOMEPATH/$(date +%F%k:%M:%S)-WWW-Backup"
         echo -e "\nWeb directory is not empty, backing up the web directory to:"
-        echo -e "'$dirName' and then deleting contents of web directory."
+        echo -e "$dirName"
         mkdir -p "$dirName"
         cp -R "$WEBPATH" "$dirName"/||die
         rm -rf "${WEBPATH:?}"||die
         find "$WEBPATH"/ -name '.*' -print0 2> /dev/null | xargs -0 rm -rf||die
+        sudo -u www-data mkdir -p "$WEBPATH"
     fi
 }
 
