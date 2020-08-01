@@ -651,7 +651,7 @@ backupwww() {
         mkdir -p "$dirName"
         cp -R "$WEBPATH" "$dirName"/||die
         rm -rf "${WEBPATH:?}"||die
-        find "$WEBPATH"/ -name '.*' -print0 | xargs -0 rm -rf||die
+        find "$WEBPATH"/ -name '.*' -print0 2> /dev/null | xargs -0 rm -rf||die
     fi
 }
 
