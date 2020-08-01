@@ -41,10 +41,10 @@ declare SCRIPTNAME GITCMD GITTEST APTPACKAGES VERBOSE LINK
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
 # Version/Branch Constants
-GITBRNCH="nginx"
+GITBRNCH="devel"
 VERSION="0.5.4.3"
 THISSCRIPT="bootstrap.sh"
-LINK="nginstall.brewpiremix.com" # Don't change for dev
+LINK="install.brewpiremix.com" # Don't change for dev
 
 ############
 ### Init
