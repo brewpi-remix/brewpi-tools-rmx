@@ -523,6 +523,9 @@ main() {
     init "$@" # Get constants
     arguments "$@" # Check command line arguments
     echo -e "\n***Script $THISSCRIPT starting.***\n"
+    sysver="$(cat "/etc/os-release" | grep 'PRETTY_NAME' | cut -d '=' -f2)"
+    sysver="$(sed -e 's/^"//' -e 's/"$//' <<<"$sysver")"
+    echo -e "\nRunning on: $sysver\n"
     checkroot # Make sure we are su into root
     term # Add term command constants
     instructions # Show instructions
