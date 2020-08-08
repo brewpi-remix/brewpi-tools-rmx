@@ -408,7 +408,7 @@ host_name() {
             esac
         done
         echo
-        if [ "$sethost" -eq 1 ]; then
+        if [ -n "$sethost" ]; then
             echo -e "You will now be asked to enter a new hostname."
             while
             read -rp "Enter new hostname: " host1  < /dev/tty
