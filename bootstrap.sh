@@ -42,7 +42,7 @@ declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
 # Version/Branch Constants
 GITBRNCH="master"
-VERSION="0.5.4.3"
+VERSION="0.5.4.4"
 THISSCRIPT="bootstrap.sh"
 LINK="install.brewpiremix.com" # Don't change for dev
 
@@ -408,7 +408,7 @@ host_name() {
             esac
         done
         echo
-        if [ "$sethost" -eq 1 ]; then
+        if [ -n "$sethost" ]; then
             echo -e "You will now be asked to enter a new hostname."
             while
             read -rp "Enter new hostname: " host1  < /dev/tty
@@ -448,7 +448,7 @@ packages() {
     # Run 'apt update' if last run was > 1 week ago
     lastUpdate=$(stat -c %Y /var/lib/apt/lists)
     nowTime=$(date +%s)
-    if [ $(("$nowTime" - "$lastUpdate")) -gt 604800 ] ; then
+    if [ $((nowTime - lastUpdate)) -gt 604800 ]; then
         echo -e "\nLast apt update was over a week ago. Running apt update before updating"
         echo -e "dependencies."
         apt-get update -yq||die
@@ -523,6 +523,9 @@ main() {
     init "$@" # Get constants
     arguments "$@" # Check command line arguments
     echo -e "\n***Script $THISSCRIPT starting.***\n"
+    sysver="$(cat "/etc/os-release" | grep 'PRETTY_NAME' | cut -d '=' -f2)"
+    sysver="$(sed -e 's/^"//' -e 's/"$//' <<<"$sysver")"
+    echo -e "\nRunning on: $sysver\n"
     checkroot # Make sure we are su into root
     term # Add term command constants
     instructions # Show instructions
@@ -540,3 +543,4 @@ main() {
 ############
 
 main "$@" && exit 0
+

@@ -651,7 +651,8 @@ backupwww() {
         cp -R "$WEBPATH" "$dirName"/||die
         rm -rf "${WEBPATH:?}"||die
         find "$WEBPATH"/ -name '.*' -print0 2> /dev/null | xargs -0 rm -rf||die
-        sudo -u www-data mkdir -p "$WEBPATH"
+        sudo mkdir -p "$WEBPATH"
+        sudo chown www-data:www-data "$WEBPATH"
     fi
 }
 
