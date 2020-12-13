@@ -95,6 +95,8 @@ log() {
     thisscript="$(basename "$(realpath "$0")")"
     scriptname="${thisscript%%.*}"
     # Tee all output to log file in home directory
+    if [ -n "$SUDO_USER" ]; then realuser="$SUDO_USER"; else realuser=$(whoami); fi
+    chown "$realuser":"$realuser" "$HOMEPATH/$scriptname.log"
     sudo -u "$realuser" touch "$HOMEPATH/$scriptname.log"
     exec > >(tee >(timestamp >> "$HOMEPATH/$scriptname.log")) 2>&1
 }
@@ -861,6 +863,7 @@ main() {
     [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
     log "$@" # Create installation log
     arguments "$@" # Handle command line arguments
+    exit 0
     echo -e "\n***Script $THISSCRIPT starting.***"
     term # Provide term codes
     findbrewpi # See if BrewPi is already installed
