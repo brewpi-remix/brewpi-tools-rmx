@@ -29,6 +29,9 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+# Set branch
+BRANCH=devel
+
 ############
 ### Global Declarations
 ############
@@ -40,10 +43,10 @@ declare SCRIPTNAME GITCMD GITTEST APTPACKAGES VERBOSE LINK
 # Color/character codes
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
-# Version/Branch Constants
-GITBRNCH="master"
+# Set branch
+if [ -z "$BRANCH" ]; then GITBRNCH="master"; else GITBRNCH="$BRANCH"; fi
 THISSCRIPT="bootstrap.sh"
-LINK="install.brewpiremix.com" # Don't change for dev
+LINK="https://raw.githubusercontent.com/brewpi-remix/brewpi-tools-rmx/$GITBRNCH/bootstrap.sh"
 
 ############
 ### Init
@@ -52,12 +55,7 @@ LINK="install.brewpiremix.com" # Don't change for dev
 init() {
     # Set up some project variables we won't have running as a curled script
     PACKAGE="BrewPi-Tools-RMX"
-    if [ ! "GITBRNCH" == "master" ]; then
-    # Use devel branch link
-        CMDLINE="curl -L dev$LINK | sudo bash"
-    else
-        CMDLINE="curl -L $LINK | sudo bash"
-    fi
+    CMDLINE="curl -L $LINK | BRANCH=$GITBRNCH sudo bash"
     # These should stay the same
     GITRAW="https://raw.githubusercontent.com/brewpi-remix"
     GITHUB="https://github.com/brewpi-remix"
@@ -66,8 +64,7 @@ init() {
     GITPROJ="${PACKAGE,,}"
     GITHUB="$GITHUB/$GITPROJ.git"
     GITRAW="$GITRAW/$GITPROJ/$GITBRNCH/$THISSCRIPT"
-    # GITCMD="-b $GITBRNCH --single-branch $GITHUB"
-    GITCMD="-b $GITBRNCH $GITHUB"
+    GITCMD="$GITHUB"
     # Website for network test
     GITTEST="$GITHUB"
     # Packages to be installed/checked via apt
@@ -495,7 +492,6 @@ check_brewpi() {
         read -rp "Remove $HOMEPATH/$GITPROJ? [y/N] " < /dev/tty
         if [[ "$REPLY" =~ ^[Yy]$ ]]; then
             rm -fr "${HOMEPATH:?}/$GITPROJ"
-            echo
         else
             echo -e "\nLeaving $HOMEPATH/$GITPROJ in place and exiting."
             exit 1
@@ -510,6 +506,9 @@ check_brewpi() {
 clonetools() {
     echo -e "\nCloning $GITPROJ repo."
     eval "sudo -u $REALUSER git clone $GITCMD $HOMEPATH/$GITPROJ"||die
+    cd "$HOMEPATH/$GITPROJ"
+    eval "sudo -u $REALUSER git checkout $GITBRNCH"||die
+    cd "$HOMEPATH"
 }
 
 ############
