@@ -863,7 +863,6 @@ main() {
     [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
     log "$@" # Create installation log
     arguments "$@" # Handle command line arguments
-    exit 0
     echo -e "\n***Script $THISSCRIPT starting.***"
     term # Provide term codes
     findbrewpi # See if BrewPi is already installed
