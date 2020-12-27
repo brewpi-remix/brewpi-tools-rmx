@@ -30,7 +30,7 @@
 # license and credits.
 
 # Set branch
-BRANCH=master
+BRANCH=py_env_reqs
 
 ############
 ### Global Declarations
