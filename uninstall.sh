@@ -34,11 +34,10 @@
 ############
 
 # General constants
-declare CMDLINE PACKAGE GITBRNCH THISSCRIPT VERSION APTPACKAGES
+declare CMDLINE PACKAGE GITBRNCH THISSCRIPT APTPACKAGES
 declare PIPPACKAGES REPLY REALUSER LINK
 # Version/Branch Constants
 GITBRNCH="master"
-VERSION="0.5.4.2"
 THISSCRIPT="uninstall.sh"
 LINK="uninstall.brewpiremix.com"
 
@@ -130,7 +129,7 @@ log() {
 usage() {
 cat << EOF
 
-$PACKAGE $THISSCRIPT version $VERSION
+$PACKAGE $THISSCRIPT
 
 Usage: sudo ./$THISSCRIPT"
 EOF
@@ -140,7 +139,7 @@ EOF
 version() {
 cat << EOF
 
-$THISSCRIPT ($PACKAGE) $VERSION
+$THISSCRIPT ($PACKAGE)
 
 Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
