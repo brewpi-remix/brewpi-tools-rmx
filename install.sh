@@ -383,7 +383,7 @@ getscriptpath() {
     # See if we already have chambers installed
     if [ -n "${INSTANCES[*]}" ]; then
         # We've already got BrewPi installed in multi-chamber
-        echo -e "\nThe following chambers are already configured on this Pi:\n"
+        echo -e "\nThe following chambers are already configured on this system:\n"
         # shellcheck disable=2128
         for instance in $INSTANCES
         do
@@ -456,39 +456,40 @@ getscriptpath() {
 ### Install a udev rule to connect this instance to an Arduino
 ############
 
-doport(){
+doport() {
     if [ -n "$CHAMBER" ]; then
         declare -i count=-1
-        #declare -a port
         declare -a serial
         declare -a manuf
         rules="/etc/udev/rules.d/99-arduino.rules"
-        devices=$(ls /dev/ttyACM* /dev/ttyUSB* 2> /dev/null)
-        # Get a list of USB TTY devices
-        for device in "${devices[@]}"; do
+
+        # Get a list of all USB devices (/dev/tty(ACM*|ttyUSB*))
+        mapfile -t < <(find "/dev/" \( -name "ttyACM*" -o -name "ttyUSB*" \))
+
+        # Create a list of manufacturer/serial number for attached devices
+        for device in "${MAPFILE[@]}"; do
             declare ok=false
             # Walk device tree | awk out the stanza with the last device in chain
             board=$(udevadm info --a -n "$device" | awk -v RS='' '/ATTRS{maxchild}=="0"/')
             thisSerial=$(echo "$board" | grep "serial" | cut -d'"' -f 2)
-            grep -q "$thisSerial" "$rules" 2> /dev/null || ok=true # Serial not in file
-            [ -z "$board" ] && ok=false # Board exists
+            thisManuf=$(echo "$board" | grep "manufacturer" | cut -d'"' -f 2)
+            # Check to make sure the serial number is not currently assigned
+            grep -q "$thisSerial" "$rules" 2> /dev/null || ok=true
+            [ -z "$device" ] && ok=false # Board exists
             if "$ok"; then
                 ((count++))
-                # Get the device Product ID, Vendor ID and Serial Number
-                #idProduct=$(echo "$board" | grep "idProduct" | cut -d'"' -f 2)
-                #idVendor=$(echo "$board" | grep "idVendor" | cut -d'"' -f 2)
-                #port[count]="$device"
-                serial[count]=$(echo "$board" | grep "serial" | cut -d'"' -f 2)
-                manuf[count]=$(echo "$board" | grep "manufacturer" | cut -d'"' -f 2)
+                serial[count]="$thisSerial"
+                manuf[count]="$thisManuf"
             fi
         done
+
         # Display a menu of devices to associate with this chamber
         if [ "$count" -gt 0 ]; then
             # There's more than one (it's 0-based)
             echo -e "\nThe following seem to be the Arduinos available on this system:\n"
             for (( c=0; c<=count; c++ ))
             do
-                echo -e "[$c] Manuf: ${manuf[c]}, Serial: ${serial[c]}"
+                echo -e "\t[$c] ${manuf[c]}, SerNo: ${serial[c]}"
             done
             echo
             while :; do
@@ -499,46 +500,53 @@ doport(){
                     break
                 fi
             done
+
             # Device already exists - well-meaning user may have set it up
             if [ -L "/dev/$CHAMBER" ]; then
-                echo -e "\nPort /dev/$CHAMBER already exists as a link; using it but check your setup."
+                # Link in /dev* already exists
+                echo -e "\nWarning: A link to port /dev/$CHAMBER already exists. Using it in config,\nbut check your setup.\n"
+                read -n 1 -s -r -p "Press any key to continue. " < /dev/tty
+                echo
             else
                 echo -e "\nCreating rule for board ${serial[board]} as /dev/$CHAMBER."
-                # Concatenate the rule
-                rule='SUBSYSTEM=="tty", ATTRS{serial}=="sernum", SYMLINK+="chambr"'
-                #rule+=', GROUP="brewpi"'
+                # Concatenate the rule with __placeholders__
+                rule='SUBSYSTEM=="tty", ATTRS{serial}=="__serial__", SYMLINK+="__chamber__"'
                 # Replace placeholders with real values
-                rule="${rule/sernum/${serial[board]}}"
-                rule="${rule/chambr/$CHAMBER}"
+                rule="${rule/__serial__/${serial[board]}}"
+                rule="${rule/__chamber__/$CHAMBER}"
                 echo "$rule" >> "$rules"
             fi
-            udevadm control --reload-rules
-            udevadm trigger
-            elif [ "$count" -eq 0 ]; then
-            # Only one (it's 0-based), use it
-            if [ -L "/dev/$CHAMBER" ]; then
-                echo -e "\nPort /dev/$CHAMBER already exists as a link; using it but check your setup."
-            else
-                echo -e "\nCreating rule for board ${serial[0]} as /dev/$CHAMBER."
-                # Concatenate the rule
-                rule='SUBSYSTEM=="tty", ATTRS{serial}=="sernum", SYMLINK+="chambr"'
-                #rule+=', GROUP="brewpi"'
-                # Replace placeholders with real values
-                rule="${rule/sernum/${serial[0]}}"
-                rule="${rule/chambr/$CHAMBER}"
-                echo "$rule" >> "$rules"
-            fi
-            udevadm control --reload-rules
-            udevadm trigger
+
+        # Only one (it's 0-based), use it
+        elif [ "$count" -eq 0 ]; then
+        if [ -L "/dev/$CHAMBER" ]; then
+            # Link in /dev* already exists
+            echo -e "\nWarning: A link to port /dev/$CHAMBER already exists. Using it in config,\nbut check your setup.\n"
+            read -n 1 -s -r -p "Press any key to continue. " < /dev/tty
+            echo
         else
-            # We have selected multi-chamber but there's no devices
-            echo -e "\nYou've configured the system for multi-chamber support however no Arduinos were"
-            echo -e "found to configure. The following configuration will be created, however you"
+            echo -e "\nCreating rule for board ${serial[0]} as /dev/$CHAMBER."
+            # Concatenate the rule with __placeholders__
+            rule='SUBSYSTEM=="tty", ATTRS{serial}=="__serial__", SYMLINK+="__chamber__"'
+            # Replace placeholders with real values
+            rule="${rule/__serial__/${serial[0]}}"
+            rule="${rule/__chamber__/$CHAMBER}"
+            echo "$rule" >> "$rules"
+        fi
+
+        # Reload new rules
+        udevadm control --reload-rules
+        udevadm trigger
+
+        # We have selected multi-chamber but there's no devices
+        else
+            echo -e "\nYou've configured the system for multi-chamber support, however no Arduinos"
+            echo -e "were found to configure. The following configuration will be created, however"
             echo -e "must manually create a rule for your device to match the configuration file."
-            echo -e "\n\tConfiguration File: $SCRIPTPATH/settings/config.cnf"
+            echo -e "\n\tConfiguration File: $SCRIPTPATH/settings/config.cfg"
             echo -e "\tDevice:             /dev/$CHAMBER\n"
             read -n 1 -s -r -p "Press any key to continue. " < /dev/tty
-            echo -e ""
+            echo
         fi
     else
         echo -e "\nScripts will use default 'port = auto' setting."
