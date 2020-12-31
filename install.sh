@@ -823,7 +823,7 @@ flash() {
 ############
 
 complete() {
-    clear
+    # clear# DEBUG TODO
     local sp7 sp11 sp18 sp28 sp49 IP
     sp7="$(printf ' %.0s' {1..7})" sp11="$(printf ' %.0s' {1..11})"
     sp18="$(printf ' %.0s' {1..18})" sp28="$(printf ' %.0s' {1..28})"
