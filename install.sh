@@ -802,18 +802,25 @@ fixsafari() {
 ############
 
 flash() {
-    local yn branch
+    local yn branch pythonpath
     branch="${GITBRNCH,,}"
     if [ ! "$branch" == "master" ]; then
         branch="--beta"
     else
         branch=""
     fi
+
+    if [ -n "$CHAMBER" ]; then
+        pythonpath=$(which python)
+    else
+        pythonpath="/home/brewpi/venv/bin/python"
+    fi
+
     echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
     read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
     yn=${yn//[^[:alpha:].-]/}
     case "$yn" in
-        [Yy]* ) eval "python3 -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;
+        [Yy]* ) eval "$pythonpath -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;
         * ) ;;
     esac
 }
