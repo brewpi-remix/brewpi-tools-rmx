@@ -39,7 +39,7 @@
 declare THISSCRIPT TOOLPATH VERSION GITBRNCH GITURL GITPROJ PACKAGE GITPROJWWW
 declare GITPROJSCRIPT GITURLWWW GITURLSCRIPT INSTANCES WEBPATH CHAMBER VERBOSE
 declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME WEBSOURCE HOMEPATH
-declare TILTCOLOR TILTCOLORS
+declare TILTCOLOR TILTCOLORS DUMMYDEVICE
 # Color/character codes
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
@@ -519,27 +519,28 @@ doport() {
 
         # Only one (it's 0-based), use it
         elif [ "$count" -eq 0 ]; then
-        if [ -L "/dev/$CHAMBER" ]; then
-            # Link in /dev* already exists
-            echo -e "\nWarning: A link to port /dev/$CHAMBER already exists. Using it in config,\nbut check your setup.\n"
-            read -n 1 -s -r -p "Press any key to continue. " < /dev/tty
-            echo
-        else
-            echo -e "\nCreating rule for board ${serial[0]} as /dev/$CHAMBER."
-            # Concatenate the rule with __placeholders__
-            rule='SUBSYSTEM=="tty", ATTRS{serial}=="__serial__", SYMLINK+="__chamber__"'
-            # Replace placeholders with real values
-            rule="${rule/__serial__/${serial[0]}}"
-            rule="${rule/__chamber__/$CHAMBER}"
-            echo "$rule" >> "$rules"
-        fi
+            if [ -L "/dev/$CHAMBER" ]; then
+                # Link in /dev* already exists
+                echo -e "\nWarning: A link to port /dev/$CHAMBER already exists. Using it in config,\nbut check your setup.\n"
+                read -n 1 -s -r -p "Press any key to continue. " < /dev/tty
+                echo
+            else
+                echo -e "\nCreating rule for board ${serial[0]} as /dev/$CHAMBER."
+                # Concatenate the rule with __placeholders__
+                rule='SUBSYSTEM=="tty", ATTRS{serial}=="__serial__", SYMLINK+="__chamber__"'
+                # Replace placeholders with real values
+                rule="${rule/__serial__/${serial[0]}}"
+                rule="${rule/__chamber__/$CHAMBER}"
+                echo "$rule" >> "$rules"
+            fi
 
-        # Reload new rules
-        udevadm control --reload-rules
-        udevadm trigger
+            # Reload new rules
+            udevadm control --reload-rules
+            udevadm trigger
 
         # We have selected multi-chamber but there's no devices
         else
+            DUMMYDEVICE=true
             echo -e "\nYou've configured the system for multi-chamber support, however no Arduinos"
             echo -e "were found to configure. The following configuration will be created, however"
             echo -e "must manually create a rule for your device to match the configuration file."
@@ -830,7 +831,7 @@ flash() {
 ############
 
 complete() {
-    clear
+    # clear # DEBUG TODO
     local sp7 sp11 sp18 sp28 sp49 IP
     sp7="$(printf ' %.0s' {1..7})" sp11="$(printf ' %.0s' {1..11})"
     sp18="$(printf ' %.0s' {1..18})" sp28="$(printf ' %.0s' {1..28})"
@@ -904,7 +905,7 @@ main() {
         fi
     fi
     doperms # Set script and www permissions
-    flash # Flash controller
+    [ ! "$DUMMYDEVICE" = true ] && flash # Flash controller if present
     # Allow BrewPi to start via daemon
     rm -f "$WEBPATH/do_not_run_brewpi"
     if [ -n "$CHAMBER" ]; then
