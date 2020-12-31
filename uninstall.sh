@@ -34,10 +34,9 @@
 ############
 
 # General constants
-declare CMDLINE PACKAGE GITBRNCH THISSCRIPT APTPACKAGES
+declare CMDLINE PACKAGE THISSCRIPT APTPACKAGES
 declare PIPPACKAGES REPLY REALUSER LINK
 # Version/Branch Constants
-GITBRNCH="master"
 THISSCRIPT="uninstall.sh"
 LINK="uninstall.brewpiremix.com"
 
@@ -48,12 +47,7 @@ LINK="uninstall.brewpiremix.com"
 init() {
     # Set up some project variables we won't have
     PACKAGE="BrewPi-Tools-RMX"
-    if [ ! "GITBRNCH" == "master" ]; then
-    # Use devel branch link
-        CMDLINE="curl -L dev$LINK | sudo bash"
-    else
-        CMDLINE="curl -L $LINK | sudo bash"
-    fi
+    CMDLINE="curl -L $LINK | sudo bash"
     # Packages to be uninstalled via apt
     APTPACKAGES="git-core pastebinit build-essential git arduino-core libapache2-mod-php apache2 python-configobj python-dev python-pip php-xml php-mbstring php-cgi php-cli php-common php libatlas-base-dev python3-numpy python3-scipy"
     # Packages to be uninstalled via pip
@@ -273,15 +267,20 @@ syslogd() {
 ############
 
 quitproc() {
-    declare home instance instances
+    declare home instance instances pythonpath
     home="/home/brewpi"
     echo -e "\nQuitting any running BrewPi processes." > /dev/tty
     instances=$(find "$home" -name "brewpi.py" 2> /dev/null)
     IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list
     # Send quit messages to all BrewPi instances
+    if [ -f "/home/brewpi/venv/bin/python" ]; then
+        pythonpath="/home/brewpi/venv/bin/python"
+    else
+        pythonpath=$(which python)
+    fi
     for instance in $instances
     do
-        /usr/bin/python3 -u "$instance" --quit
+        eval "$pythonpath  -u $instance --quit"
     done
     sleep 2
     # Get instances again
@@ -290,7 +289,7 @@ quitproc() {
     IFS=$'\n' instances=("$(sort <<<"${instances[*]}")") && unset IFS # Sort list    # Send kill messages to all BrewPi instances
     for instance in $instances
     do
-        /usr/bin/python3 -u "$instance" --kill
+        eval "$pythonpath  -u $instance --kill"
     done
     sleep 2
 }
@@ -340,14 +339,14 @@ killproc() {
 delrepo() {
     local webroot
     # Wipe out tools
-    if [ -d "/home/$REALUSER/brewpi-tools-rmx" ]; then
-        echo -e "\nClearing /home/$REALUSER/brewpi-tools-rmx." > /dev/tty
-        rm -fr "/home/$REALUSER/brewpi-tools-rmx"
+    if [ -d "$HOMEPATH/brewpi-tools-rmx" ]; then
+        echo -e "\nClearing $HOMEPATH/brewpi-tools-rmx." > /dev/tty
+        rm -fr "$HOMEPATH/brewpi-tools-rmx"
     fi
     # Wipe out legacy tools
-    if [ -d "/home/$REALUSER/brewpi-tools" ]; then
-        echo -e "\nClearing /home/$REALUSER/brewpi-tools." > /dev/tty
-        rm -fr "/home/$REALUSER/brewpi-tools"
+    if [ -d "$HOMEPATH/brewpi-tools" ]; then
+        echo -e "\nClearing $HOMEPATH/brewpi-tools." > /dev/tty
+        rm -fr "$HOMEPATH/brewpi-tools"
     fi
     # Wipe out BrewPi scripts
     if [ -d /home/brewpi ]; then
@@ -566,7 +565,7 @@ resetpwd() {
 
 delchamber() {
     local chamber newchamber link home instances newlink webDir unitFile
-    local daemonName rules scriptDir webPath
+    local daemonName rules scriptDir webPath pythonpath
     chamber="$1"
     home="/home/brewpi"
     rules="/etc/udev/rules.d/99-arduino.rules"
@@ -614,9 +613,10 @@ delchamber() {
     fi
     # Delete BrewPi scripts for chamber
     if [ -d "$scriptDir" ]; then
+        pythonpath="/home/brewpi/venv/bin/python"
         # Stop running instance
-        "$scriptDir/brewpi.py --quit" > /dev/null 2>&1
-        "$scriptDir/brewpi.py --kill" > /dev/null 2>&1
+        "$pythonpath $scriptDir/brewpi.py --quit" > /dev/null 2>&1
+        "$pythonpath $scriptDir/brewpi.py --kill" > /dev/null 2>&1
         # Remove BrewPi script instance
         echo -e "\nRemoving $scriptDir."
         rm -fr "$scriptDir" > /dev/null 2>&1
