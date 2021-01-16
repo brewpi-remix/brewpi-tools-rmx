@@ -600,14 +600,15 @@ clonescripts() {
     chown -R brewpi:brewpi "$SCRIPTPATH"||die
     if [ -n "$SOURCE" ]; then
         # Clone from local
-        eval "sudo -u brewpi git clone -b $GITBRNCH $SCRIPTSOURCE $SCRIPTPATH"||die
+        eval "sudo -u brewpi git clone $SCRIPTSOURCE $SCRIPTPATH"||die
         # Update $SCRIPTPATH with git origin from $SCRIPTSOURCE
         sourceURL="$(cd "$SCRIPTSOURCE" && git config --get remote.origin.url)"
         (cd "$SCRIPTPATH" && git remote set-url origin "$sourceURL")
     else
         # Clone from GitHub
-        eval "sudo -u brewpi git clone -b $GITBRNCH $GITURLSCRIPT $SCRIPTPATH"||die
+        eval "sudo -u brewpi git clone $GITURLSCRIPT $SCRIPTPATH"||die
     fi
+    eval "cd $SCRIPTPATH && sudo -u brewpi git checkout $GITBRNCH"||die
 }
 
 ############
@@ -675,13 +676,14 @@ clonewww() {
     local sourceURL
     echo -e "\nCloning web site to $WEBPATH."
     if [ -n "$SOURCE" ]; then
-        eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $WEBSOURCE $WEBPATH"||die
+        eval "sudo -u www-data git clone $WEBSOURCE $WEBPATH"||die
         # Update $WEBPATH with git origin from $WEBSOURCE
         sourceURL="$(cd "$WEBSOURCE" && git config --get remote.origin.url)"
         (cd "$WEBPATH" && git remote set-url origin "$sourceURL")
     else
-        eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $GITURLWWW $WEBPATH"||die
+        eval "sudo -u www-data git clone $GITURLWWW $WEBPATH"||die
     fi
+    eval "cd $WEBPATH && sudo -u www-data git checkout $GITBRNCH"||die
     # Keep BrewPi from running while we do things
     touch "$WEBPATH/do_not_run_brewpi"
 }
