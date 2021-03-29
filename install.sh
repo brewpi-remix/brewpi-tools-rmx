@@ -502,13 +502,13 @@ doport() {
             done
 
             # Device already exists - well-meaning user may have set it up
-            if [ -L "/dev/tty$CHAMBER" ]; then
+            if [ -L "/dev/$CHAMBER" ]; then
                 # Link in /dev* already exists
-                echo -e "\nWarning: A link to port /dev/tty$CHAMBER already exists. Using it in config,\nbut check your setup.\n"
+                echo -e "\nWarning: A link to port /dev/$CHAMBER already exists. Using it in config,\nbut check your setup.\n"
                 read -n 1 -s -r -p "Press any key to continue. " < /dev/tty
                 echo
             else
-                echo -e "\nCreating rule for board ${serial[board]} as /dev/tty$CHAMBER."
+                echo -e "\nCreating rule for board ${serial[board]} as /dev/$CHAMBER."
                 # Concatenate the rule with __placeholders__
                 rule='SUBSYSTEM=="tty", ATTRS{serial}=="__serial__", SYMLINK+="__chamber__"'
                 # Replace placeholders with real values
@@ -519,15 +519,15 @@ doport() {
 
         # Only one (it's 0-based), use it
         elif [ "$count" -eq 0 ]; then
-            if [ -L "/dev/tty$CHAMBER" ]; then
+            if [ -L "/dev/$CHAMBER" ]; then
                 # Link in /dev* already exists
-                echo -e "\nWarning: A link to port /dev/tty$CHAMBER already exists. Using it in config,\nbut check your setup.\n"
+                echo -e "\nWarning: A link to port /dev/$CHAMBER already exists. Using it in config,\nbut check your setup.\n"
                 read -n 1 -s -r -p "Press any key to continue. " < /dev/tty
                 echo
             else
-                echo -e "\nCreating rule for board ${serial[0]} as /dev/tty$CHAMBER."
+                echo -e "\nCreating rule for board ${serial[0]} as /dev/$CHAMBER."
                 # Concatenate the rule with __placeholders__
-                rule='SUBSYSTEM=="tty", ATTRS{serial}=="__serial__", SYMLINK+="tty__chamber__"'
+                rule='SUBSYSTEM=="tty", ATTRS{serial}=="__serial__", SYMLINK+="__chamber__"'
                 # Replace placeholders with real values
                 rule="${rule/__serial__/${serial[0]}}"
                 rule="${rule/__chamber__/$CHAMBER}"
@@ -545,7 +545,7 @@ doport() {
             echo -e "were found to configure. The following configuration will be created, however"
             echo -e "must manually create a rule for your device to match the configuration file."
             echo -e "\n\tConfiguration File: $SCRIPTPATH/settings/config.cfg"
-            echo -e "\tDevice:             /dev/tty$CHAMBER\n"
+            echo -e "\tDevice:             /dev/$CHAMBER\n"
             read -n 1 -s -r -p "Press any key to continue. " < /dev/tty
             echo
         fi
@@ -743,7 +743,7 @@ updateconfig() {
         if [ -z "$CHAMBER" ]; then
             port="auto"
         else
-            port="/dev/tty$CHAMBER"
+            port="/dev/$CHAMBER"
         fi
         echo "port = $port" >> "$SCRIPTPATH/settings/config.cfg"
         # Create chamber name in custom script configuration file
