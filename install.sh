@@ -819,13 +819,7 @@ flash() {
         pythonpath="/home/brewpi/venv/bin/python"
     fi
 
-    echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
-    read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
-    yn=${yn//[^[:alpha:].-]/}
-    case "$yn" in
-        [Yy]* ) eval "$pythonpath -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;
-        * ) ;;
-    esac
+    eval "$pythonpath -u $SCRIPTPATH/utils/updateFirmware.py $branch"
 }
 
 ############
