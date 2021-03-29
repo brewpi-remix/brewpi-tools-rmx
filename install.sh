@@ -527,7 +527,7 @@ doport() {
             else
                 echo -e "\nCreating rule for board ${serial[0]} as /dev/tty$CHAMBER."
                 # Concatenate the rule with __placeholders__
-                rule='SUBSYSTEM=="tty", ATTRS{serial}=="__serial__", SYMLINK+="__chamber__"'
+                rule='SUBSYSTEM=="tty", ATTRS{serial}=="__serial__", SYMLINK+="tty__chamber__"'
                 # Replace placeholders with real values
                 rule="${rule/__serial__/${serial[0]}}"
                 rule="${rule/__chamber__/$CHAMBER}"
