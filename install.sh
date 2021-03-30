@@ -813,12 +813,7 @@ flash() {
     else
         branch=""
     fi
-
-    if [ -n "$CHAMBER" ]; then
-        pythonpath=$(which python)
-    else
-        pythonpath="/home/brewpi/venv/bin/python"
-    fi
+    pythonpath="/home/brewpi/venv/bin/python"
 
     read -rp "DEBUG: eval $pythonpath -u $SCRIPTPATH/updateFirmware.py $branch " trash < /dev/tty # DEBUG
 
