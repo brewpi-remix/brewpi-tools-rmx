@@ -877,7 +877,8 @@ EOF
 main() {
     init "$@" # Initialize constants and variables
     checkroot "$@" # Make sure we are using sudo
-    [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
+    # [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
+    VERBOSE=true # Do not trim logs
     log "$@" # Create installation log
     arguments "$@" # Handle command line arguments
     echo -e "\n***Script $THISSCRIPT starting.***"
