@@ -778,6 +778,7 @@ dodaemon() {
     # Get wireless lan device name
     WLAN="$(iw dev | awk '$1=="Interface"{print $2}')"
     # If no WLAN or if we are cloning from a local git
+    # TODO: Give a choice on adding this
     if [ -n "$SOURCE" ] || [ -z "$WLAN" ]; then
         eval "$SCRIPTPATH/utils/doDaemon.sh -nowifi"||die
     else
@@ -819,6 +820,8 @@ flash() {
         pythonpath="/home/brewpi/venv/bin/python"
     fi
 
+    read -rp "DEBUG: eval $pythonpath -u $SCRIPTPATH/updateFirmware.py $branch " trash < /dev/tty # DEBUG
+
     eval "$pythonpath -u $SCRIPTPATH/updateFirmware.py $branch"
 }
 
@@ -827,7 +830,7 @@ flash() {
 ############
 
 complete() {
-    # clear # TODO:  remove comment
+    # clear # TODO: DEBUG: remove comment
     local sp7 sp11 sp18 sp28 sp49 IP
     sp7="$(printf ' %.0s' {1..7})" sp11="$(printf ' %.0s' {1..11})"
     sp18="$(printf ' %.0s' {1..18})" sp28="$(printf ' %.0s' {1..28})"
