@@ -778,11 +778,20 @@ dodaemon() {
     # Get wireless lan device name
     WLAN="$(iw dev | awk '$1=="Interface"{print $2}')"
     # If no WLAN or if we are cloning from a local git
-    # TODO: Give a choice on adding this
     if [ -n "$SOURCE" ] || [ -z "$WLAN" ]; then
         eval "$SCRIPTPATH/utils/doDaemon.sh -nowifi"||die
     else
-        eval "$SCRIPTPATH/utils/doDaemon.sh"||die
+        echo -e "" > /dev/tty
+        echo -e "BrewPi can install a daemon which can help a Raspberry Pi stay connected to"
+        read -rp "your WiFi access point.  Would you like this daemon added? [y/N]: " yn  < /dev/tty
+        case "$yn" in
+            [Yy]* )
+                eval "$SCRIPTPATH/utils/doDaemon.sh"||die
+                ;;
+            * )
+                eval "$SCRIPTPATH/utils/doDaemon.sh -nowifi"||die
+                ;;
+        esac
     fi
     if [ -n "$CHAMBER" ]; then
         systemctl stop "$CHAMBER"
@@ -823,7 +832,7 @@ flash() {
 ############
 
 complete() {
-    # clear # TODO: DEBUG: remove comment
+    clear
     local sp7 sp11 sp18 sp28 sp49 IP
     sp7="$(printf ' %.0s' {1..7})" sp11="$(printf ' %.0s' {1..11})"
     sp18="$(printf ' %.0s' {1..18})" sp28="$(printf ' %.0s' {1..28})"
