@@ -815,8 +815,6 @@ flash() {
     fi
     pythonpath="/home/brewpi/venv/bin/python"
 
-    read -rp "DEBUG: eval $pythonpath -u $SCRIPTPATH/updateFirmware.py $branch " trash < /dev/tty # DEBUG
-
     eval "$pythonpath -u $SCRIPTPATH/updateFirmware.py $branch"
 }
 
