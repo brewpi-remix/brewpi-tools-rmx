@@ -819,7 +819,7 @@ flash() {
         pythonpath="/home/brewpi/venv/bin/python"
     fi
 
-    eval "$pythonpath -u $SCRIPTPATH/utils/updateFirmware.py $branch"
+    eval "$pythonpath -u $SCRIPTPATH/updateFirmware.py $branch"
 }
 
 ############
