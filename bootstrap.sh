@@ -516,7 +516,8 @@ clonetools() {
 ############
 
 main() {
-    [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
+    #[[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
+    VERBOSE=true  # Do not trim logs
     log "$@" # Start logging
     init "$@" # Get constants
     arguments "$@" # Check command line arguments

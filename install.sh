@@ -781,7 +781,17 @@ dodaemon() {
     if [ -n "$SOURCE" ] || [ -z "$WLAN" ]; then
         eval "$SCRIPTPATH/utils/doDaemon.sh -nowifi"||die
     else
-        eval "$SCRIPTPATH/utils/doDaemon.sh"||die
+        echo -e "" > /dev/tty
+        echo -e "BrewPi can install a daemon which can help a Raspberry Pi stay connected to"
+        read -rp "your WiFi access point.  Would you like this daemon added? [y/N]: " yn  < /dev/tty
+        case "$yn" in
+            [Yy]* )
+                eval "$SCRIPTPATH/utils/doDaemon.sh"||die
+                ;;
+            * )
+                eval "$SCRIPTPATH/utils/doDaemon.sh -nowifi"||die
+                ;;
+        esac
     fi
     if [ -n "$CHAMBER" ]; then
         systemctl stop "$CHAMBER"
@@ -812,20 +822,9 @@ flash() {
     else
         branch=""
     fi
+    pythonpath="/home/brewpi/venv/bin/python"
 
-    if [ -n "$CHAMBER" ]; then
-        pythonpath=$(which python)
-    else
-        pythonpath="/home/brewpi/venv/bin/python"
-    fi
-
-    echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
-    read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
-    yn=${yn//[^[:alpha:].-]/}
-    case "$yn" in
-        [Yy]* ) eval "$pythonpath -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;
-        * ) ;;
-    esac
+    eval "$pythonpath -u $SCRIPTPATH/updateFirmware.py $branch"
 }
 
 ############
@@ -848,7 +847,7 @@ $DOT$BGBLK$FGYLW$sp7 | || ' \(_-<  _/ _\` | | | | (__/ _ \ '  \| '_ \ / -_)  _/ 
 $DOT$BGBLK$FGYLW$sp7|___|_|\_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|$sp11
 $DOT$BGBLK$FGYLW$sp49|_|$sp28
 $DOT$BGBLK$FGGRN$HHR$RESET
-BrewPi scripts will start shortly, usually within 30 seconds.
+BrewPi scripts will start shortly, usually within 30 secs.
 
  - BrewPi frontend URL : http://$IP/$CHAMBER
                   -or- : http://$(hostname).local/$CHAMBER
@@ -878,7 +877,8 @@ EOF
 main() {
     init "$@" # Initialize constants and variables
     checkroot "$@" # Make sure we are using sudo
-    [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
+    # [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
+    VERBOSE=true # Do not trim logs
     log "$@" # Create installation log
     arguments "$@" # Handle command line arguments
     echo -e "\n***Script $THISSCRIPT starting.***"
