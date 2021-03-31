@@ -847,7 +847,7 @@ $DOT$BGBLK$FGYLW$sp7 | || ' \(_-<  _/ _\` | | | | (__/ _ \ '  \| '_ \ / -_)  _/ 
 $DOT$BGBLK$FGYLW$sp7|___|_|\_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|$sp11
 $DOT$BGBLK$FGYLW$sp49|_|$sp28
 $DOT$BGBLK$FGGRN$HHR$RESET
-BrewPi scripts will start shortly, usually within 30 seconds.
+BrewPi scripts will start shortly, usually within 30 secs.
 
  - BrewPi frontend URL : http://$IP/$CHAMBER
                   -or- : http://$(hostname).local/$CHAMBER
