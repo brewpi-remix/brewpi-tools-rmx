@@ -833,11 +833,17 @@ flash() {
 
 complete() {
     clear
-    local sp7 sp11 sp18 sp28 sp49 IP
+    local sp7 sp11 sp18 sp28 sp49 ip port
     sp7="$(printf ' %.0s' {1..7})" sp11="$(printf ' %.0s' {1..11})"
     sp18="$(printf ' %.0s' {1..18})" sp28="$(printf ' %.0s' {1..28})"
     sp49="$(printf ' %.0s' {1..49})"
-    IP=$(ip -4 addr | grep 'global' | cut -f1  -d'/' | cut -d" " -f6)
+    ip=$(hostname -I | awk '{print $1}')
+    port=$(grep "<VirtualHost" /etc/apache2/sites-enabled/000-default* | xargs | cut -d ":" -f2 | cut -d ">" -f1)
+    if [ "$port" != "80" ]; then
+        port=":$port"
+    else
+        port=
+    fi
     # Note:  $(printf ...) hack adds spaces at beg/end to support non-black BG
   cat << EOF
 
@@ -849,8 +855,8 @@ $DOT$BGBLK$FGYLW$sp49|_|$sp28
 $DOT$BGBLK$FGGRN$HHR$RESET
 BrewPi scripts will start shortly, usually within 30 secs.
 
- - BrewPi frontend URL : http://$IP/$CHAMBER
-                  -or- : http://$(hostname).local/$CHAMBER
+ - BrewPi frontend URL : http://$ip$port/$CHAMBER
+                  -or- : http://$(hostname).local$port/$CHAMBER
  - Installation path   : $SCRIPTPATH
  - Release version     : $VERSION ($GITBRNCH)
  - Commit version      : $COMMIT
@@ -858,8 +864,8 @@ BrewPi scripts will start shortly, usually within 30 secs.
 EOF
     if [ -n "$CHAMBER" ]; then
     cat << EOF
- - Multi-chamber URL   : http://$IP
-                  -or- : http://$(hostname).local
+ - Multi-chamber URL   : http://$ip$port
+                  -or- : http://$(hostname).local$port
 
 If you would like to install another chamber, issue the command:
 sudo $TOOLPATH/install.sh
@@ -901,7 +907,7 @@ main() {
     fixsafari # Fix display bug with Safari browsers
     # Add links for multi-chamber dashboard
     if [ -n "$CHAMBER" ]; then
-        webRoot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
+        webRoot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* | xargs | cut -d " " -f2)"
         if [ ! -L "$webRoot/index.php" ]; then
             eval "$SCRIPTPATH/utils/doIndex.sh"||warn
         fi
