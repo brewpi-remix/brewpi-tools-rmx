@@ -38,8 +38,8 @@
 # General constants
 declare THISSCRIPT TOOLPATH VERSION GITBRNCH GITURL GITPROJ PACKAGE GITPROJWWW
 declare GITPROJSCRIPT GITURLWWW GITURLSCRIPT INSTANCES WEBPATH CHAMBER VERBOSE
-declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME WEBSOURCE
-declare TILTCOLOR TILTCOLORS
+declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME WEBSOURCE HOMEPATH
+declare TILTCOLOR TILTCOLORS DUMMYDEVICE
 # Color/character codes
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
@@ -88,26 +88,17 @@ clean() {
 }
 
 log() {
-    local thisscript scriptname shadow homepath
-    [[ "$*" == *"-nolog"* ]] && return # Turn off logging
     # Set up our local variables
-    local thisscript scriptname realuser homepath shadow
+    local thisscript scriptname shadow realuser
+    [[ "$*" == *"-nolog"* ]] && return # Turn off logging
     # Get scriptname (creates log name) since we start before the main script
     thisscript="$(basename "$(realpath "$0")")"
     scriptname="${thisscript%%.*}"
-    # Get home directory for logging
-    if [ -n "$SUDO_USER" ]; then realuser="$SUDO_USER"; else realuser=$(whoami); fi
-    shadow="$( (getent passwd "$realuser") 2>&1)"
-    if [ -n "$shadow" ]; then
-        homepath=$(echo "$shadow" | cut -d':' -f6)
-    else
-        echo -e "\nERROR: Unable to retrieve $realuser's home directory. Manual install"
-        echo -e "may be necessary."
-        exit 1
-    fi
     # Tee all output to log file in home directory
-    sudo -u "$realuser" touch "$homepath/$scriptname.log"
-    exec > >(tee >(timestamp >> "$homepath/$scriptname.log")) 2>&1
+    if [ -n "$SUDO_USER" ]; then realuser="$SUDO_USER"; else realuser=$(whoami); fi
+    chown "$realuser":"$realuser" "$HOMEPATH/$scriptname.log"
+    sudo -u "$realuser" touch "$HOMEPATH/$scriptname.log"
+    exec > >(tee >(timestamp >> "$HOMEPATH/$scriptname.log")) 2>&1
 }
 
 ############
@@ -118,6 +109,16 @@ init() {
     # Set up some project constants
     THISSCRIPT="$(basename "$(realpath "$0")")"
     TOOLPATH="$(cd "$(dirname "$0")" || die ; pwd -P )"
+    # Get home directory for logging
+    if [ -n "$SUDO_USER" ]; then realuser="$SUDO_USER"; else realuser=$(whoami); fi
+    shadow="$( (getent passwd "$realuser") 2>&1)"
+    if [ -n "$shadow" ]; then
+        HOMEPATH=$(echo "$shadow" | cut -d':' -f6)
+    else
+        echo -e "\nERROR: Unable to retrieve $realuser's home directory. Manual install"
+        echo -e "may be necessary."
+        die
+    fi
     cd "$TOOLPATH" || die
     if [ -x "$(command -v git)" ] && [ -d .git ]; then
         VERSION="$(git describe --tags "$(git rev-list --tags --max-count=1)")"
@@ -382,7 +383,8 @@ getscriptpath() {
     # See if we already have chambers installed
     if [ -n "${INSTANCES[*]}" ]; then
         # We've already got BrewPi installed in multi-chamber
-        echo -e "\nThe following chambers are already configured on this Pi:\n"
+        echo -e "\nThe following chambers are already configured on this system:\n"
+        # shellcheck disable=2128
         for instance in $INSTANCES
         do
             echo -e "\t$(dirname "${instance}")"
@@ -454,39 +456,40 @@ getscriptpath() {
 ### Install a udev rule to connect this instance to an Arduino
 ############
 
-doport(){
+doport() {
     if [ -n "$CHAMBER" ]; then
         declare -i count=-1
-        #declare -a port
         declare -a serial
         declare -a manuf
         rules="/etc/udev/rules.d/99-arduino.rules"
-        devices=$(ls /dev/ttyACM* /dev/ttyUSB* 2> /dev/null)
-        # Get a list of USB TTY devices
-        for device in "${devices[@]}"; do
+
+        # Get a list of all USB devices (/dev/tty(ACM*|ttyUSB*))
+        mapfile -t < <(find "/dev/" \( -name "ttyACM*" -o -name "ttyUSB*" \))
+
+        # Create a list of manufacturer/serial number for attached devices
+        for device in "${MAPFILE[@]}"; do
             declare ok=false
             # Walk device tree | awk out the stanza with the last device in chain
             board=$(udevadm info --a -n "$device" | awk -v RS='' '/ATTRS{maxchild}=="0"/')
             thisSerial=$(echo "$board" | grep "serial" | cut -d'"' -f 2)
-            grep -q "$thisSerial" "$rules" 2> /dev/null || ok=true # Serial not in file
-            [ -z "$board" ] && ok=false # Board exists
+            thisManuf=$(echo "$board" | grep "manufacturer" | cut -d'"' -f 2)
+            # Check to make sure the serial number is not currently assigned
+            grep -q "$thisSerial" "$rules" 2> /dev/null || ok=true
+            [ -z "$device" ] && ok=false # Board exists
             if "$ok"; then
                 ((count++))
-                # Get the device Product ID, Vendor ID and Serial Number
-                #idProduct=$(echo "$board" | grep "idProduct" | cut -d'"' -f 2)
-                #idVendor=$(echo "$board" | grep "idVendor" | cut -d'"' -f 2)
-                #port[count]="$device"
-                serial[count]=$(echo "$board" | grep "serial" | cut -d'"' -f 2)
-                manuf[count]=$(echo "$board" | grep "manufacturer" | cut -d'"' -f 2)
+                serial[count]="$thisSerial"
+                manuf[count]="$thisManuf"
             fi
         done
+
         # Display a menu of devices to associate with this chamber
         if [ "$count" -gt 0 ]; then
             # There's more than one (it's 0-based)
             echo -e "\nThe following seem to be the Arduinos available on this system:\n"
             for (( c=0; c<=count; c++ ))
             do
-                echo -e "[$c] Manuf: ${manuf[c]}, Serial: ${serial[c]}"
+                echo -e "\t[$c] ${manuf[c]}, SerNo: ${serial[c]}"
             done
             echo
             while :; do
@@ -497,46 +500,54 @@ doport(){
                     break
                 fi
             done
+
             # Device already exists - well-meaning user may have set it up
             if [ -L "/dev/$CHAMBER" ]; then
-                echo -e "\nPort /dev/$CHAMBER already exists as a link; using it but check your setup."
+                # Link in /dev* already exists
+                echo -e "\nWarning: A link to port /dev/$CHAMBER already exists. Using it in config,\nbut check your setup.\n"
+                read -n 1 -s -r -p "Press any key to continue. " < /dev/tty
+                echo
             else
                 echo -e "\nCreating rule for board ${serial[board]} as /dev/$CHAMBER."
-                # Concatenate the rule
-                rule='SUBSYSTEM=="tty", ATTRS{serial}=="sernum", SYMLINK+="chambr"'
-                #rule+=', GROUP="brewpi"'
+                # Concatenate the rule with __placeholders__
+                rule='SUBSYSTEM=="tty", ATTRS{serial}=="__serial__", SYMLINK+="__chamber__"'
                 # Replace placeholders with real values
-                rule="${rule/sernum/${serial[board]}}"
-                rule="${rule/chambr/$CHAMBER}"
+                rule="${rule/__serial__/${serial[board]}}"
+                rule="${rule/__chamber__/$CHAMBER}"
                 echo "$rule" >> "$rules"
             fi
-            udevadm control --reload-rules
-            udevadm trigger
-            elif [ "$count" -eq 0 ]; then
-            # Only one (it's 0-based), use it
+
+        # Only one (it's 0-based), use it
+        elif [ "$count" -eq 0 ]; then
             if [ -L "/dev/$CHAMBER" ]; then
-                echo -e "\nPort /dev/$CHAMBER already exists as a link; using it but check your setup."
+                # Link in /dev* already exists
+                echo -e "\nWarning: A link to port /dev/$CHAMBER already exists. Using it in config,\nbut check your setup.\n"
+                read -n 1 -s -r -p "Press any key to continue. " < /dev/tty
+                echo
             else
                 echo -e "\nCreating rule for board ${serial[0]} as /dev/$CHAMBER."
-                # Concatenate the rule
-                rule='SUBSYSTEM=="tty", ATTRS{serial}=="sernum", SYMLINK+="chambr"'
-                #rule+=', GROUP="brewpi"'
+                # Concatenate the rule with __placeholders__
+                rule='SUBSYSTEM=="tty", ATTRS{serial}=="__serial__", SYMLINK+="__chamber__"'
                 # Replace placeholders with real values
-                rule="${rule/sernum/${serial[0]}}"
-                rule="${rule/chambr/$CHAMBER}"
+                rule="${rule/__serial__/${serial[0]}}"
+                rule="${rule/__chamber__/$CHAMBER}"
                 echo "$rule" >> "$rules"
             fi
+
+            # Reload new rules
             udevadm control --reload-rules
             udevadm trigger
+
+        # We have selected multi-chamber but there's no devices
         else
-            # We have selected multi-chamber but there's no devices
-            echo -e "\nYou've configured the system for multi-chamber support however no Arduinos were"
-            echo -e "found to configure. The following configuration will be created, however you"
+            DUMMYDEVICE=true
+            echo -e "\nYou've configured the system for multi-chamber support, however no Arduinos"
+            echo -e "were found to configure. The following configuration will be created, however"
             echo -e "must manually create a rule for your device to match the configuration file."
-            echo -e "\n\tConfiguration File: $SCRIPTPATH/settings/config.cnf"
+            echo -e "\n\tConfiguration File: $SCRIPTPATH/settings/config.cfg"
             echo -e "\tDevice:             /dev/$CHAMBER\n"
             read -n 1 -s -r -p "Press any key to continue. " < /dev/tty
-            echo -e ""
+            echo
         fi
     else
         echo -e "\nScripts will use default 'port = auto' setting."
@@ -589,14 +600,15 @@ clonescripts() {
     chown -R brewpi:brewpi "$SCRIPTPATH"||die
     if [ -n "$SOURCE" ]; then
         # Clone from local
-        eval "sudo -u brewpi git clone -b $GITBRNCH $SCRIPTSOURCE $SCRIPTPATH"||die
+        eval "sudo -u brewpi git clone $SCRIPTSOURCE $SCRIPTPATH"||die
         # Update $SCRIPTPATH with git origin from $SCRIPTSOURCE
         sourceURL="$(cd "$SCRIPTSOURCE" && git config --get remote.origin.url)"
         (cd "$SCRIPTPATH" && git remote set-url origin "$sourceURL")
     else
         # Clone from GitHub
-        eval "sudo -u brewpi git clone -b $GITBRNCH $GITURLSCRIPT $SCRIPTPATH"||die
+        eval "sudo -u brewpi git clone $GITURLSCRIPT $SCRIPTPATH"||die
     fi
+    eval "cd $SCRIPTPATH && sudo -u brewpi git checkout $GITBRNCH"||die
 }
 
 ############
@@ -638,20 +650,21 @@ getwwwpath() {
 ############
 
 backupwww() {
-    local backupdir dirName rootWeb
+    local dirName
     # Back up WEBPATH if it has any files in it
-    rootWeb="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
-    /etc/init.d/apache2 stop||die
+    sudo systemctl stop apache2||die
     rm -f "$WEBPATH/do_not_run_brewpi" 2> /dev/null || true
-    rm -f "$rootWeb/index.html" 2> /dev/null || true
+    rm -f "$WEBPATH/index.html" 2> /dev/null || true
     if [ -d "$WEBPATH" ] && [ -n "$(ls -A "${WEBPATH}")" ]; then
-        dirName="$backupdir/$(date +%F%k:%M:%S)-WWW"
+        dirName="$HOMEPATH/$(date +%F%k:%M:%S)-WWW-Backup"
         echo -e "\nWeb directory is not empty, backing up the web directory to:"
-        echo -e "'$dirName' and then deleting contents of web directory."
+        echo -e "$dirName"
         mkdir -p "$dirName"
         cp -R "$WEBPATH" "$dirName"/||die
         rm -rf "${WEBPATH:?}"||die
-        find "$WEBPATH"/ -name '.*' -print0 | xargs -0 rm -rf||die
+        find "$WEBPATH"/ -name '.*' -print0 2> /dev/null | xargs -0 rm -rf||die
+        sudo mkdir -p "$WEBPATH"
+        sudo chown www-data:www-data "$WEBPATH"
     fi
 }
 
@@ -663,13 +676,14 @@ clonewww() {
     local sourceURL
     echo -e "\nCloning web site to $WEBPATH."
     if [ -n "$SOURCE" ]; then
-        eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $WEBSOURCE $WEBPATH"||die
+        eval "sudo -u www-data git clone $WEBSOURCE $WEBPATH"||die
         # Update $WEBPATH with git origin from $WEBSOURCE
         sourceURL="$(cd "$WEBSOURCE" && git config --get remote.origin.url)"
         (cd "$WEBPATH" && git remote set-url origin "$sourceURL")
     else
-        eval "sudo -u www-data git clone -b $GITBRNCH --single-branch $GITURLWWW $WEBPATH"||die
+        eval "sudo -u www-data git clone $GITURLWWW $WEBPATH"||die
     fi
+    eval "cd $WEBPATH && sudo -u www-data git checkout $GITBRNCH"||die
     # Keep BrewPi from running while we do things
     touch "$WEBPATH/do_not_run_brewpi"
 }
@@ -767,7 +781,17 @@ dodaemon() {
     if [ -n "$SOURCE" ] || [ -z "$WLAN" ]; then
         eval "$SCRIPTPATH/utils/doDaemon.sh -nowifi"||die
     else
-        eval "$SCRIPTPATH/utils/doDaemon.sh"||die
+        echo -e "" > /dev/tty
+        echo -e "BrewPi can install a daemon which can help a Raspberry Pi stay connected to"
+        read -rp "your WiFi access point.  Would you like this daemon added? [y/N]: " yn  < /dev/tty
+        case "$yn" in
+            [Yy]* )
+                eval "$SCRIPTPATH/utils/doDaemon.sh"||die
+                ;;
+            * )
+                eval "$SCRIPTPATH/utils/doDaemon.sh -nowifi"||die
+                ;;
+        esac
     fi
     if [ -n "$CHAMBER" ]; then
         systemctl stop "$CHAMBER"
@@ -791,20 +815,16 @@ fixsafari() {
 ############
 
 flash() {
-    local yn branch
+    local yn branch pythonpath
     branch="${GITBRNCH,,}"
     if [ ! "$branch" == "master" ]; then
         branch="--beta"
     else
         branch=""
     fi
-    echo -e "\nIf you have previously flashed your controller, you do not need to do so again."
-    read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
-    yn=${yn//[^[:alpha:].-]/}
-    case "$yn" in
-        [Yy]* ) eval "python3 -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;
-        * ) ;;
-    esac
+    pythonpath="/home/brewpi/venv/bin/python"
+
+    eval "$pythonpath -u $SCRIPTPATH/updateFirmware.py $branch"
 }
 
 ############
@@ -813,11 +833,17 @@ flash() {
 
 complete() {
     clear
-    local sp7 sp11 sp18 sp28 sp49 IP
+    local sp7 sp11 sp18 sp28 sp49 ip port
     sp7="$(printf ' %.0s' {1..7})" sp11="$(printf ' %.0s' {1..11})"
     sp18="$(printf ' %.0s' {1..18})" sp28="$(printf ' %.0s' {1..28})"
     sp49="$(printf ' %.0s' {1..49})"
-    IP=$(ip -4 addr | grep 'global' | cut -f1  -d'/' | cut -d" " -f6)
+    ip=$(hostname -I | awk '{print $1}')
+    port=$(grep "<VirtualHost" /etc/apache2/sites-enabled/000-default* | xargs | cut -d ":" -f2 | cut -d ">" -f1)
+    if [ "$port" != "80" ]; then
+        port=":$port"
+    else
+        port=
+    fi
     # Note:  $(printf ...) hack adds spaces at beg/end to support non-black BG
   cat << EOF
 
@@ -827,10 +853,10 @@ $DOT$BGBLK$FGYLW$sp7 | || ' \(_-<  _/ _\` | | | | (__/ _ \ '  \| '_ \ / -_)  _/ 
 $DOT$BGBLK$FGYLW$sp7|___|_|\_/__/\__\__,_|_|_|  \___\___/_|_|_| .__/_\___|\__\___|$sp11
 $DOT$BGBLK$FGYLW$sp49|_|$sp28
 $DOT$BGBLK$FGGRN$HHR$RESET
-BrewPi scripts will start shortly, usually within 30 seconds.
+BrewPi scripts will start shortly, usually within 30 secs.
 
- - BrewPi frontend URL : http://$IP/$CHAMBER
-                  -or- : http://$(hostname).local/$CHAMBER
+ - BrewPi frontend URL : http://$ip$port/$CHAMBER
+                  -or- : http://$(hostname).local$port/$CHAMBER
  - Installation path   : $SCRIPTPATH
  - Release version     : $VERSION ($GITBRNCH)
  - Commit version      : $COMMIT
@@ -838,8 +864,8 @@ BrewPi scripts will start shortly, usually within 30 seconds.
 EOF
     if [ -n "$CHAMBER" ]; then
     cat << EOF
- - Multi-chamber URL   : http://$IP
-                  -or- : http://$(hostname).local
+ - Multi-chamber URL   : http://$ip$port
+                  -or- : http://$(hostname).local$port
 
 If you would like to install another chamber, issue the command:
 sudo $TOOLPATH/install.sh
@@ -857,7 +883,8 @@ EOF
 main() {
     init "$@" # Initialize constants and variables
     checkroot "$@" # Make sure we are using sudo
-    [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
+    # [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
+    VERBOSE=true # Do not trim logs
     log "$@" # Create installation log
     arguments "$@" # Handle command line arguments
     echo -e "\n***Script $THISSCRIPT starting.***"
@@ -880,13 +907,13 @@ main() {
     fixsafari # Fix display bug with Safari browsers
     # Add links for multi-chamber dashboard
     if [ -n "$CHAMBER" ]; then
-        webRoot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
+        webRoot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* | xargs | cut -d " " -f2)"
         if [ ! -L "$webRoot/index.php" ]; then
             eval "$SCRIPTPATH/utils/doIndex.sh"||warn
         fi
     fi
     doperms # Set script and www permissions
-    flash # Flash controller
+    [ ! "$DUMMYDEVICE" = true ] && flash # Flash controller if present
     # Allow BrewPi to start via daemon
     rm -f "$WEBPATH/do_not_run_brewpi"
     if [ -n "$CHAMBER" ]; then

@@ -29,22 +29,24 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+# Set branch
+BRANCH=devel
+
 ############
 ### Global Declarations
 ############
 
 # General constants
-declare THISSCRIPT VERSION GITBRNCH GITURL GITPROJ PACKAGE CHAMBER VERBOSE
+declare THISSCRIPT GITBRNCH GITURL GITPROJ PACKAGE CHAMBER VERBOSE
 declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME CMDLINE GITRAW GITHUB
 declare SCRIPTNAME GITCMD GITTEST APTPACKAGES VERBOSE LINK
 # Color/character codes
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
-# Version/Branch Constants
-GITBRNCH="devel"
-VERSION="0.5.4.2"
+# Set branch
+if [ -z "$BRANCH" ]; then GITBRNCH="master"; else GITBRNCH="$BRANCH"; fi
 THISSCRIPT="bootstrap.sh"
-LINK="install.brewpiremix.com" # Don't change for dev
+LINK="https://raw.githubusercontent.com/brewpi-remix/brewpi-tools-rmx/$GITBRNCH/bootstrap.sh"
 
 ############
 ### Init
@@ -53,12 +55,7 @@ LINK="install.brewpiremix.com" # Don't change for dev
 init() {
     # Set up some project variables we won't have running as a curled script
     PACKAGE="BrewPi-Tools-RMX"
-    if [ ! "GITBRNCH" == "master" ]; then
-    # Use devel branch link
-        CMDLINE="curl -L dev$LINK | sudo bash"
-    else
-        CMDLINE="curl -L $LINK | sudo bash"
-    fi
+    CMDLINE="curl -L $LINK | BRANCH=$GITBRNCH sudo bash"
     # These should stay the same
     GITRAW="https://raw.githubusercontent.com/brewpi-remix"
     GITHUB="https://github.com/brewpi-remix"
@@ -67,8 +64,7 @@ init() {
     GITPROJ="${PACKAGE,,}"
     GITHUB="$GITHUB/$GITPROJ.git"
     GITRAW="$GITRAW/$GITPROJ/$GITBRNCH/$THISSCRIPT"
-    # GITCMD="-b $GITBRNCH --single-branch $GITHUB"
-    GITCMD="-b $GITBRNCH $GITHUB"
+    GITCMD="$GITHUB"
     # Website for network test
     GITTEST="$GITHUB"
     # Packages to be installed/checked via apt
@@ -147,7 +143,7 @@ log() {
 usage() {
 cat << EOF
 
-$PACKAGE $THISSCRIPT version $VERSION
+$PACKAGE $THISSCRIPT
 
 Usage: sudo ./$THISSCRIPT"
 EOF
@@ -157,7 +153,7 @@ EOF
 version() {
 cat << EOF
 
-$THISSCRIPT ($PACKAGE) $VERSION
+$THISSCRIPT ($PACKAGE)
 
 Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -408,7 +404,7 @@ host_name() {
             esac
         done
         echo
-        if [ "$sethost" -eq 1 ]; then
+        if [ -n "$sethost" ]; then
             echo -e "You will now be asked to enter a new hostname."
             while
             read -rp "Enter new hostname: " host1  < /dev/tty
@@ -439,12 +435,16 @@ host_name() {
 
 packages() {
     local lastUpdate nowTime pkgOk upgradesAvail pkg
-    echo -e "\nFixing any broken installations before proceeding."
+    echo -e "\nUpdating any expired apt keys."
+    for K in $(apt-key list 2> /dev/null | grep expired | cut -d'/' -f2 | cut -d' ' -f1); do
+	    sudo apt-key adv --recv-keys --keyserver keys.gnupg.net $K;
+    done
+    echo -e "\nFixing any broken installations."
     sudo apt-get --fix-broken install -y||die
     # Run 'apt update' if last run was > 1 week ago
     lastUpdate=$(stat -c %Y /var/lib/apt/lists)
     nowTime=$(date +%s)
-    if [ $(("$nowTime" - "$lastUpdate")) -gt 604800 ] ; then
+    if [ $((nowTime - lastUpdate)) -gt 604800 ]; then
         echo -e "\nLast apt update was over a week ago. Running apt update before updating"
         echo -e "dependencies."
         apt-get update -yq||die
@@ -492,7 +492,6 @@ check_brewpi() {
         read -rp "Remove $HOMEPATH/$GITPROJ? [y/N] " < /dev/tty
         if [[ "$REPLY" =~ ^[Yy]$ ]]; then
             rm -fr "${HOMEPATH:?}/$GITPROJ"
-            echo
         else
             echo -e "\nLeaving $HOMEPATH/$GITPROJ in place and exiting."
             exit 1
@@ -507,6 +506,9 @@ check_brewpi() {
 clonetools() {
     echo -e "\nCloning $GITPROJ repo."
     eval "sudo -u $REALUSER git clone $GITCMD $HOMEPATH/$GITPROJ"||die
+    cd "$HOMEPATH/$GITPROJ"
+    eval "sudo -u $REALUSER git checkout $GITBRNCH"||die
+    cd "$HOMEPATH"
 }
 
 ############
@@ -514,11 +516,15 @@ clonetools() {
 ############
 
 main() {
-    [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
+    #[[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
+    VERBOSE=true  # Do not trim logs
     log "$@" # Start logging
     init "$@" # Get constants
     arguments "$@" # Check command line arguments
     echo -e "\n***Script $THISSCRIPT starting.***\n"
+    sysver="$(cat "/etc/os-release" | grep 'PRETTY_NAME' | cut -d '=' -f2)"
+    sysver="$(sed -e 's/^"//' -e 's/"$//' <<<"$sysver")"
+    echo -e "\nRunning on: $sysver\n"
     checkroot # Make sure we are su into root
     term # Add term command constants
     instructions # Show instructions
@@ -536,3 +542,4 @@ main() {
 ############
 
 main "$@" && exit 0
+
