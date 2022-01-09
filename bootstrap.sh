@@ -30,7 +30,7 @@
 # license and credits.
 
 # Set branch
-BRANCH=master
+BRANCH=main
 
 ############
 ### Global Declarations
@@ -331,7 +331,7 @@ checkpass() {
     if [ "$user_exists" -eq 0 ]; then
         salt=$(getent shadow "pi" | cut -d$ -f3)
         extpass=$(getent shadow "pi" | cut -d: -f2)
-        match=$(python -c 'import crypt; print crypt.crypt("'"raspberry"'", "$6$'${salt}'")')
+        match=$(python3 -c 'import crypt; print(crypt.crypt("'"raspberry"'", "$6$'${salt}'"))')
         [ "${match}" == "${extpass}" ] && badpwd=true || badpwd=false
         if [ "$badpwd" = true ]; then
             echo -e "\nDefault password found for the 'pi' account. This should be changed."
