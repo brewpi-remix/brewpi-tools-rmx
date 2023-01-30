@@ -46,7 +46,7 @@ declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
 # Set branch
 if [ -z "$BRANCH" ]; then GITBRNCH="main"; else GITBRNCH="$BRANCH"; fi
 THISSCRIPT="bootstrap.sh"
-LINK="https://raw.githubusercontent.com/brewpi-remix/brewpi-tools-rmx/git_change/bootstrap.sh"
+LINK="https://raw.githubusercontent.com/brewpi-remix/brewpi-tools-rmx/CVE-2022-24765/bootstrap.sh"
 
 ############
 ### Init
