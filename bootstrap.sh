@@ -505,6 +505,7 @@ check_brewpi() {
 
 clonetools() {
     echo -e "\nCloning $GITPROJ repo."
+    git config --system --add safe.directory '*'
     eval "sudo -u $REALUSER git clone $GITCMD $HOMEPATH/$GITPROJ"||die
     cd "$HOMEPATH/$GITPROJ"
     eval "sudo -u $REALUSER git checkout $GITBRNCH"||die
