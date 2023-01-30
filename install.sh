@@ -598,7 +598,7 @@ clonescripts() {
     rm -fr "$SCRIPTPATH" >/dev/null 2>&1
     if [ ! -d "$SCRIPTPATH" ]; then mkdir -p "$SCRIPTPATH"; fi
     chown -R brewpi:brewpi "$SCRIPTPATH"||die
-    sudo git config --system --add safe.directory '*'
+    git config --system --add safe.directory '*'
     if [ -n "$SOURCE" ]; then
         # Clone from local
         eval "sudo -u brewpi git clone $SCRIPTSOURCE $SCRIPTPATH"||die
