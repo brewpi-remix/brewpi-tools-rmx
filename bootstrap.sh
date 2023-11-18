@@ -46,7 +46,7 @@ declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
 # Set branch
 if [ -z "$BRANCH" ]; then GITBRNCH="main"; else GITBRNCH="$BRANCH"; fi
 THISSCRIPT="bootstrap.sh"
-LINK="https://raw.githubusercontent.com/brewpi-remix/brewpi-tools-rmx/CVE-2022-24765/bootstrap.sh"
+LINK="https://raw.githubusercontent.com/brewpi-remix/brewpi-tools-rmx/$devel/bootstrap.sh"
 
 ############
 ### Init
@@ -80,7 +80,7 @@ timestamp() {
     [[ "$VERBOSE" == "true" ]] && length=999 || length=60 # Allow full logging
     while read -r; do
         # Clean and trim line to 60 characters to allow for timestamp on one line
-        REPLY="$(clean "$REPLY" $length)"
+        REPLY="$(clean "$REPLY" "$length")"
         # Strip blank lines
         if [ -n "$REPLY" ]; then
             # Add date in '2019-02-26 08:19:22' format to log
@@ -437,7 +437,7 @@ packages() {
     local lastUpdate nowTime pkgOk upgradesAvail pkg
     echo -e "\nUpdating any expired apt keys."
     for K in $(apt-key list 2> /dev/null | grep expired | cut -d'/' -f2 | cut -d' ' -f1); do
-	    sudo apt-key adv --recv-keys --keyserver keys.gnupg.net $K;
+	    sudo apt-key adv --recv-keys --keyserver keys.gnupg.net "$K";
     done
     echo -e "\nFixing any broken installations."
     sudo apt-get --fix-broken install -y||die
@@ -507,9 +507,9 @@ clonetools() {
     echo -e "\nCloning $GITPROJ repo."
     git config --system --add safe.directory '*'
     eval "sudo -u $REALUSER git clone $GITCMD $HOMEPATH/$GITPROJ"||die
-    cd "$HOMEPATH/$GITPROJ"
+    cd "$HOMEPATH/$GITPROJ"||die
     eval "sudo -u $REALUSER git checkout $GITBRNCH"||die
-    cd "$HOMEPATH"
+    cd "$HOMEPATH"||die
 }
 
 ############
