@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2001,SC2002,SC2016,SC2086,SC2119,SC2120
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 #
@@ -30,7 +31,7 @@
 # license and credits.
 
 # Set branch
-BRANCH=main
+BRANCH=devel
 
 ############
 ### Global Declarations
@@ -44,7 +45,7 @@ declare SCRIPTNAME GITCMD GITTEST APTPACKAGES VERBOSE LINK
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
 # Set branch
-if [ -z "$BRANCH" ]; then GITBRNCH="master"; else GITBRNCH="$BRANCH"; fi
+if [ -z "$BRANCH" ]; then GITBRNCH="main"; else GITBRNCH="$BRANCH"; fi
 THISSCRIPT="bootstrap.sh"
 LINK="https://raw.githubusercontent.com/brewpi-remix/brewpi-tools-rmx/$GITBRNCH/bootstrap.sh"
 
@@ -80,7 +81,7 @@ timestamp() {
     [[ "$VERBOSE" == "true" ]] && length=999 || length=60 # Allow full logging
     while read -r; do
         # Clean and trim line to 60 characters to allow for timestamp on one line
-        REPLY="$(clean "$REPLY" $length)"
+        REPLY="$(clean "$REPLY" "$length")"
         # Strip blank lines
         if [ -n "$REPLY" ]; then
             # Add date in '2019-02-26 08:19:22' format to log
@@ -323,6 +324,7 @@ EOF
 
 ############
 ### Check for default 'pi' password and gently prompt to change it now
+### (No longer used)
 ############
 
 checkpass() {
@@ -437,7 +439,7 @@ packages() {
     local lastUpdate nowTime pkgOk upgradesAvail pkg
     echo -e "\nUpdating any expired apt keys."
     for K in $(apt-key list 2> /dev/null | grep expired | cut -d'/' -f2 | cut -d' ' -f1); do
-	    sudo apt-key adv --recv-keys --keyserver keys.gnupg.net $K;
+	    sudo apt-key adv --recv-keys --keyserver keys.gnupg.net "$K";
     done
     echo -e "\nFixing any broken installations."
     sudo apt-get --fix-broken install -y||die
@@ -505,10 +507,11 @@ check_brewpi() {
 
 clonetools() {
     echo -e "\nCloning $GITPROJ repo."
+    git config --system --add safe.directory '*'
     eval "sudo -u $REALUSER git clone $GITCMD $HOMEPATH/$GITPROJ"||die
-    cd "$HOMEPATH/$GITPROJ"
+    cd "$HOMEPATH/$GITPROJ"||die
     eval "sudo -u $REALUSER git checkout $GITBRNCH"||die
-    cd "$HOMEPATH"
+    cd "$HOMEPATH"||die
 }
 
 ############
@@ -529,7 +532,7 @@ main() {
     term # Add term command constants
     instructions # Show instructions
     check_brewpi # See if BrewPi is installed
-    checkpass # Check for default password
+    # checkpass # Check for default password
     settime # Set timezone
     host_name # Change hostname
     packages # Install and update required packages
@@ -542,4 +545,3 @@ main() {
 ############
 
 main "$@" && exit 0
-
