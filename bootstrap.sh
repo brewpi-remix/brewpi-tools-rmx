@@ -323,6 +323,7 @@ EOF
 
 ############
 ### Check for default 'pi' password and gently prompt to change it now
+### (No longer used)
 ############
 
 checkpass() {
@@ -530,7 +531,7 @@ main() {
     term # Add term command constants
     instructions # Show instructions
     check_brewpi # See if BrewPi is installed
-    checkpass # Check for default password
+    # checkpass # Check for default password
     settime # Set timezone
     host_name # Change hostname
     packages # Install and update required packages
