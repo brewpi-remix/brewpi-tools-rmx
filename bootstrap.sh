@@ -31,7 +31,7 @@
 # license and credits.
 
 # Set branch
-BRANCH=devel
+BRANCH=main
 
 ############
 ### Global Declarations
