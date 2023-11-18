@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2001,SC2002,SC2016,SC2086,SC2119,SC2120
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 #
@@ -46,7 +47,7 @@ declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
 # Set branch
 if [ -z "$BRANCH" ]; then GITBRNCH="main"; else GITBRNCH="$BRANCH"; fi
 THISSCRIPT="bootstrap.sh"
-LINK="https://raw.githubusercontent.com/brewpi-remix/brewpi-tools-rmx/$devel/bootstrap.sh"
+LINK="https://raw.githubusercontent.com/brewpi-remix/brewpi-tools-rmx/$BRANCH/bootstrap.sh"
 
 ############
 ### Init
@@ -544,4 +545,3 @@ main() {
 ############
 
 main "$@" && exit 0
-
