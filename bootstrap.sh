@@ -44,9 +44,9 @@ declare SCRIPTNAME GITCMD GITTEST APTPACKAGES VERBOSE LINK
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
 # Set branch
-if [ -z "$BRANCH" ]; then GITBRNCH="master"; else GITBRNCH="$BRANCH"; fi
+if [ -z "$BRANCH" ]; then GITBRNCH="main"; else GITBRNCH="$BRANCH"; fi
 THISSCRIPT="bootstrap.sh"
-LINK="https://raw.githubusercontent.com/brewpi-remix/brewpi-tools-rmx/$GITBRNCH/bootstrap.sh"
+LINK="https://raw.githubusercontent.com/brewpi-remix/brewpi-tools-rmx/CVE-2022-24765/bootstrap.sh"
 
 ############
 ### Init
@@ -505,6 +505,7 @@ check_brewpi() {
 
 clonetools() {
     echo -e "\nCloning $GITPROJ repo."
+    git config --system --add safe.directory '*'
     eval "sudo -u $REALUSER git clone $GITCMD $HOMEPATH/$GITPROJ"||die
     cd "$HOMEPATH/$GITPROJ"
     eval "sudo -u $REALUSER git checkout $GITBRNCH"||die
