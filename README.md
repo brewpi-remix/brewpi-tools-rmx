@@ -30,7 +30,7 @@ If you want to know the who, what, why and when, check out [the documentation](#
 
 To begin installing BrewPi, you need only issue the following command in a [terminal window](https://www.raspberrypi.org/documentation/usage/terminal/) (or via [ssh](https://www.raspberrypi.org/documentation/remote-access/ssh/)) on your Internet-connected Raspberry Pi:
 
-`curl -L install.brewpiremix.com | sudo bash`
+`curl -fsSL install.brewpiremix.com | sudo bash`
 
 Or, if you must know and type a longer URL (all one line):
 
