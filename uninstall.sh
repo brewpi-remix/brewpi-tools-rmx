@@ -242,7 +242,7 @@ syslogd() {
     local ddir targets target filename name
     ddir="/etc/systemd/system"
     targets="$(grep -rl "# Created for BrewPi version" $ddir)"
-    
+
     for target in $targets
     do
         filename="$(basename "$target")"
@@ -580,7 +580,7 @@ delchamber() {
     webDir="$webPath/$chamber"
     unitFile="/etc/systemd/system/$chamber.service"
     daemonName="$chamber.service"
-    
+
     # Check and fix symlink if needed
     echo
     link=$(dirname "$(readlink "$webPath/index.php")")
@@ -599,7 +599,7 @@ delchamber() {
         echo -e "Link:   $webPath/index.php"
         ln -sfn "$newlink" "$webPath/index.php"
     fi
-    
+
     # Delete daemon for chamber
     if [ -f "$unitFile" ]; then
         # TODO:  Delete unit file for that chamber
