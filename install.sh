@@ -331,7 +331,7 @@ checkfree() {
     freek=$(df -Pk | grep -m1 '\/$' | awk '{print $4}')
     freem="$((freek / 1024))"
     freep=$(df -Pk | grep -m1 '\/$' | awk '{print $5}')
-    
+
     if [ "$freem" -le "$req" ]; then
         echo -e "\nDisk usage is $freep, free disk space is $freem MB,"
         echo -e "Not enough space to continue setup. Installing $PACKAGE requires"
@@ -436,7 +436,7 @@ getscriptpath() {
         fi
         echo -e "\nUsing '$SCRIPTPATH' for scripts directory."
     fi
-    
+
     if [ -n "$CHAMBER" ]; then
         echo -e "\nNow enter a friendly name to be used for the chamber as it will be displayed."
         echo -e "Capital letters may be used, however any character entered that is not [A-Z],"
@@ -818,7 +818,7 @@ fixsafari() {
 flash() {
     local yn branch pythonpath
     branch="${GITBRNCH,,}"
-    if [ ! "$branch" == "master" ]; then
+    if [ ! "$branch" == "main" ]; then
         branch="--beta"
     else
         branch=""

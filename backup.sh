@@ -40,7 +40,7 @@ declare REPLY SOURCE SCRIPTPATH CMDLINE GITRAW GITHUB SCRIPTNAME LINK
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
 # Version/Branch Constants
-GITBRNCH="master"
+GITBRNCH="main"
 VERSION="0.5.3.2"
 THISSCRIPT="backup.sh"
 LINK="backup.brewpiremix.com"
@@ -52,7 +52,7 @@ LINK="backup.brewpiremix.com"
 init() {
     # Set up some project variables we won't have running as a curled script
     PACKAGE="BrewPi-Tools-RMX"
-    if [ ! "GITBRNCH" == "master" ]; then
+    if [ ! "GITBRNCH" == "main" ]; then
     # Use devel branch link
         CMDLINE="curl -L dev$LINK | sudo bash"
     else
@@ -359,7 +359,7 @@ doBackup() {
     mkdir -p "$SCRIPTBACKUP/data"
     mkdir -p "$SCRIPTBACKUP/settings"
     mkdir -p "$WWWBACKUP/data"
-    
+
     # Rough backup of all settings and data
     echo -e "\nBacking up all settings and data." > /dev/tty
     [[ -e "$SCRIPTPATH/data" ]] && cp -ur "$SCRIPTPATH/data" "$SCRIPTBACKUP/"

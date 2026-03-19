@@ -451,7 +451,7 @@ packages() {
         echo -e "dependencies."
         apt-get update -yq||die
     fi
-    
+
     # Now install any necessary packages if they are not installed
     echo -e "\nChecking and installing required dependencies via apt."
     for pkg in $APTPACKAGES; do
@@ -462,7 +462,7 @@ packages() {
             apt-get install "$pkg" -y -q=2||die
         fi
     done
-    
+
     # Get list of installed packages with updates available
     upgradesAvail=$(dpkg --get-selections | xargs apt-cache policy {} | \
         grep -1 Installed | sed -r 's/(:|Installed: |Candidate: )//' | \
