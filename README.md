@@ -24,7 +24,24 @@ These [forks](https://en.wikipedia.org/wiki/Fork_(software_development)) are int
 - [Known Issues / Report Issues](#known-issues)
 
 # <a name="getting-started"></a>Getting Started
-Check [Assumptions and Proceedings](#assumptions-proceedings) before moving forward if you are not starting with a brand new install of the current Raspbian on a dedicated Pi.
+The installer requires Debian or Raspberry Pi OS **Bookworm (12)** or **Trixie (13)**. Both `bootstrap.sh` and `install.sh` refuse unsupported releases, including Bullseye and older, before installing or updating packages. Upgrade an older OS separately before running these tools. Check [Assumptions and Proceedings](#assumptions-proceedings) before moving forward if you are not starting with a brand new install on a dedicated Pi.
+
+APT indexes are refreshed on every installation, including when adding a chamber. A refresh error stops setup instead of using stale indexes. The installer explicitly installs or upgrades PHP packages and checks their installed versions against these minimums for the PHP2Shell fixes (CVE-2026-109618 and CVE-2026-109619):
+
+| OS release | PHP branch | Minimum package version |
+| --- | --- | --- |
+| Bookworm | 8.2 | `8.2.35-1~deb12u1` |
+| Trixie | 8.4 | `8.4.27-1~deb13u1` |
+
+These minimums come from Debian's [PHP 8.2 security tracker](https://security-tracker.debian.org/tracker/source-package/php8.2) and [PHP 8.4 security tracker](https://security-tracker.debian.org/tracker/source-package/php8.4). Newer versions in the same PHP branch are accepted. The PHP installation step refuses package removals and downgrades. Missing or older APT candidates, held PHP packages, installed PHP runtimes from another branch, and package verification failures stop installation. Review security repository configuration, mirror availability, pinning, or holds as indicated; the installer does not change repositories or remove holds. After the PHP update, Apache and running PHP-FPM workers are fully restarted following configuration checks, before proceeding with chamber setup. Stopped PHP-FPM services stay stopped. The installer checks the complete PHP package inventory again after installing other dependencies and restarts web workers again after updating Apache configuration.
+
+Offline regression tests mock package changes, configuration writes, and service operations while using Debian's real version comparator. Run on Debian with Python 3 and Bash:
+
+```bash
+python3 -m unittest discover -s tests -v
+bash -n bootstrap.sh install.sh
+shellcheck bootstrap.sh install.sh
+```
 
 If you want to know the who, what, why, and when, check out [the documentation](#documentation).
 
@@ -104,7 +121,7 @@ To make this work well, I have to make some assumptions about the environment in
   4. Prompt you to set the proper timezone
   5. Prompt to optionally change the hostname if it is currently the default 'raspberrypi'
   6. Check network connectivity to GitHub (this part should be a given since it's intended to be run via `curl`, but I'm not going to assume someone can't break my plans)
-  7. Run an `apt update` if it's not been run within the last week
+  7. Refresh APT indexes before package changes, stopping if any repository refresh fails
   8. Install `git` packages via `apt get` to allow the rest of the install to work
   9. Clone the BrewPi Tools RMX into the `~/brewpi-tools-rmx` folder
   10. Execute install.sh, which is responsible for the rest of the setup

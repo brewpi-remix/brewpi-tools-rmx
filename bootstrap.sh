@@ -41,6 +41,7 @@ BRANCH=main
 declare THISSCRIPT GITBRNCH GITURL GITPROJ PACKAGE CHAMBER VERBOSE
 declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME CMDLINE GITRAW GITHUB
 declare SCRIPTNAME GITCMD GITTEST APTPACKAGES VERBOSE LINK
+declare OSCODENAME
 # Color/character codes
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
@@ -435,22 +436,41 @@ host_name() {
 ### Install or update required packages
 ############
 
+checkos() {
+    local ID='' VERSION_CODENAME='' PRETTY_NAME=''
+    local releasefile="${1:-/etc/os-release}"
+    if [ ! -r "$releasefile" ]; then
+        echo "ERROR: Cannot identify the OS; Debian/Raspberry Pi OS Bookworm or Trixie is required." >&2
+        return 1
+    fi
+    # Keep this gate self-contained: bootstrap also runs directly through curl | bash.
+    # shellcheck source=/dev/null
+    . "$releasefile" || return 1
+    case "$ID:$VERSION_CODENAME" in
+        debian:bookworm|raspbian:bookworm|debian:trixie|raspbian:trixie)
+            OSCODENAME="$VERSION_CODENAME"
+            ;;
+        *)
+            echo "ERROR: Unsupported OS: ${PRETTY_NAME:-unknown}." >&2
+            echo "Use Debian/Raspberry Pi OS Bookworm or Trixie. Bullseye and older are refused; no packages will be updated." >&2
+            return 1
+            ;;
+    esac
+}
+
 packages() {
-    local lastUpdate nowTime pkgOk upgradesAvail pkg
+    local pkgOk upgradesAvail pkg
     echo -e "\nUpdating any expired apt keys."
     for K in $(apt-key list 2> /dev/null | grep expired | cut -d'/' -f2 | cut -d' ' -f1); do
 	    sudo apt-key adv --recv-keys --keyserver keys.gnupg.net "$K";
     done
+    echo -e "\nRefreshing APT indexes before installing or updating dependencies."
+    if ! apt-get update -o APT::Update::Error-Mode=any; then
+        echo "ERROR: APT refresh failed; refusing to install packages using stale indexes." >&2
+        exit 1
+    fi
     echo -e "\nFixing any broken installations."
     sudo apt-get --fix-broken install -y||die
-    # Run 'apt update' if last run was > 1 week ago
-    lastUpdate=$(stat -c %Y /var/lib/apt/lists)
-    nowTime=$(date +%s)
-    if [ $((nowTime - lastUpdate)) -gt 604800 ]; then
-        echo -e "\nLast apt update was over a week ago. Running apt update before updating"
-        echo -e "dependencies."
-        apt-get update -yq||die
-    fi
 
     # Now install any necessary packages if they are not installed
     echo -e "\nChecking and installing required dependencies via apt."
@@ -519,6 +539,7 @@ clonetools() {
 ############
 
 main() {
+    checkos || exit 1 # Refuse unsupported releases before package or system changes
     #[[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
     VERBOSE=true  # Do not trim logs
     log "$@" # Start logging
@@ -544,4 +565,6 @@ main() {
 ### Start the script
 ############
 
-main "$@" && exit 0
+if [[ -z "${BASH_SOURCE[0]}" || "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@" && exit 0
+fi

@@ -40,6 +40,8 @@ declare THISSCRIPT TOOLPATH VERSION GITBRNCH GITURL GITPROJ PACKAGE GITPROJWWW
 declare GITPROJSCRIPT GITURLWWW GITURLSCRIPT INSTANCES WEBPATH CHAMBER VERBOSE
 declare REPLY SOURCE SCRIPTSOURCE SCRIPTPATH CHAMBERNAME WEBSOURCE HOMEPATH
 declare TILTCOLOR TILTCOLORS DUMMYDEVICE
+declare OSCODENAME PHPSERIES PHPFIXED
+declare -a PHPPACKAGES
 # Color/character codes
 declare BOLD SMSO RMSO FGBLK FGRED FGGRN FGYLW FGBLU FGMAG FGCYN FGWHT FGRST
 declare BGBLK BGRED BGGRN BGYLW BGBLU BGMAG BGCYN BGWHT BGRST DOT HHR LHR RESET
@@ -613,6 +615,120 @@ clonescripts() {
 }
 
 ############
+### Require a supported OS and patched PHP before changing the installation
+############
+
+checkos() {
+    local ID='' VERSION_CODENAME='' PRETTY_NAME=''
+    local releasefile="${1:-/etc/os-release}"
+    if [ ! -r "$releasefile" ]; then
+        echo "ERROR: Cannot identify the OS; Debian/Raspberry Pi OS Bookworm or Trixie is required." >&2
+        return 1
+    fi
+    # shellcheck source=/dev/null
+    . "$releasefile" || return 1
+    case "$ID:$VERSION_CODENAME" in
+        debian:bookworm|raspbian:bookworm|debian:trixie|raspbian:trixie)
+            OSCODENAME="$VERSION_CODENAME"
+            ;;
+        *)
+            echo "ERROR: Unsupported OS: ${PRETTY_NAME:-unknown}." >&2
+            echo "Use Debian/Raspberry Pi OS Bookworm or Trixie. Bullseye and older are refused; no packages will be updated." >&2
+            return 1
+            ;;
+    esac
+}
+
+patchedphpversion() {
+    # Check the branch as well as the Debian revision; an epoch must not mask old PHP.
+    local version="${1#*:}"
+    [[ "$version" == "$PHPSERIES."* ]] &&
+        dpkg --compare-versions "$version" ge "$PHPFIXED"
+}
+
+collectphppackages() {
+    local inventory package status source
+    PHPPACKAGES=("php$PHPSERIES" "libapache2-mod-php$PHPSERIES"
+        "php$PHPSERIES-cli" "php$PHPSERIES-cgi" "php$PHPSERIES-common"
+        "php$PHPSERIES-mbstring" "php$PHPSERIES-xml")
+
+    inventory=$(dpkg-query -W -f='${binary:Package} ${db:Status-Status} ${source:Package}\n') || return 1
+    while read -r package status source; do
+        [ "$status" = installed ] || continue
+        if [[ "$source" =~ ^php[0-9]+(\.[0-9]+)?$ ]]; then
+            if [ "$source" != "php$PHPSERIES" ]; then
+                echo "ERROR: $package uses $source; this OS requires PHP $PHPSERIES. Resolve other PHP branches before installing." >&2
+                return 1
+            fi
+            # Include every installed package built from PHP, including FPM and extensions.
+            if [[ " ${PHPPACKAGES[*]} " != *" $package "* ]]; then
+                PHPPACKAGES+=("$package")
+            fi
+        fi
+    done <<< "$inventory"
+}
+
+verifyphp() {
+    local package info status version source
+    if [ -z "$PHPSERIES" ] || [ -z "$PHPFIXED" ]; then
+        echo "ERROR: The PHP security minimum has not been selected." >&2
+        return 1
+    fi
+    # Rebuild the inventory so changes made by the dependency installer are checked too.
+    collectphppackages || return 1
+    for package in "${PHPPACKAGES[@]}"; do
+        info=$(dpkg-query -W -f='${db:Status-Status} ${Version} ${source:Package}\n' "$package") || return 1
+        read -r status version source <<< "$info"
+        if [ "$status" != installed ] || [ "$source" != "php$PHPSERIES" ] || ! patchedphpversion "$version"; then
+            echo "ERROR: $package is not installed with verified patched PHP (requires $PHPFIXED or newer in PHP $PHPSERIES)." >&2
+            return 1
+        fi
+    done
+}
+
+preparephp() {
+    local package policy candidate holds held
+    local -a targets=()
+    # PHP2Shell: CVE-2026-109618 and CVE-2026-109619, fixed 21 October 2026.
+    # https://security-tracker.debian.org/tracker/source-package/php8.2
+    # https://security-tracker.debian.org/tracker/source-package/php8.4
+    case "$OSCODENAME" in
+        bookworm) PHPSERIES=8.2; PHPFIXED='8.2.35-1~deb12u1' ;;
+        trixie) PHPSERIES=8.4; PHPFIXED='8.4.27-1~deb13u1' ;;
+        *) echo "ERROR: A supported OS must be identified before installing PHP." >&2; return 1 ;;
+    esac
+    collectphppackages || return 1
+
+    echo -e "\nRefreshing APT indexes before checking PHP security updates."
+    if ! apt-get update -o APT::Update::Error-Mode=any; then
+        echo "ERROR: APT refresh failed; refusing to install packages using stale indexes." >&2
+        return 1
+    fi
+    holds=$(apt-mark showhold) || return 1
+    for package in "${PHPPACKAGES[@]}"; do
+        while read -r held; do
+            if [ "${held%%:*}" = "${package%%:*}" ]; then
+                echo "ERROR: $package is held. Review its hold before installing PHP security updates." >&2
+                return 1
+            fi
+        done <<< "$holds"
+        policy=$(LC_ALL=C apt-cache policy "$package") || return 1
+        candidate=$(awk '$1 == "Candidate:" {print $2}' <<< "$policy")
+        if ! patchedphpversion "$candidate"; then
+            echo "ERROR: $package candidate '${candidate:-none}' does not meet the PHP security minimum $PHPFIXED." >&2
+            echo "Check $OSCODENAME security repositories, APT pinning, and mirror availability, then rerun the installer." >&2
+            return 1
+        fi
+        targets+=("$package=$candidate")
+    done
+
+    echo -e "\nInstalling/upgrading PHP $PHPSERIES packages (minimum $PHPFIXED)."
+    apt-get install --no-remove --no-allow-downgrades --assume-yes "${targets[@]}" || return 1
+    verifyphp || return 1
+    echo "PHP packages meet the PHP2Shell security minimum."
+}
+
+############
 ### Install dependencies
 ############
 
@@ -802,13 +918,44 @@ dodaemon() {
 }
 
 ############
+### Fully restart patched web workers without starting inactive FPM services
+############
+
+restartphp() {
+    local package fpmstate fpmservice=''
+    apache2ctl configtest || return 1
+    for package in "${PHPPACKAGES[@]}"; do
+        if [ "${package%%:*}" = "php$PHPSERIES-fpm" ]; then
+            fpmstate=$(systemctl show --property=ActiveState --value "php$PHPSERIES-fpm.service") || return 1
+            case "$fpmstate" in
+                active|reloading)
+                    fpmservice="php$PHPSERIES-fpm.service"
+                    "php-fpm$PHPSERIES" --test || return 1
+                    ;;
+                inactive|failed) ;; # No running workers; preserve the stopped state.
+                *)
+                    echo "ERROR: PHP-FPM state '${fpmstate:-unknown}' does not allow a verified worker restart." >&2
+                    return 1
+                    ;;
+            esac
+            break
+        fi
+    done
+    # Validate all active worker configurations before restarting either service.
+    systemctl restart apache2.service || return 1
+    if [ -n "$fpmservice" ]; then
+        systemctl restart "$fpmservice" || return 1
+    fi
+}
+
+############
 ### Fix an issue with BrewPi and Safari-based browsers
 ############
 
 fixsafari() {
     echo -e "\nFixing apache2.conf."
-    sed -i -e 's/KeepAliveTimeout 5/KeepAliveTimeout 99/g' /etc/apache2/apache2.conf
-    /etc/init.d/apache2 restart
+    sed -i -e 's/KeepAliveTimeout 5/KeepAliveTimeout 99/g' /etc/apache2/apache2.conf || return 1
+    restartphp
 }
 
 ############
@@ -882,6 +1029,7 @@ EOF
 # TODO:  Make decisions to do things based on [ ! -z "$INSTANCES" ] (true if multichamber)
 
 main() {
+    checkos || exit 1 # Refuse unsupported releases before any installation changes
     init "$@" # Initialize constants and variables
     checkroot "$@" # Make sure we are using sudo
     # [[ "$*" == *"-verbose"* ]] && VERBOSE=true # Do not trim logs
@@ -893,19 +1041,22 @@ main() {
     findbrewpi # See if BrewPi is already installed
     [ -z "$SOURCE" ] && checknet # Check for connection to GitHub
     checkfree # Make sure there's enough free space for install
+    preparephp || exit 1 # Refresh APT and require patched PHP, including additional chambers
+    restartphp || exit 1 # Load the fixes even if a later setup step fails or is cancelled
     getscriptpath # Choose a sub directory name or take default for scripts
     doport # Install a udev rule for the Arduino connected to this installation
     backupscript # Backup anything in the scripts directory
     makeuser # Create/configure user account
     clonescripts # Clone scripts git repository
     [ -z "$SOURCE" ] && dodepends # Install dependencies
+    verifyphp || exit 1 # Ensure the dependency installer left patched PHP installed
     getwwwpath # Get WWW install location
     backupwww # Backup anything in WWW location
     clonewww # Clone WWW files
     doGravity # Check if we are running a Tilt/Tiltbridge/iSpindel
     updateconfig # Update config files if non-default paths are used
     dodaemon # Set up daemons
-    fixsafari # Fix display bug with Safari browsers
+    fixsafari || exit 1 # Fix display bug and fully restart patched web workers
     # Add links for multi-chamber dashboard
     if [ -n "$CHAMBER" ]; then
         webRoot="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* | xargs | cut -d " " -f2)"
@@ -929,4 +1080,6 @@ main() {
 ### Start the script
 ############
 
-main "$@" && exit 0
+if [[ -z "${BASH_SOURCE[0]}" || "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@" && exit 0
+fi
